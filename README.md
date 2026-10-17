@@ -109,16 +109,45 @@ notifier (`SLACK_WEBHOOK_URL`) is the $0 alternative if you drop Zapier.
 
 ## Producer / consumer architecture
 
-```
- PRODUCERS (in)                        ANALYZE                          CONSUMERS (out)
- ─────────────────       ─────────────────────────────       ────────────────────────────────
- ☁ social (Apify) ──┐   ┌─ caption (vision)      ──┐   ├──▶ Slack alerts (Zapier catch hook)
- ☁ social (RSSHub) ─┤   │  describe -> text set    │   ├──▶ Retool volunteer surfaces (Phase 3–4)
- 🏛 govt pages ──────┼──▶│ classify (Jev)          ├───┼──▶ polls.pizza public visuals (Phase 4)
- 👤 site reports ────┘   │  calibrated conf         │   └──▶ unified /wait-times API (north star)
-                         └─ normalize + corroborate ─┘
-                            (LLM strings, Jev decisions,
-                             cross-source corroboration)
+```mermaid
+flowchart LR
+  subgraph producers ["PRODUCERS (in)"]
+    social1["☁️ social — Apify actors<br/>(IG / X / TikTok)"]
+    social2["☁️ social — RSSHub feeds<br/>(X and anything with RSS)"]
+    govt["🏛️ gov wait-time pages<br/>(future leg)"]
+    crowd["👤 site reports — pizzabase /reports<br/>GROUND TRUTH"]
+  end
+
+  subgraph analyze ["ANALYZE"]
+    caption["vision caption — OpenRouter flash-lite<br/>media → text description set"]
+    classify["classify — Jev ≤255 choices + calibrated conf<br/>(LLM fallback until access lands)"]
+    normalize["normalize — LLM strings<br/>'20-30 min' → 25 · 'SHORT' → category"]
+    corroborate["corroborate — aggregator-side, Phase 4<br/>joins flagged posts ↔ reports on Location + 4h window"]
+  end
+
+  subgraph consumers ["CONSUMERS (out)"]
+    slack["Slack alerts<br/>(Zapier catch hook — live today)"]
+    retool["Retool volunteer surfaces<br/>(Phase 3-4)"]
+    visuals["polls.pizza public visuals<br/>(Phase 4)"]
+    api["unified /wait-times API<br/>(north star)"]
+  end
+
+  social1 --> caption
+  social2 --> caption
+  govt --> normalize
+  caption --> classify
+  classify -->|"flag: relevant + conf ≥ 0.7"| slack
+  crowd -->|"structured at capture —<br/>skips vision + classify"| normalize
+  classify -.->|"feedflag/observation@1"| bus
+  crowd -.-> bus
+
+  subgraph bus ["THE BUS — data/observations.jsonl"]
+  end
+
+  bus --> retool
+  bus --> visuals
+  bus --> api
+  corroborate -.-> bus
 ```
 
 All four legs emit the same `feedflag/observation@1` record into

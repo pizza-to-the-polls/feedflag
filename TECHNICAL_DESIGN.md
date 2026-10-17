@@ -33,15 +33,36 @@ where the producer isn't already structured.
 
 ## 3. Architecture (recap — details in README)
 
-```
- PRODUCERS (in)                    ANALYZE                             CONSUMERS (out)
- ────────────────      ─────────────────────────────────       ─────────────────────────────────
- ☁  Apify actors   ──▶ │ vision caption (OpenRouter flash-lite)│ ──▶ Slack (Zapier catch hook / webhook)
- 🏛  gov pages (P4) ──▶ │ classify (Jev ≤255 choices, fallback) │ ──▶ Retool surfaces (P4)
- 👤  pizzabase      ──▶ │ normalize wait-time (LLM strings)      │ ──▶ polls.pizza visuals + /wait-times (P4)
-     /reports          └──────────────┬─────────────────────────┘
-                                          ▼
-                          data/observations.jsonl  (feedflag/observation@1)
+```mermaid
+flowchart LR
+  subgraph producers ["PRODUCERS (in)"]
+    apify["☁️ Apify actors<br/>IG / X / TikTok"]
+    govt["🏛️ gov pages<br/>(Phase 4)"]
+    reports["👤 pizzabase /reports<br/>(ground truth)"]
+  end
+
+  subgraph analyze ["ANALYZE"]
+    vision["vision caption<br/>OpenRouter flash-lite"]
+    classify["classify — Jev<br/>≤255 choices, calibrated conf<br/>LLM fallback until access"]
+    normal["normalize wait-time<br/>LLM strings"]
+  end
+
+  bus[("THE BUS<br/>data/observations.jsonl<br/>feedflag/observation@1")]
+
+  subgraph consumers ["CONSUMERS (out)"]
+    slack["Slack<br/>Zapier catch hook / webhook"]
+    retool["Retool surfaces<br/>(P4)"]
+    public["polls.pizza visuals +<br/>/wait-times API (P4)"]
+  end
+
+  apify --> vision --> classify
+  govt --> normal
+  reports -->|"structured at capture — no vision / no classify"| bus
+  classify -->|"flagged tail only"| slack
+  classify -->|"observations"| bus
+  normal --> bus
+  bus --> retool
+  bus --> public
 ```
 
 Division of labor (load-bearing, from JEV_EXPLORATION): **LLMs generate strings**
