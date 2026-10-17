@@ -1,0 +1,43 @@
+{
+  "sources": [
+    {
+      "platform": "instagram",
+      "adapter": "rsshub",
+      "handle": "pizzastothepolls",
+      "limit": 20
+    },
+    {
+      "platform": "x",
+      "adapter": "rsshub",
+      "handle": "PollsPizza",
+      "limit": 20
+    },
+    {
+      "platform": "tiktok",
+      "adapter": "apify",
+      "actor": "clockworks/tiktok-scraper",
+      "input": {
+        "profiles": ["https://www.tiktok.com/@pizzastothepolls"],
+        "resultsLimit": 20
+      }
+    },
+    {
+      "platform": "instagram",
+      "adapter": "apify",
+      "actor": "apify/instagram-scraper",
+      "input": {
+        "directUrls": ["https://www.instagram.com/pizzastothepolls/"],
+        "resultsType": "posts",
+        "resultsLimit": 20
+      }
+    }
+  ],
+  "categories": [
+    "food_delivery_moment",
+    "poll_line_report",
+    "wait_time_page_mention",
+    "press_mention",
+    "community_shoutout",
+    "irrelevant"
+  ]
+}

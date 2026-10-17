@@ -1,0 +1,56 @@
+name: feedflag
+
+# Asynchronous runs every 30 min. NOTE: `data/seen.json` is the dedupe state —
+# on ephemeral GH runners we commit it back at the end of each run so the next
+# run doesn't re-caption the same posts (keeps OpenRouter spend tiny).
+# Alternative: keep state in S3/R2, or run via launchd on an always-on Mac.
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: feedflag
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm start
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          VISION_MODEL: ${{ secrets.VISION_MODEL }}
+          TEXT_MODEL: ${{ secrets.TEXT_MODEL }}
+          RSSHUB_URL: ${{ secrets.RSSHUB_URL }}
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          PIZZABASE_API_URL: ${{ secrets.PIZZABASE_API_URL }}
+          PIZZABASE_API_KEY: ${{ secrets.PIZZABASE_API_KEY }}
+          SITE_REPORTS_MAX: "50"
+          JEV_API_URL: ${{ secrets.JEV_API_URL }}
+          JEV_API_KEY: ${{ secrets.JEV_API_KEY }}
+          ZAPIER_CATCH_URL: ${{ secrets.ZAPIER_CATCH_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          FLAG_CONFIDENCE: "0.7"
+          MAX_POSTS_PER_RUN: "40"
+      - name: Persist dedupe state
+        run: |
+          if [ -n "$(git status --porcelain data)" ]; then
+            git config user.name "feedflag-bot"
+            git config user.email "feedflag-bot@users.noreply.github.com"
+            git add -f data
+            git commit -m "chore(data): feedflag run state [skip ci]"
+            git push
+          fi

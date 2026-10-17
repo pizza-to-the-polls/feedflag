@@ -1,0 +1,21 @@
+{
+  "name": "feedflag",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Social feed reader (IG/X/TikTok) -> OpenRouter vision captions -> JEV relevance classification -> Slack via Zapier",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "start:env": "node --env-file=.env --import tsx src/index.ts",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.5.0",
+    "tsx": "^4.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

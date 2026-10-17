@@ -1,0 +1,31 @@
+import type { FlaggedItem } from "../types.js";
+import { excerpt } from "../util.js";
+
+/** Human-facing message text. JEV can't write strings, so this stays here. */
+export function flagText(f: FlaggedItem): string {
+  const c = f.classification;
+  const head = `🚩 *${c.category}* — ${(c.confidence * 100).toFixed(0)}% conf (${c.provider})`;
+  const who = `@${f.item.authorHandle} on ${f.item.platform}`;
+  const body = excerpt(f.description.caption || "(no caption)", 400);
+  const media = f.description.imageDescriptions.length
+    ? `Images: ${excerpt(f.description.imageDescriptions.join(" | "), 300)}`
+    : "";
+  const link = f.item.url ?? "";
+  return [head, who, body, media, link].filter(Boolean).join("\n");
+}
+
+/** Flat JSON payload — Zapier maps fields from this into Slack steps. */
+export function flagPayload(f: FlaggedItem): Record<string, unknown> {
+  return {
+    text: flagText(f),
+    platform: f.item.platform,
+    author: f.item.authorHandle,
+    url: f.item.url ?? "",
+    posted_at: f.item.postedAt,
+    category: f.classification.category,
+    confidence: f.classification.confidence,
+    provider: f.classification.provider,
+    caption: f.description.caption,
+    image_descriptions: f.description.imageDescriptions,
+  };
+}
