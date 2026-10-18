@@ -68,10 +68,10 @@ jobs:
           if [ -n "$SLACK_WEBHOOK_URL" ]; then
             npx tsx scripts/digest.ts --hours 25 --slack > /tmp/slack.txt
             printf '\nDetails: %s\n' "$COMMENT_URL" >> /tmp/slack.txt
-            curl -s -o /dev/null -w "slack post: %{http_code}\n" -X POST \
+            curl -s --max-time 15 -o /dev/null -w "slack post: %{http_code}\n" -X POST \
               -H 'Content-Type: application/json' \
               -d "$(jq -n --rawfile t /tmp/slack.txt '{text: $t}')" \
-              "$SLACK_WEBHOOK_URL"
+              "$SLACK_WEBHOOK_URL" || echo "slack post failed (non-fatal)"
           fi
       - name: Persist pipeline state
         run: |
