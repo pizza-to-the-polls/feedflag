@@ -43,7 +43,10 @@ async function fetchReportsPage(page: number, limit: number): Promise<ReportJson
   const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`pizzabase /reports ${res.status} (wire a service token in pizzabase for machine auth)`);
   const j: unknown = await res.json();
-  const arr = Array.isArray(j) ? j : ((j as { reports?: unknown[] }).reports ?? []);
+  // pizzabase index() returns {results, count}; tolerate a bare array too
+  const arr = Array.isArray(j)
+    ? j
+    : ((j as { results?: unknown[] }).results ?? (j as { reports?: unknown[] }).reports ?? []);
   return arr as ReportJson[];
 }
 
