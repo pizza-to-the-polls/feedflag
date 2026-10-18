@@ -110,7 +110,9 @@ export function normalizeApifyRecord(
   );
   const id = pick(r.id, r.id_str, r.pk, r.postId, r.shortcode, r.webUrl, r.url, r.shareUrl);
   if (!id) return null;
-  const caption = String(pick(r.caption, r.full_text, r.text, r.title, r.desc, ""));
+  // NB: pick() rejects "" (its own fallback) — coalesce to keep String() from
+  // producing the literal "undefined" for video-only / caption-less posts.
+  const caption = String(pick(r.caption, r.full_text, r.text, r.title, r.desc) ?? "");
   const url = pick(r.url, r.webUrl, r.shareUrl, r.externalUrl, r.link);
   return {
     id: String(id),
