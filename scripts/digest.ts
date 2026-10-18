@@ -117,16 +117,19 @@ if (SLACK) {
   parts.push(
     "Feedback: `npm run label -- --add <ID>=right|wrong[:category]` — or tell Pi in chat which [ID]s were wrong",
   );
-  // JSON payload (not bare text): embeds the first flagged image via
+  // JSON payload (not bare text): embeds up to 4 flagged thumbnails via
   // attachments.image_url. Workflow posts this with --data-binary @file.
-  const image = flagged.map(mediaOf).find(Boolean);
+  const images = flagged
+    .map((f) => mediaOf(f))
+    .filter((u): u is string => !!u)
+    .slice(0, 4);
   console.log(
     JSON.stringify({
       text: parts.join("\n"),
       username: "feedflag",
       icon_url: "https://github.com/pizza-to-the-polls.png",
-      attachments: image
-        ? [{ color: "#E01B5D", fallback: "flagged media", image_url: image }]
+      attachments: images.length
+        ? images.map((image) => ({ color: "#E01B5D", fallback: "flagged media", image_url: image }))
         : undefined,
     }),
   );
