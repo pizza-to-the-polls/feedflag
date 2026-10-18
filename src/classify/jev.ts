@@ -1,56 +1,92 @@
 import type { Classification, DecisionProvider, DescriptionSet } from "../types.js";
 import { settings } from "../config.js";
+import { openrouterChat } from "../describe/openrouter.js";
 import { renderInput } from "./render-input.js";
 
 /**
- * JEV (TypeSafe AI "System One Model") decision provider.
+ * Jev (TypeSafe AI "System One Model") decision provider, via OpenRouter
+ * (model: `typesafe/jev-router`, $0.042/MTok input, output free).
  *
- * ⚠️ Waitlist requested 2026-12-04, access not yet granted, and JEV is NOT on
- * OpenRouter — direct API. The HTTP shape below is modeled on their published
- * docs ("typed decisions, calibrated confidence on every output, up to 255
- * choices"). Rewrite the transport when trial access lands; the rest of the
- * pipeline only depends on the DecisionProvider shape, per JEV_EXPLORATION.md.
+ * Jev returns typed decisions with calibrated confidence in ~100ms — no
+ * strings, no prose. The `jev-router` model handles the decision routing;
+ * we hand it the flattened description set (text only — the vision model
+ * already stood in for the media) plus the category enum, and parse a
+ * category pick + confidence out of the response.
  *
- * JEV cannot generate strings, so this decision only picks from the
- * configured category enum — the notify layer writes all human-facing text.
+ * If the response shape isn't what we expect, we throw — the composite
+ * provider in `classify/index.ts` falls back to the LLM classifier, so a
+ * Jev transport hiccup never drops a post.
  */
-export async function jevDecide(req: {
-  decision: string;
-  input: Record<string, string>;
-  choices: string[];
-}): Promise<{ choice: string; confidence: number }> {
-  const res = await fetch(`${settings.jevUrl}/v1/decide`, {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${settings.jevKey}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(req),
-  });
-  if (!res.ok) {
-    throw new Error(`Jev ${res.status}: ${(await res.text()).slice(0, 300)}`);
+
+interface JevChoice {
+  category: string;
+  confidence: number;
+}
+
+function parseJevResponse(content: string, categories: string[]): JevChoice {
+  // Try strict JSON first: {"category": "...", "confidence": 0.82}
+  const candidates: string[] = [];
+  const first = content.indexOf("{");
+  const last = content.lastIndexOf("}");
+  if (first !== -1 && last > first) candidates.push(content.slice(first, last + 1));
+  // Then a bare "category: 0.82" style line, and any JSON object in the text
+  for (const candidate of candidates) {
+    try {
+      const j = JSON.parse(candidate) as { category?: unknown; confidence?: unknown };
+      if (typeof j.category === "string" && categories.includes(j.category)) {
+        const conf = Number(j.confidence);
+        return {
+          category: j.category,
+          confidence: Number.isFinite(conf) ? Math.min(Math.max(conf, 0), 1) : 0,
+        };
+      }
+    } catch {
+      // try next candidate
+    }
   }
-  const j: any = await res.json();
-  return {
-    choice: String(j.choice ?? j.decision ?? j.category),
-    confidence: Number(j.confidence ?? j.probability ?? 0),
-  };
+  // Last resort: scan for a category mention + a float near it
+  for (const c of categories) {
+    const idx = content.indexOf(c);
+    if (idx !== -1) {
+      const tail = content.slice(idx + c.length, idx + c.length + 40);
+      const m = tail.match(/(\d?\.\d+)/);
+      return { category: c, confidence: m ? Number(m[1]) : 0 };
+    }
+  }
+  throw new Error(`unparseable Jev response: ${content.slice(0, 120)}`);
 }
 
 export const jevProvider: DecisionProvider = {
   name: "jev",
   async classify(d: DescriptionSet, categories: string[]): Promise<Classification> {
-    if (!settings.jevUrl || !settings.jevKey) throw new Error("JEV_API_URL / JEV_API_KEY not configured");
-    const { choice, confidence } = await jevDecide({
-      decision: "social_feed_relevance",
-      input: renderInput(d),
-      choices: categories,
+    if (!settings.jevModel) throw new Error("JEV_MODEL not configured");
+    if (!settings.openrouterKey) throw new Error("OPENROUTER_API_KEY not configured");
+    const content = await openrouterChat({
+      model: settings.jevModel,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a typed decision system. Classify the described social-media post " +
+            "into exactly one category. Respond with strict JSON only: " +
+            '{"category": <one of [' +
+            categories.map((c) => `"${c}"`).join(", ") +
+            ']>, "confidence": <calibrated 0..1 probability that the category is correct>}. ' +
+            "Confidence must reflect actual uncertainty: high (>=0.9) only when the evidence " +
+            "unambiguously supports the category.",
+        },
+        {
+          role: "user",
+          content: JSON.stringify(renderInput(d), null, 2),
+        },
+      ],
     });
+    const { category, confidence } = parseJevResponse(content, categories);
     return {
-      relevant: choice !== "irrelevant",
+      relevant: category !== "irrelevant",
       confidence,
-      category: choice,
-      provider: "jev",
+      category,
+      provider: `jev:${settings.jevModel}`,
     };
   },
 };

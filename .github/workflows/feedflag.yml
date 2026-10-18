@@ -1,13 +1,12 @@
 name: feedflag
 
-# Asynchronous runs every 30 min. NOTE: `data/seen.json` is the dedupe state —
-# on ephemeral GH runners we commit it back at the end of each run so the next
-# run doesn't re-caption the same posts (keeps OpenRouter spend tiny).
-# Alternative: keep state in S3/R2, or run via launchd on an always-on Mac.
+# Manual dispatch only for now. Stage 1 (FEAT-002b) re-enables the schedule
+# once cost telemetry is tuned — enabling the cron with live secrets below
+# would otherwise start ~48 paid Apify/OpenRouter runs per day.
+# `data/seen.json` is the dedupe state; we commit it back at the end of each
+# run so the next run doesn't re-pay for captioning the same posts.
 
 on:
-  schedule:
-    - cron: "*/30 * * * *"
   workflow_dispatch: {}
 
 permissions:
@@ -32,25 +31,27 @@ jobs:
       - run: npm start
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          VISION_MODEL: ${{ secrets.VISION_MODEL }}
-          TEXT_MODEL: ${{ secrets.TEXT_MODEL }}
-          RSSHUB_URL: ${{ secrets.RSSHUB_URL }}
           APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
-          PIZZABASE_API_URL: ${{ secrets.PIZZABASE_API_URL }}
+          PIZZABASE_API_URL: https://base.polls.pizza
           PIZZABASE_API_KEY: ${{ secrets.PIZZABASE_API_KEY }}
-          SITE_REPORTS_MAX: "50"
-          JEV_API_URL: ${{ secrets.JEV_API_URL }}
-          JEV_API_KEY: ${{ secrets.JEV_API_KEY }}
           ZAPIER_CATCH_URL: ${{ secrets.ZAPIER_CATCH_URL }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          JEV_MODEL: typesafe/jev-router
+          SITE_REPORTS_MAX: "50"
           FLAG_CONFIDENCE: "0.7"
           MAX_POSTS_PER_RUN: "40"
       - name: Persist dedupe state
+        # Whitelist ONLY pipeline state files — never `git add -f data`,
+        # which would sweep machine-token files into the repo.
         run: |
-          if [ -n "$(git status --porcelain data)" ]; then
+          changed=""
+          for f in data/seen.json data/flagged.jsonl data/observations.jsonl data/reports-sync.json; do
+            [ -f "$f" ] && changed="$changed $f"
+          done
+          if [ -n "$changed" ]; then
             git config user.name "feedflag-bot"
             git config user.email "feedflag-bot@users.noreply.github.com"
-            git add -f data
+            git add -f -- $changed
             git commit -m "chore(data): feedflag run state [skip ci]"
             git push
           fi

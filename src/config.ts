@@ -34,21 +34,37 @@ export function loadFeedsConfig(): FeedsConfig {
   return cfg;
 }
 
+function positiveInt(raw: string | undefined, dflt: number): number {
+  const n = Number(raw);
+  return raw && Number.isFinite(n) && n > 0 ? Math.floor(n) : dflt;
+}
+
+function unitInterval(raw: string | undefined, dflt: number): number {
+  const n = Number(raw);
+  return raw && Number.isFinite(n) && n >= 0 && n <= 1 ? n : dflt;
+}
+
 export const settings = {
-  openrouterKey: env.OPENROUTER_API_KEY ?? "",
-  visionModel: env.VISION_MODEL ?? "google/gemini-2.5-flash-lite",
-  textModel: env.TEXT_MODEL ?? "google/gemini-2.5-flash-lite",
-  rsshubUrl: (env.RSSHUB_URL ?? "").replace(/\/+$/, ""),
-  apifyToken: env.APIFY_API_TOKEN ?? "",
-  jevUrl: (env.JEV_API_URL ?? "").replace(/\/+$/, ""),
-  jevKey: env.JEV_API_KEY ?? "",
-  zapierCatchUrl: env.ZAPIER_CATCH_URL ?? "",
-  slackWebhookUrl: env.SLACK_WEBHOOK_URL ?? "",
-  pizzabaseUrl: (env.PIZZABASE_API_URL ?? "").replace(/\/+$/, ""),
-  pizzabaseKey: env.PIZZABASE_API_KEY ?? "",
-  siteReportsMax: Number(env.SITE_REPORTS_MAX ?? 50),
-  dataDir: resolve(env.DATA_DIR ?? "./data"),
-  flagConfidence: Number(env.FLAG_CONFIDENCE ?? 0.7),
-  maxPostsPerRun: Number(env.MAX_POSTS_PER_RUN ?? 40),
-  describeConcurrency: Number(env.DESCRIBE_CONCURRENCY ?? 3),
+  // Note: `||` (not `??`) throughout — GH Actions sets missing secrets to
+  // empty strings, and Number("") is 0, which would zero the flag threshold.
+  openrouterKey: env.OPENROUTER_API_KEY || "",
+  visionModel: env.VISION_MODEL || "google/gemini-2.5-flash-lite",
+  textModel: env.TEXT_MODEL || "google/gemini-2.5-flash-lite",
+  // Jev via OpenRouter (typesafe/jev-router, $0.042/MTok in, output free).
+  // Unset -> default to jev-router; set to "" -> pin to the LLM fallback.
+  jevModel: env.JEV_MODEL === undefined ? "typesafe/jev-router" : env.JEV_MODEL,
+  rsshubUrl: (env.RSSHUB_URL || "").replace(/\/+$/, ""),
+  apifyToken: env.APIFY_API_TOKEN || "",
+  // Optional direct TypeSafe API (reserved; unused while Jev routes via OpenRouter)
+  jevUrl: (env.JEV_API_URL || "").replace(/\/+$/, ""),
+  jevKey: env.JEV_API_KEY || "",
+  zapierCatchUrl: (env.ZAPIER_CATCH_URL || "").replace(/\/+$/, ""),
+  slackWebhookUrl: env.SLACK_WEBHOOK_URL || "",
+  pizzabaseUrl: (env.PIZZABASE_API_URL || "").replace(/\/+$/, ""),
+  pizzabaseKey: env.PIZZABASE_API_KEY || "",
+  siteReportsMax: positiveInt(env.SITE_REPORTS_MAX, 50),
+  dataDir: resolve(env.DATA_DIR || "./data"),
+  flagConfidence: unitInterval(env.FLAG_CONFIDENCE, 0.7),
+  maxPostsPerRun: positiveInt(env.MAX_POSTS_PER_RUN, 40),
+  describeConcurrency: positiveInt(env.DESCRIBE_CONCURRENCY, 3),
 };

@@ -38,7 +38,8 @@ interface ReportJson {
 async function fetchReportsPage(page: number, limit: number): Promise<ReportJson[]> {
   const url = `${settings.pizzabaseUrl}/reports?limit=${limit}&page=${page}`;
   const headers: Record<string, string> = { accept: "application/json" };
-  if (settings.pizzabaseKey) headers.authorization = `Bearer ${settings.pizzabaseKey}`;
+  // pizzabase checkAuthorization strips a "Basic " prefix (src/controller/helper.ts)
+  if (settings.pizzabaseKey) headers.authorization = `Basic ${settings.pizzabaseKey}`;
   const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`pizzabase /reports ${res.status} (wire a service token in pizzabase for machine auth)`);
   const j: unknown = await res.json();
