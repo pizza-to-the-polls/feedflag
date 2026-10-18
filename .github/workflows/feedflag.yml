@@ -1,16 +1,22 @@
 name: feedflag
 
-# Manual dispatch only for now. Stage 1 (FEAT-002b) re-enables the schedule
-# once cost telemetry is tuned — enabling the cron with live secrets below
-# would otherwise start ~48 paid Apify/OpenRouter runs per day.
-# `data/seen.json` is the dedupe state; we commit it back at the end of each
-# run so the next run doesn't re-pay for captioning the same posts.
+# Scheduled every 3h (8 runs/day ≈ 1,400 Actions min/mo — inside the free tier
+# at typical runtimes). Pay-per-result Apify + dedupe keeps API cost ~cents/run
+# (verified live). FEAT-002b tunes cadence; Phase-4 graduation path is Lambda
+# (see TECHNICAL_DESIGN.md).
+#
+# `data/` is pipeline state; committed back at end of each run so the next
+# run doesn't re-pay for captioning. Whitelisted files ONLY — never
+# `git add -f data` (machine-token.sql lives in data/).
 
 on:
+  schedule:
+    - cron: "0 */3 * * *"
   workflow_dispatch: {}
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: feedflag
@@ -34,15 +40,18 @@ jobs:
           APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
           PIZZABASE_API_URL: https://base.polls.pizza
           PIZZABASE_API_KEY: ${{ secrets.PIZZABASE_API_KEY }}
-          ZAPIER_CATCH_URL: ${{ secrets.ZAPIER_CATCH_URL }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           JEV_MODEL: typesafe/jev-router
           SITE_REPORTS_MAX: "50"
           FLAG_CONFIDENCE: "0.7"
           MAX_POSTS_PER_RUN: "40"
-      - name: Persist dedupe state
-        # Whitelist ONLY pipeline state files — never `git add -f data`,
-        # which would sweep machine-token files into the repo.
+      - name: Post findings digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FINDINGS_ISSUE: "5"
+        run: |
+          npx tsx scripts/digest.ts --hours 25 > /tmp/digest.md
+          gh issue comment "$FINDINGS_ISSUE" --body-file /tmp/digest.md
+      - name: Persist pipeline state
         run: |
           changed=""
           for f in data/seen.json data/flagged.jsonl data/observations.jsonl data/reports-sync.json; do
