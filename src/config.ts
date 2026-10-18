@@ -19,6 +19,10 @@ export interface FeedsConfig {
   sources: FeedSource[];
   /** Enum categories JEV chooses from. Max 255 (Jev choice cardinality limit). */
   categories: string[];
+  /** Categories that raise a Slack flag. Defaults to all categories.
+  *  Label feedback (2026-10-18): press/community/delivery categories are
+  *  archive-only — the dispatch signal is LINES. */
+  flagCategories?: string[];
 }
 
 const env = process.env;
@@ -30,6 +34,9 @@ export function loadFeedsConfig(): FeedsConfig {
   if (!cfg.categories?.length) throw new Error(`No categories in ${path}`);
   if (cfg.categories.length > 255) {
     throw new Error(`categories.length=${cfg.categories.length} > 255 (Jev decision cardinality limit)`);
+  }
+  if (cfg.flagCategories && !cfg.flagCategories.every((c) => cfg.categories.includes(c))) {
+    throw new Error(`flagCategories must be a subset of categories`);
   }
   return cfg;
 }

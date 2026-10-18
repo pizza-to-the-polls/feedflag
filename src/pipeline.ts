@@ -81,7 +81,10 @@ export async function runPipeline(opts: RunOptions = {}) {
     });
     if (!classification) return null;
     const f: FlaggedItem = { item, description, classification };
-    const isFlag = classification.relevant && classification.confidence >= settings.flagConfidence;
+    const isFlag =
+      classification.relevant &&
+      classification.confidence >= settings.flagConfidence &&
+      (cfg.flagCategories ?? categories).includes(classification.category);
     if (isFlag) flagged.push(f);
     return f;
   });

@@ -69,6 +69,22 @@ const KIND_EMOJI: Record<string, string> = {
   irrelevant: "·",
 };
 
+function loadLabels(): Set<string> {
+  const p = join(DATA_DIR, "labels.jsonl");
+  if (!existsSync(p)) return new Set();
+  const out = new Set<string>();
+  for (const line of readFileSync(p, "utf8").split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const l = JSON.parse(line) as { id: string; verdict: string };
+      if (l.verdict === "wrong") out.add(l.id);
+    } catch {
+      // skip malformed
+    }
+  }
+  return out;
+}
+
 const obs = load();
 if (obs.length === 0) {
   console.log(
@@ -81,7 +97,16 @@ if (obs.length === 0) {
 
 // Classifier picks only — crowd rows are ground truth (fixed 0.95, no
 // classifier in the loop) and never appear in the notifier's flags.
-const flagged = obs.filter((o) => o.relevant && o.confidence >= 0.7 && o.domain !== "crowd");
+// Wrong-labeled flags (feedback) are excluded — user saw them once, verdict'd
+// them wrong, shouldn't see them again.
+const wrongLabels = loadLabels();
+const flagged = obs.filter(
+  (o) =>
+    o.relevant &&
+    o.confidence >= 0.7 &&
+    o.domain !== "crowd" &&
+    !wrongLabels.has(observationId({ source_ref: o.source_ref, observed_at: o.observed_at, domain: o.domain })),
+);
 const mediaOf = (o: Obs): string | undefined => {
   const urls = o.description?.item?.mediaUrls ?? [];
   return urls.find((u) => /\.(jpe?g|png|webp)([?#]|$)/i.test(u)) ?? urls[0] ?? undefined;

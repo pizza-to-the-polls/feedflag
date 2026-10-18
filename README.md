@@ -223,6 +223,13 @@ pipelines share the same shape: **fetch → describe/extract → classify → ro
 Flags carry a stable 8-char **ID** everywhere they surface (Slack digests,
 findings comments, review queue) — `sha256(domain:source_ref:observed_at)`.
 
+**First feedback cycle landed (2026-10-18):** 4/4 flags labeled 👎 (dog photo,
+press appearance, "It's done! #Vote", ballot-integrity press release) →
+precision 0% at every threshold. Fixes shipped: `flagCategories` policy
+(`config/feeds.json` — only line-related categories raise Slack flags;
+press/community/delivery are archive-only) and **wrong-labeled flags are
+excluded from every digest** — once you 👎 something, you never see it again.
+
 Three ways to give feedback, ranked by friction:
 
 1. **Tell Pi in chat** — "the `cbe91f81` flag was wrong" (or "@badrobot68 wasn't a

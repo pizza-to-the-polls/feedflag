@@ -36,5 +36,9 @@
     "press_mention",
     "community_shoutout",
     "irrelevant"
+  ],
+  "flagCategories": [
+    "poll_line_report",
+    "wait_time_page_mention"
   ]
 }
