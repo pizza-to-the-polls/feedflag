@@ -31,7 +31,10 @@ interface Obs {
   confidence: number;
   provider: string;
   relevant: boolean;
-  description?: { caption?: string };
+  description?: {
+    caption?: string;
+    item?: { mediaUrls?: string[]; videoUrl?: string };
+  };
 }
 
 function load(): Obs[] {
@@ -79,6 +82,10 @@ if (obs.length === 0) {
 // Classifier picks only — crowd rows are ground truth (fixed 0.95, no
 // classifier in the loop) and never appear in the notifier's flags.
 const flagged = obs.filter((o) => o.relevant && o.confidence >= 0.7 && o.domain !== "crowd");
+const mediaOf = (o: Obs): string | undefined => {
+  const urls = o.description?.item?.mediaUrls ?? [];
+  return urls.find((u) => /\.(jpe?g|png|webp)([?#]|$)/i.test(u)) ?? urls[0] ?? undefined;
+};
 const byDomain = new Map<string, number>();
 const byKind = new Map<string, number>();
 for (const o of obs) {
@@ -110,7 +117,19 @@ if (SLACK) {
   parts.push(
     "Feedback: `npm run label -- --add <ID>=right|wrong[:category]` — or tell Pi in chat which [ID]s were wrong",
   );
-  console.log(parts.join("\n"));
+  // JSON payload (not bare text): embeds the first flagged image via
+  // attachments.image_url. Workflow posts this with --data-binary @file.
+  const image = flagged.map(mediaOf).find(Boolean);
+  console.log(
+    JSON.stringify({
+      text: parts.join("\n"),
+      username: "feedflag",
+      icon_url: "https://github.com/pizza-to-the-polls.png",
+      attachments: image
+        ? [{ color: "#E01B5D", fallback: "flagged media", image_url: image }]
+        : undefined,
+    }),
+  );
   process.exit(0);
 }
 
@@ -139,6 +158,21 @@ if (flagged.length > 0) {
     lines.push(
       `| ${id8} | ${f.platform ?? "?"} | @${f.author ?? "?"} | ${KIND_EMOJI[f.signal_kind] ?? ""}${f.signal_kind} | ${pct(f.confidence)} | ${f.provider} | ${link} |`,
     );
+  }
+  lines.push("");
+  lines.push("### Flagged media");
+  lines.push("");
+  lines.push(
+    "*Hotlinked from platform CDNs (signed URLs expire — Slack is the durable surface).*",
+  );
+  for (const f of flagged.slice(0, 4)) {
+    const img = mediaOf(f);
+    if (img) {
+      lines.push("");
+      lines.push(`**${f.signal_kind} — @${f.author ?? "?"}**`);
+      lines.push("");
+      lines.push(`![${f.signal_kind}](${img})`);
+    }
   }
 }
 

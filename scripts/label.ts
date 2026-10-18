@@ -34,6 +34,7 @@ interface Obs {
   author?: string;
   platform?: string;
   url?: string;
+  description?: { item?: { mediaUrls?: string[] } };
 }
 
 interface Label {
@@ -167,8 +168,9 @@ const queue = obs
 console.log(`## Review queue — ${queue.length} unlabeled flags (last ${hours}h)\n`);
 if (!queue.length) console.log(`Nothing to label. (All flags labeled, or no flags in window.)\n`);
 for (const o of queue) {
+  const media = o.description?.item?.mediaUrls?.[0];
   console.log(
-    `[${idOf(o)}] ${pct(o.confidence)} ${o.signal_kind} @${o.author ?? "?"} (${o.platform ?? "?"}, ${o.provider})\n    ${o.url ?? "(no url)"}\n`,
+    `[${idOf(o)}] ${pct(o.confidence)} ${o.signal_kind} @${o.author ?? "?"} (${o.platform ?? "?"}, ${o.provider})\n    ${o.url ?? "(no url)"}${media ? `\n    media: ${media}` : ""}\n`,
   );
 }
 console.log(`Label with: npm run label -- --add <ID>=right|wrong[:category]`);

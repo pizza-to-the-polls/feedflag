@@ -1,5 +1,6 @@
 import type { FlaggedItem } from "../types.js";
 import { excerpt } from "../util.js";
+import { flagMediaUrl } from "./slack.js";
 
 /** Human-facing message text. JEV can't write strings, so this stays here. */
 export function flagText(f: FlaggedItem): string {
@@ -27,5 +28,7 @@ export function flagPayload(f: FlaggedItem): Record<string, unknown> {
     provider: f.classification.provider,
     caption: f.description.caption,
     image_descriptions: f.description.imageDescriptions,
+    media_urls: f.description.item.mediaUrls,
+    media_embed: flagMediaUrl(f) ?? "", // Zapier Slack step can use this directly
   };
 }

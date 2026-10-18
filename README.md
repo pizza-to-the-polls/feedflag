@@ -86,7 +86,8 @@ launchd on an always-on Mac and skip that).
 3. Action: **Slack → Send Channel Message**, map `text` from the catch-hook
    payload (ready-made Slack-formatted), or compose from fields — the payload
    includes `category`, `confidence`, `author`, `platform`, `url`,
-   `image_descriptions`.
+   `image_descriptions`, plus `media_urls` / `media_embed` (first embeddable
+   image URL — ready for a Slack image block in a Zapier step).
 4. Publish the Zap. Test with `npm start -- --limit 3`.
 
 To route different categories to different channels or add a digest, add Zap
