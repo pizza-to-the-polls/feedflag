@@ -50,6 +50,7 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           PIZZABASE_API_URL: https://base.polls.pizza
           PIZZABASE_API_KEY: ${{ secrets.PIZZABASE_API_KEY }}
           JEV_MODEL: typesafe/jev-router
@@ -60,9 +61,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           FINDINGS_ISSUE: "5"
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           npx tsx scripts/digest.ts --hours 25 > /tmp/digest.md
-          gh issue comment "$FINDINGS_ISSUE" --body-file /tmp/digest.md
+          COMMENT_URL=$(gh issue comment "$FINDINGS_ISSUE" --body-file /tmp/digest.md)
+          if [ -n "$SLACK_WEBHOOK_URL" ]; then
+            npx tsx scripts/digest.ts --hours 25 --slack > /tmp/slack.txt
+            printf '\nDetails: %s\n' "$COMMENT_URL" >> /tmp/slack.txt
+            curl -s -o /dev/null -w "slack post: %{http_code}\n" -X POST \
+              -H 'Content-Type: application/json' \
+              -d "$(jq -n --rawfile t /tmp/slack.txt '{text: $t}')" \
+              "$SLACK_WEBHOOK_URL"
+          fi
       - name: Persist pipeline state
         run: |
           changed=""

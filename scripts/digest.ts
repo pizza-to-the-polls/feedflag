@@ -15,6 +15,7 @@ const HOURS = Number(
     return i === -1 ? "24" : process.argv[i + 1];
   })(),
 );
+const SLACK = process.argv.includes("--slack");
 const DATA_DIR = process.env.DATA_DIR ?? "./data";
 
 interface Obs {
@@ -66,7 +67,11 @@ const KIND_EMOJI: Record<string, string> = {
 
 const obs = load();
 if (obs.length === 0) {
-  console.log(`## Feedflag digest — last ${HOURS}h\n\nNo observations in the window. (Pipeline may not have run — check Actions tab.)`);
+  console.log(
+    SLACK
+      ? `:pizza: *Feedflag digest — last ${HOURS}h* — no observations in the window (pipeline may not have run).`
+      : `## Feedflag digest — last ${HOURS}h\n\nNo observations in the window. (Pipeline may not have run — check Actions tab.)`,
+  );
   process.exit(0);
 }
 
@@ -76,6 +81,30 @@ const byKind = new Map<string, number>();
 for (const o of obs) {
   byDomain.set(o.domain, (byDomain.get(o.domain) ?? 0) + 1);
   byKind.set(o.signal_kind, (byKind.get(o.signal_kind) ?? 0) + 1);
+}
+
+if (SLACK) {
+  const parts: string[] = [];
+  parts.push(
+    ":pizza: *Feedflag digest — last " + HOURS + "h*",
+  );
+  parts.push(
+    obs.length + " observations (" + [...byDomain.entries()].map(([d, n]) => n + " " + d).join(", ") + ") · *" + flagged.length + " flagged* ≥70%",
+  );
+  for (const f of flagged) {
+    parts.push(
+      "• " +
+        pct(f.confidence) +
+        " " +
+        (KIND_EMOJI[f.signal_kind] ?? "") +
+        f.signal_kind +
+        " @" +
+        (f.author ?? "?") +
+        (f.url ? " — <" + f.url + ">" : ""),
+    );
+  }
+  console.log(parts.join("\n"));
+  process.exit(0);
 }
 
 const lines: string[] = [];
