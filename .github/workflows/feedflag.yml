@@ -11,7 +11,19 @@ name: feedflag
 
 on:
   schedule:
-    - cron: "0 */3 * * *"
+    # Meal-time + poll-close runs (GitHub cron is UTC).
+    # Local times shown for DST (EDT/CDT/PDT, through Nov 1 2026).
+    # NOTE: DST ends Nov 1 — election day is Nov 3. After that these run an
+    # hour EARLY local; bump each entry +1 UTC before election day.
+    # Same run-count as the old 0 */3 * * * (8/day) — cost unchanged.
+    - cron: "0 16 * * *" # 12:00 ET lunch
+    - cron: "0 17 * * *" # 12:00 CT lunch (11:00 PT)
+    - cron: "0 19 * * *" # 12:00 PT lunch
+    - cron: "0 21 * * *" # 17:00 ET after work
+    - cron: "0 22 * * *" # 17:00 CT after work (18:00 ET)
+    - cron: "0 23 * * *" # 19:00 ET poll close (7pm, typical)
+    - cron: "0 0 * * *"  # 19:00 CT poll close + 17:00 PT after work
+    - cron: "0 2 * * *"  # 19:00 PT poll close
   workflow_dispatch: {}
 
 permissions:
