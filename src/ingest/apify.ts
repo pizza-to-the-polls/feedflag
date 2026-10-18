@@ -43,7 +43,9 @@ function mediaUrls(r: any, platform: Platform): string[] {
       return images.filter((u) => typeof u === "string");
     }
     case "x": {
-      const media = [...arr(pick(r.extended_entities?.media, r.entities?.media))];
+      const media = [
+        ...arr(pick(r.extended_entities?.media, r.extendedEntities?.media, r.entities?.media, r.media)),
+      ];
       return media
         .map((m: any) => pick(m?.media_url_https, m?.media_url))
         .filter((u: any) => typeof u === "string");
@@ -100,6 +102,9 @@ export function normalizeApifyRecord(
       r.ownerUsername,
       r.username,
       r.user?.username,
+      r.user?.screen_name,
+      r.owner?.username,
+      r.author?.userName,
       r.authorMeta?.uniqueId,
       r.authorMeta?.name,
       r.author?.unique_id ?? r.author?.uniqueId,
@@ -112,7 +117,7 @@ export function normalizeApifyRecord(
   if (!id) return null;
   // NB: pick() rejects "" (its own fallback) — coalesce to keep String() from
   // producing the literal "undefined" for video-only / caption-less posts.
-  const caption = String(pick(r.caption, r.full_text, r.text, r.title, r.desc) ?? "");
+  const caption = String(pick(r.caption, r.full_text, r.fullText, r.text, r.title, r.desc) ?? "");
   const url = pick(r.url, r.webUrl, r.shareUrl, r.externalUrl, r.link);
   return {
     id: String(id),

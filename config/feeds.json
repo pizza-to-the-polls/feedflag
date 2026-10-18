@@ -2,33 +2,30 @@
   "sources": [
     {
       "platform": "instagram",
-      "adapter": "rsshub",
-      "handle": "pizzastothepolls",
-      "limit": 20
-    },
-    {
-      "platform": "x",
-      "adapter": "rsshub",
-      "handle": "PollsPizza",
-      "limit": 20
+      "adapter": "apify",
+      "actor": "apify/instagram-hashtag-scraper",
+      "input": {
+        "hashtags": ["pollingplace", "electionday", "ivoted"],
+        "resultsLimit": 15
+      }
     },
     {
       "platform": "tiktok",
       "adapter": "apify",
-      "actor": "clockworks/tiktok-scraper",
+      "actor": "clockworks/tiktok-hashtag-scraper",
       "input": {
-        "profiles": ["https://www.tiktok.com/@pizzastothepolls"],
-        "resultsLimit": 20
+        "hashtags": ["electionday"],
+        "resultsPerPage": 10,
+        "pages": 1
       }
     },
     {
-      "platform": "instagram",
+      "platform": "x",
       "adapter": "apify",
-      "actor": "apify/instagram-scraper",
+      "actor": "apidojo/tweet-scraper",
       "input": {
-        "directUrls": ["https://www.instagram.com/pizzastothepolls/"],
-        "resultsType": "posts",
-        "resultsLimit": 20
+        "searchTerms": ["poll line", "voting line wait"],
+        "limit": 15
       }
     }
   ],
