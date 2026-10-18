@@ -18,6 +18,21 @@ export async function mapLimit<T, R>(
   return results;
 }
 
+import { createHash } from "node:crypto";
+
+/** Stable short id for an observation — the feedback-loop reference key
+ *  used in Slack digests and scripts/label.ts. */
+export function observationId(o: {
+  source_ref?: string;
+  observed_at: string;
+  domain: string;
+}): string {
+  return createHash("sha256")
+    .update(`${o.domain}:${o.source_ref}:${o.observed_at}`)
+    .digest("hex")
+    .slice(0, 8);
+}
+
 export function dedupeById<T extends { id: string }>(items: T[]): T[] {
   const seen = new Set<string>();
   return items.filter((it) => {

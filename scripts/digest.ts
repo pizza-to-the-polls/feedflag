@@ -8,6 +8,7 @@
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { observationId } from "../src/util.js";
 
 const HOURS = Number(
   (() => {
@@ -75,7 +76,9 @@ if (obs.length === 0) {
   process.exit(0);
 }
 
-const flagged = obs.filter((o) => o.relevant && o.confidence >= 0.7);
+// Classifier picks only — crowd rows are ground truth (fixed 0.95, no
+// classifier in the loop) and never appear in the notifier's flags.
+const flagged = obs.filter((o) => o.relevant && o.confidence >= 0.7 && o.domain !== "crowd");
 const byDomain = new Map<string, number>();
 const byKind = new Map<string, number>();
 for (const o of obs) {
@@ -92,8 +95,9 @@ if (SLACK) {
     obs.length + " observations (" + [...byDomain.entries()].map(([d, n]) => n + " " + d).join(", ") + ") · *" + flagged.length + " flagged* ≥70%",
   );
   for (const f of flagged) {
+    const id8 = observationId({ source_ref: f.source_ref, observed_at: f.observed_at, domain: f.domain });
     parts.push(
-      "• " +
+      "• [" + id8 + "] " +
         pct(f.confidence) +
         " " +
         (KIND_EMOJI[f.signal_kind] ?? "") +
@@ -103,6 +107,9 @@ if (SLACK) {
         (f.url ? " — <" + f.url + ">" : ""),
     );
   }
+  parts.push(
+    "Feedback: `npm run label -- --add <ID>=right|wrong[:category]` — or tell Pi in chat which [ID]s were wrong",
+  );
   console.log(parts.join("\n"));
   process.exit(0);
 }
@@ -124,12 +131,13 @@ if (flagged.length > 0) {
   lines.push("");
   lines.push("### 🚩 Flagged");
   lines.push("");
-  lines.push("| Platform | Who | Kind | Conf | Provider | Link |");
-  lines.push("|---|---|---|---|---|---|");
+  lines.push("| ID | Platform | Who | Kind | Conf | Provider | Link |");
+  lines.push("|---|---|---|---|---|---|---|");
   for (const f of flagged) {
+    const id8 = observationId({ source_ref: f.source_ref, observed_at: f.observed_at, domain: f.domain });
     const link = f.url ? `[view](${f.url})` : "—";
     lines.push(
-      `| ${f.platform ?? "?"} | @${f.author ?? "?"} | ${KIND_EMOJI[f.signal_kind] ?? ""}${f.signal_kind} | ${pct(f.confidence)} | ${f.provider} | ${link} |`,
+      `| ${id8} | ${f.platform ?? "?"} | @${f.author ?? "?"} | ${KIND_EMOJI[f.signal_kind] ?? ""}${f.signal_kind} | ${pct(f.confidence)} | ${f.provider} | ${link} |`,
     );
   }
 }

@@ -9,6 +9,7 @@
     "start": "tsx src/index.ts",
     "start:env": "node --env-file=.env --import tsx src/index.ts",
     "digest": "tsx scripts/digest.ts",
+    "label": "tsx scripts/label.ts",
     "check": "tsc --noEmit"
   },
   "dependencies": {

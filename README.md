@@ -217,6 +217,39 @@ pipelines share the same shape: **fetch → describe/extract → classify → ro
   pipelines. The aggregator itself (matching, API, Retool surfaces) lives in
   pizzabase; feedflag just emits loader-compatible JSONL.
 
+## Feedback loop (correcting the classifier)
+
+Flags carry a stable 8-char **ID** everywhere they surface (Slack digests,
+findings comments, review queue) — `sha256(domain:source_ref:observed_at)`.
+
+Three ways to give feedback, ranked by friction:
+
+1. **Tell Pi in chat** — "the `cbe91f81` flag was wrong" (or "@badrobot68 wasn't a
+   poll line") — it applies the label with the script.
+2. **The CLI**:
+   ```bash
+   npm run label -- --list                 # review queue (unlabeled flags, last 25h)
+   npm run label -- --add cbe91f81=wrong:press_mention,f79ae22f=right
+   npm run label -- --report               # precision @ thresholds, calibration, confusion pairs
+   ```
+   Labels land in `data/labels.jsonl` — commit them as regular work.
+3. **Slack reactions** (planned — needs a bot token): 👍/👎 on flag posts,
+   collected by a scheduled step. Ticket: see issue tracker.
+
+**What labels do** (honest version — Jev isn't user-retrainable):
+- **Tune `FLAG_CONFIDENCE`** against measured precision (`--report` suggests the
+  smallest threshold hitting ≥90% precision)
+- **Measure Jev calibration** — stated confidence vs actual accuracy per bucket,
+  the `JEV_EXPLORATION.md` §3 gate. If Jev says 90% and is right 70%, the
+  threshold compensates or the miscalibration goes upstream to TypeSafe.
+- **Confusion pairs** (`picked → should have been`) expose taxonomy problems —
+  categories are just `config/feeds.json`; merge/split there.
+- **Few-shot the LLM fallback** — misclassified examples can be inlined into
+  the fallback prompt (not yet wired; labels.jsonl is the corpus).
+
+Ground-truth crowd rows (`domain:"crowd"`) are excluded from flags/queue/report —
+there's no classifier pick to correct.
+
 ## Caveats
 
 - Scraping IG/TikTok is against platform ToS; Apify/RSSHub routes degrade
