@@ -106,11 +106,12 @@ if (flagged.length > 0) {
 }
 
 const sample = obs.find((o) => o.relevant && o.description?.caption);
-if (sample?.description?.caption) {
+const sampleCaption = sample?.description?.caption || obs.find((o) => o.description?.caption)?.description?.caption;
+if (sampleCaption) {
   lines.push("");
   lines.push("### Sample caption (from the description sets)");
   lines.push("");
-  lines.push(`> ${sample.description.caption.slice(0, 280).replace(/\n/g, " ")}`);
+  lines.push(`> ${String(sampleCaption).slice(0, 280).replace(/\n/g, " ")}`);
 }
 
 lines.push("");
