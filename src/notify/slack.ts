@@ -10,7 +10,11 @@ export const slackNotifier: Notifier = {
     const res = await fetch(settings.slackWebhookUrl, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ text: flagText(flag) }),
+      body: JSON.stringify({
+        text: flagText(flag),
+        username: "feedflag",
+        icon_url: "https://github.com/pizza-to-the-polls.png",
+      }),
     });
     if (!res.ok) {
       throw new Error(`Slack webhook ${res.status}: ${(await res.text()).slice(0, 200)}`);

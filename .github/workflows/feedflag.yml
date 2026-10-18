@@ -70,7 +70,7 @@ jobs:
             printf '\nDetails: %s\n' "$COMMENT_URL" >> /tmp/slack.txt
             curl -s --max-time 15 -o /dev/null -w "slack post: %{http_code}\n" -X POST \
               -H 'Content-Type: application/json' \
-              -d "$(jq -n --rawfile t /tmp/slack.txt '{text: $t}')" \
+              -d "$(jq -n --rawfile t /tmp/slack.txt '{text: $t, username: "feedflag", icon_url: "https://github.com/pizza-to-the-polls.png"}')" \
               "$SLACK_WEBHOOK_URL" || echo "slack post failed (non-fatal)"
           fi
       - name: Persist pipeline state
