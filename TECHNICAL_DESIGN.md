@@ -122,6 +122,7 @@ JSONL only — aggregator logic lives in pizzabase.
 | D4 | **Crowd = ground truth** | reports structured at capture + volunteer-reviewed; corroborate predictions, calibrate Jev |
 | D5 | **Jev swappable** | pre-track-record vendor; `DecisionProvider` seam + LLM fallback, never hard-dependent |
 | D6 | **PII floor** | `contactInfo` never emitted from reports leg; only `reportURL` + Location fields |
+| D7 | **One DB: pizzabase's Postgres** (2026-10-18) | feedflag gets no separate tracker DB — observations land in pizzabase via machine-token HTTPS bulk-load (`feed_observations`); the Phase-4 corroboration joins stay in-database; JSONL remains the audit log / dry-run buffer. RDS/Aurora-for-feedflag rejected: VPC friction + cross-DB federation for zero benefit |
 
 ## 6. Risks
 
