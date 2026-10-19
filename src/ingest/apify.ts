@@ -51,10 +51,13 @@ function mediaUrls(r: any, platform: Platform): string[] {
         .filter((u: any) => typeof u === "string");
     }
     case "tiktok": {
-      const covers = arr(pick(r.covers, r.surcover ? [r.surcover] : undefined));
-      return covers
-        .map((c: any) => pick(typeof c === "string" ? c : c?.url, typeof c === "string" ? c : c?.webUrl))
-        .filter((u: any) => typeof u === "string");
+      // clockworks hashtag actor: mediaUrls = slideshow images (empty for videos);
+      // videoMeta.coverUrl = the video cover (embeddable thumbnail)
+      const urls = [
+        ...arr(r.mediaUrls).filter((u) => typeof u === "string"),
+        pick(r.videoMeta?.coverUrl, r.videoMeta?.originalCoverUrl),
+      ];
+      return urls.filter((u): u is string => typeof u === "string");
     }
     case "site":
       return [];
@@ -118,7 +121,7 @@ export function normalizeApifyRecord(
   // NB: pick() rejects "" (its own fallback) — coalesce to keep String() from
   // producing the literal "undefined" for video-only / caption-less posts.
   const caption = String(pick(r.caption, r.full_text, r.fullText, r.text, r.title, r.desc) ?? "");
-  const url = pick(r.url, r.webUrl, r.shareUrl, r.externalUrl, r.link);
+  const url = pick(r.url, r.webVideoUrl, r.webUrl, r.shareUrl, r.externalUrl, r.link);
   return {
     id: String(id),
     platform,
@@ -127,6 +130,12 @@ export function normalizeApifyRecord(
     caption,
     hashtags: [...`${caption} ${caption}`.matchAll(/#[\p{L}\p{N}_]+/gu)].map((m) => m[0]),
     url: typeof url === "string" ? url : undefined,
+    // Actor-provided AI video description (when the actor supports it):
+    // text evidence without vision captioning.
+    aiSummary:
+      typeof pick(r.videoMeta?.aiVideoDescription, r.videoMeta?.aiVideoSummary) === "string"
+        ? String(pick(r.videoMeta?.aiVideoDescription, r.videoMeta?.aiVideoSummary))
+        : undefined,
     mediaUrls: mediaUrls(r, platform),
     videoUrl: videoUrl(r, platform),
     source,

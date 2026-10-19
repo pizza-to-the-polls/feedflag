@@ -103,12 +103,17 @@ export async function describeItem(item: FeedItem): Promise<DescriptionSet> {
       imageDescriptions.push("(image present, caption unavailable)");
     }
   }
+  // Actor-provided AI video description (e.g. clockworks videoMeta): text
+  // evidence without vision captioning — append to the description set.
+  if (item.aiSummary) imageDescriptions.push(`[AI video description] ${item.aiSummary}`);
   return {
     item,
     caption: item.caption,
     imageDescriptions,
     videoSummary: item.videoUrl
       ? "Video post; first frame captioned above."
-      : undefined,
+      : item.aiSummary
+        ? "Video post; AI description above."
+        : undefined,
   };
 }

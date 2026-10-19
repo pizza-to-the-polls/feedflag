@@ -12,6 +12,8 @@ export interface FeedItem {
   hashtags: string[];
   /** Permalink to the original post */
   url?: string;
+  /** Actor-provided AI description of a video (clockworks videoMeta.aiVideoDescription) — feeds the description set without vision captioning */
+  aiSummary?: string;
   /** Image URLs (videos are handled via videoUrl -> ffmpeg frame) */
   mediaUrls: string[];
   videoUrl?: string;
