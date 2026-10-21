@@ -1,0 +1,658 @@
+{
+  "https://gisit.tarrantcounty.com/tcvotingwaittime/#Southwest Community Center": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:22:16.119Z",
+    "address": "6300 Welch Avenue, Ft. Worth"
+  },
+  "https://gisit.tarrantcounty.com/tcvotingwaittime/#Everman Civic Center": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:22:16.276Z",
+    "address": "213 N Race St, Everman"
+  },
+  "https://gisit.tarrantcounty.com/tcvotingwaittime/#Crouch Event Center in Bicentennial": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:22:16.276Z",
+    "address": "900 East Glendale Street, Crowley"
+  },
+  "https://gisit.tarrantcounty.com/tcvotingwaittime/#Chisholm Trail Community Center": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:22:16.276Z",
+    "address": "4936 McPherson Boulevard, Fort Worth"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Old Courthouse - Coleman Conference Room": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:43.994Z",
+    "address": "301 W Market St, Greensboro"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Ag Center (Parn)": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "3309 Burlington Rd, Greensboro"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Barber Park (Simkins Pavilion)": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "1500 Barber Park Dr, Greensboro"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Brown Recreation Center": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "302 E Vandalia Rd, Greensboro"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Bur-Mil Club": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "5834 Bur-Mil Club Rd, Greensboro"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Charlotte Hawkins Brown (Kimball Hall)": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "6134 Burlington Rd, Gibsonville"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Craft Recreation Center": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "3911 Yanceyville St, Greensboro"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Deep River Recreation Center": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "1529 Skeet Club Rd, High Point"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Jamestown Town Hall": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "301 E Main St, Jamestown"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Leonard Recreation Center": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "6324 Ballinger Rd, Greensboro"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Lewis Recreation Center": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "3110 Forest Lawn Dr, Greensboro"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#NC A&T University (Dudley Building)": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "202 University Cir, Greensboro"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Oak Ridge Townhall": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "8315 Linville Rd, Oak Ridge"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Pleasant Garden Community Center": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "5024 Alliance Church Rd, Pleasant Garden"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Roy B. Culler, Jr. Senior Center": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "921 Eastchester Dr, Suite #1230, High Point"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#UNCG (Kaplan Center-Wellness)": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "1301 W Gate City Blvd, Greensboro"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Washington Terrace Park": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "101 Gordon St, High Point"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Allen Jay Recreation Center": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "1073 E Springfield Rd, High Point"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Gateway Research Park": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "5900 Summit Ave, Browns Summit"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Gibsonville Community Center": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "314 10th St, Gibsonville"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Greensboro Complex Special Events Center": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "1921 W Gate City Blvd, Greensboro"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Griffin Recreation Center": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "5301 Hilltop Rd, Greensboro"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#GTCC Cameron Campus": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "7908 Leabourne Rd, Colfax"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Northeast Park": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "3441 NE Park Dr, Gibsonville"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Northern Guilford Middle School": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "616 Simpson-Calhoun Rd, Greensboro"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Stokesdale Town Hall": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "8325 Angel-Pardue Rd, Stokesdale"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Summerfield Community Center": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "5404 Centerfield Rd, Summerfield"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Trotter Active Adult Center": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "3906 Betula St, Greensboro"
+  },
+  "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Union Square Campus": {
+    "minutes": 30,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:22:44.047Z",
+    "address": "124 E Gate City Blvd, Greensboro"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Optimist Community Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:23:08.998Z",
+    "address": "5900 Whittier Dr, Raleigh, NC 27609"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#John M. Brown Community Ce...": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:23:09.170Z",
+    "address": "53 Hunter St, Apex, NC 27502"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Laurel Hills Community Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:23:09.170Z",
+    "address": "3808 Edwards Mill Rd, Raleigh, NC 2..."
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Knightdale Recreation Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:23:09.170Z",
+    "address": "102 Lawson Ridge Rd, Knightdale, N..."
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Abbotts Creek Community Ce...": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:23:09.170Z",
+    "address": "9950 Durant Rd, Raleigh, NC 27614"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Wendell Community Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:23:09.170Z",
+    "address": "601 W 3rd St, Wendell, NC 27591"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Lake Lynn Community Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:23:09.170Z",
+    "address": "7921 Ray Rd, Raleigh, NC 27613"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#John Chavis Memorial Park C...": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:23:09.170Z",
+    "address": "505 Martin Luther King Jr Blvd, Raleig..."
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#NCSU Western Boulevard Bus...": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:23:09.170Z",
+    "address": "1220 Varsity Dr, Raleigh, NC 27606"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Cary Senior Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:23:09.170Z",
+    "address": "120 Maury Odell Pl, Cary, NC 27513"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#W.E. Hunt Recreation Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:23:09.170Z",
+    "address": "301 Stinson Ave, Holly Springs, NC 2..."
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Wake County Commons Buil...": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:23:09.170Z",
+    "address": "4011 Carya Dr, Raleigh, NC 27610"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Wake Technical Community C...": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:23:09.170Z",
+    "address": "4723 Advantage Way, Raleigh, NC 27..."
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Avery Street Recreation Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:23:09.170Z",
+    "address": "125 Avery St, Garner, NC 27529"
+  },
+  "https://app.harrisvotes.com/WaitTimes?lang=en-US#Harris County Attorney Conference Center (5 in line)": {
+    "minutes": 7,
+    "category": null,
+    "updated": "2026-10-21T18:23:07.94",
+    "confidence": 0.95,
+    "at": "2026-10-21T23:23:09.537Z",
+    "address": "1019 Congress Avenue, Houston"
+  },
+  "https://app.harrisvotes.com/WaitTimes?lang=en-US#BakerRipley Ripley House (5 in line)": {
+    "minutes": 7,
+    "category": null,
+    "updated": "2026-10-21T18:23:07.94",
+    "confidence": 0.95,
+    "at": "2026-10-21T23:23:09.625Z",
+    "address": "4410 Navigation Boulevard, Houston"
+  },
+  "https://app.harrisvotes.com/WaitTimes?lang=en-US#Moody Park Community Center (5 in line)": {
+    "minutes": 7,
+    "category": null,
+    "updated": "2026-10-21T18:23:07.94",
+    "confidence": 0.95,
+    "at": "2026-10-21T23:23:09.625Z",
+    "address": "3725 Fulton Street, Houston"
+  },
+  "https://app.harrisvotes.com/WaitTimes?lang=en-US#TSU Barbara Jordan Mickey Leland School of Public Affairs (5 in line)": {
+    "minutes": 7,
+    "category": null,
+    "updated": "2026-10-21T18:23:07.94",
+    "confidence": 0.95,
+    "at": "2026-10-21T23:23:09.625Z",
+    "address": "3401 Cleburne Street, Houston"
+  },
+  "https://app.harrisvotes.com/WaitTimes?lang=en-US#Wheeler Avenue Baptist Church Fellowship Hall (15 in line)": {
+    "minutes": 22,
+    "category": null,
+    "updated": "2026-10-21T18:23:07.94",
+    "confidence": 0.95,
+    "at": "2026-10-21T23:23:09.625Z",
+    "address": "3826 Wheeler Avenue Building D, Houston"
+  },
+  "https://app.harrisvotes.com/WaitTimes?lang=en-US#University of Houston Student Center (5 in line)": {
+    "minutes": 7,
+    "category": null,
+    "updated": "2026-10-21T18:23:07.94",
+    "confidence": 0.95,
+    "at": "2026-10-21T23:23:09.625Z",
+    "address": "4455 University Drive, Houston"
+  },
+  "https://app.harrisvotes.com/WaitTimes?lang=en-US#Denver Harbor Community Center (5 in line)": {
+    "minutes": 7,
+    "category": null,
+    "updated": "2026-10-21T18:23:07.94",
+    "confidence": 0.95,
+    "at": "2026-10-21T23:23:09.625Z",
+    "address": "6402 Market Street, Houston"
+  },
+  "https://app.harrisvotes.com/WaitTimes?lang=en-US#Kashmere MultiService Center (5 in line)": {
+    "minutes": 7,
+    "category": null,
+    "updated": "2026-10-21T18:23:07.94",
+    "confidence": 0.95,
+    "at": "2026-10-21T23:23:09.625Z",
+    "address": "4802 Lockwood Drive, Houston"
+  },
+  "https://app.harrisvotes.com/WaitTimes?lang=en-US#Shrine of The Black Madonna Cultural and Event Center (10 in line)": {
+    "minutes": 7,
+    "category": null,
+    "updated": "2026-10-21T18:23:07.94",
+    "confidence": 0.95,
+    "at": "2026-10-21T23:23:09.625Z",
+    "address": "5309 Martin Luther King Boulevard, Houston"
+  },
+  "https://epcountyvotestx.gov/voter-information/early-voting-locations#Agua Dulce Community Center": {
+    "minutes": 5,
+    "category": "short",
+    "updated": null,
+    "confidence": 1,
+    "at": "2026-10-21T23:23:19.923Z",
+    "address": "15371 Kentwood Ave."
+  },
+  "https://epcountyvotestx.gov/voter-information/early-voting-locations#Arlington Park Shelter": {
+    "minutes": 5,
+    "category": "short",
+    "updated": null,
+    "confidence": 1,
+    "at": "2026-10-21T23:23:20.037Z",
+    "address": "10350 Pasadena Cir."
+  },
+  "https://epcountyvotestx.gov/voter-information/early-voting-locations#Bassett Place": {
+    "minutes": 5,
+    "category": "short",
+    "updated": null,
+    "confidence": 1,
+    "at": "2026-10-21T23:23:20.037Z",
+    "address": "6101 Gateway West"
+  },
+  "https://epcountyvotestx.gov/voter-information/early-voting-locations#Canutillo Nutrition Center": {
+    "minutes": 5,
+    "category": "short",
+    "updated": null,
+    "confidence": 1,
+    "at": "2026-10-21T23:23:20.037Z",
+    "address": "7351 Bosque Rd."
+  },
+  "https://epcountyvotestx.gov/voter-information/early-voting-locations#Carl L. Robinson Heat Retreat": {
+    "minutes": 5,
+    "category": "short",
+    "updated": null,
+    "confidence": 1,
+    "at": "2026-10-21T23:23:20.037Z",
+    "address": "5509 Will Ruth Ave."
+  },
+  "https://epcountyvotestx.gov/voter-information/early-voting-locations#Chayo Apodaca Community Center": {
+    "minutes": 5,
+    "category": "short",
+    "updated": null,
+    "confidence": 1,
+    "at": "2026-10-21T23:23:20.037Z",
+    "address": "341 N. Moon Rd."
+  },
+  "https://epcountyvotestx.gov/voter-information/early-voting-locations#City of San Elizario Municipal Court": {
+    "minutes": 5,
+    "category": "short",
+    "updated": null,
+    "confidence": 1,
+    "at": "2026-10-21T23:23:20.037Z",
+    "address": "12004 Socorro Rd. Suite B"
+  },
+  "https://epcountyvotestx.gov/voter-information/early-voting-locations#Clint Junior High School": {
+    "minutes": 5,
+    "category": "short",
+    "updated": null,
+    "confidence": 1,
+    "at": "2026-10-21T23:23:20.037Z",
+    "address": "12625 Alameda Ave."
+  },
+  "https://epcountyvotestx.gov/voter-information/early-voting-locations#Commissioner's Corner": {
+    "minutes": 5,
+    "category": "short",
+    "updated": null,
+    "confidence": 1,
+    "at": "2026-10-21T23:23:20.037Z",
+    "address": "10700 Montana Ave."
+  },
+  "https://epcountyvotestx.gov/voter-information/early-voting-locations#Dorris Van Doren Library": {
+    "minutes": 15,
+    "category": "medium",
+    "updated": null,
+    "confidence": 1,
+    "at": "2026-10-21T23:23:20.037Z",
+    "address": "551 Redd Rd."
+  },
+  "https://epcountyvotestx.gov/voter-information/early-voting-locations#EPCC Administrative Services Center": {
+    "minutes": 15,
+    "category": "medium",
+    "updated": null,
+    "confidence": 1,
+    "at": "2026-10-21T23:23:20.037Z",
+    "address": "9050 Viscount Blvd."
+  },
+  "https://epcountyvotestx.gov/voter-information/early-voting-locations#EPCC Transmountain Campus": {
+    "minutes": 5,
+    "category": "short",
+    "updated": null,
+    "confidence": 1,
+    "at": "2026-10-21T23:23:20.037Z",
+    "address": "9570 Gateway North Blvd."
+  },
+  "https://epcountyvotestx.gov/voter-information/early-voting-locations#El": {
+    "minutes": null,
+    "category": null,
+    "updated": null,
+    "confidence": 0,
+    "at": "2026-10-21T23:23:20.037Z",
+    "address": null
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#*Arcola Lakes Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:24:09.090Z",
+    "address": "8240 NW 7th Avenue\nMiami, FL 33150"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Coral Gables Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:24:09.352Z",
+    "address": "3443 Segovia Street\nCoral Gables, FL 33134"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Coral Reef Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:24:09.352Z",
+    "address": "9211 SW 152nd Street\nMiami, FL 33157"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Florida International University\n(Student Academic Success Center)": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:24:09.352Z",
+    "address": "11200 SW 8th Street"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Joseph Caleb Center Community Meeting Room": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:24:09.352Z",
+    "address": "5400 NW 22nd Avenue - Building A\nMiami, FL 33142"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Kendale Lakes Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:24:09.352Z",
+    "address": "15205 SW 88th Street\nMiami, FL 33196"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Kendall Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:24:09.352Z",
+    "address": "9101 SW 97th Avenue\nMiami, FL 33176"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Lemon City Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:24:09.352Z",
+    "address": "430 NE 61st Street"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#North Miami Public Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:24:09.352Z",
+    "address": "835 NE 132nd Street\nNorth Miami, FL 33161"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#North Shore Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:24:09.352Z",
+    "address": "7501 Collins Avenue\nMiami Beach, FL 33141"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Northeast Dade-Aventura Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:24:09.352Z",
+    "address": "2930 Aventura Boulevard\nAventura, FL 33180"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Office of the Supervisor of Elections": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-21T23:24:09.352Z",
+    "address": "2700 NW 87th Avenue\nDoral, FL 33172"
+  },
+  "https://www.arcgis.com/apps/dashboards/1a86b03b27fa48188bf3699c4eccfb20#(unnamed)": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.95,
+    "at": "2026-10-21T23:24:09.600Z",
+    "address": null
+  }
+}
