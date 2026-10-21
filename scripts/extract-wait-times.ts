@@ -77,6 +77,10 @@ interface Source {
     /** json-post: path to records array ("a.b") */
     recordsPath?: string;
     nameField: string;
+    /** fallback name fields (Clark EV rows: SITE_NAME null, names live in SHORTNAME/Location) */
+    nameFallbackFields?: string[];
+    /** stable per-site key (dedupe/collision) — e.g. Clark POLL_CODE. Defaults to name. */
+    keyField?: string;
     waitMinutesField?: string;
     waitTextField?: string;
     lineCountField?: string;
@@ -87,6 +91,8 @@ interface Source {
 
 interface Reading {
   precinct_name: string;
+  /** stable site key (rest path: e.g. POLL_CODE) — dedupes when names are messy */
+  site_key?: string;
   wait_minutes: number | null;
   wait_category: string | null;
   last_updated: string | null;
@@ -326,7 +332,15 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
     }
     return records
       .map((rec) => {
-        const name = String(rec[r.nameField] ?? "").trim();
+        const name = String(
+          [r.nameField, ...(r.nameFallbackFields ?? [])]
+            .map((f) => rec[f])
+            .find((v) => v != null && String(v).trim() !== "") ?? "",
+        ).trim();
+        const siteKey =
+          r.keyField != null && rec[r.keyField] != null
+            ? `${String(rec[r.keyField]).trim()}`
+            : undefined;
         const rawMin = r.waitMinutesField != null ? rec[r.waitMinutesField] : undefined;
         let minutes: number | null =
           typeof rawMin === "number" ? rawMin : rawMin != null ? normalizeRange(String(rawMin)) : null;
@@ -347,6 +361,7 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
           people != null && Number(people) > 0 ? ` (${people} in line)` : lines != null ? ` (${lines} lines)` : "";
         return {
           precinct_name: (name || "(unnamed)") + extra,
+          site_key: siteKey,
           wait_minutes: minutes,
           wait_category: cat,
           last_updated:
@@ -456,7 +471,7 @@ const main = async () => {
     const volChanges: string[] = [];
     const vetChanges: string[] = [];
     for (const r of readings) {
-      const key = `${s.url}#${r.precinct_name}`;
+      const key = `${s.url}#${r.site_key ?? r.precinct_name}`;
       const prev = state[key];
       const changed =
         !prev || prev.minutes !== r.wait_minutes || prev.category !== r.wait_category;
@@ -471,14 +486,17 @@ const main = async () => {
       if (!changed) continue;
       const line = volChannelLine(r, prev);
       const mins = r.wait_minutes ?? -1;
+      const volEligible = mins >= MIN_POST_MINUTES || r.wait_category === "long";
       // VOL FEED (graduated sources only): dispatch signal = lines >= 1 hour.
-      // Everything else lives in vetting.
-      if (mins >= MIN_POST_MINUTES || r.wait_category === "long") {
+      // Single-channel mode (no vols webhook): the one channel is VOL-GRADE —
+      // sub-60min churn stays in console/state/digest until a vols channel
+      // exists (user call 2026-10-21: "15-min posts are not helpful").
+      if (volEligible) {
         totalChanged++;
         if (s.graduated) volChanges.push(line);
         vetChanges.push(line);
-      } else if (mins >= VETTING_MIN_MINUTES) {
-        // sub-60min churn with a floor — vetting sees it (source health), vols don't
+      } else if (mins >= VETTING_MIN_MINUTES && settings.volsWebhookUrl) {
+        // two-channel mode: vetting tier sees churn for source smell-tests
         vetChanges.push(line);
       }
     }
@@ -510,7 +528,7 @@ const main = async () => {
           JSON.stringify({
             schema: "feedflag/observation@1",
             domain: "govt",
-            source_ref: `${s.url}#${r.precinct_name}`,
+            source_ref: `${s.url}#${r.site_key ?? r.precinct_name}`,
             url: s.url,
             author: s.display_label,
             platform: "govt",
