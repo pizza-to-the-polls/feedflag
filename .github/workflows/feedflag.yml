@@ -57,6 +57,10 @@ jobs:
           SITE_REPORTS_MAX: "50"
           FLAG_CONFIDENCE: "0.7"
           MAX_POSTS_PER_RUN: "40"
+      - name: Extract gov wait times
+        env:
+          WAIT_TIME_SOURCES: ./config/govt-sources.jsonl
+        run: npx tsx scripts/extract-wait-times.ts
       - name: Post findings digest
         env:
           GH_TOKEN: ${{ github.token }}

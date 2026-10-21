@@ -1,0 +1,415 @@
+#!/usr/bin/env node
+/**
+ * Phase-3 pilot: official wait-time EXTRACTION — fetch seeded gov sources,
+ * LLM-extract structured readings, post CHANGES to Slack.
+ *
+ *   npx tsx scripts/extract-wait-times.ts          # run (fetch → extract → notify)
+ *   npx tsx scripts/extract-wait-times.ts --dry   # no Slack, no state write
+ *
+ * Design (GOVT_WAIT_TIME_SOURCES_PLAN.md §5):
+ * - polite fetching: identified UA, robots.txt respected, 20s timeout, max 1
+ *   pass per source per run (runs are cron-spaced by meal/poll-close hours)
+ * - HTML → focused text: strip scripts/styles, locate the wait-time region,
+ *   cap at ~6KB (full pages are too big for cheap extraction)
+ * - LLM (flash-lite) strict-JSON extraction → {precinct_name, wait_minutes,
+ *   wait_category, last_updated, confidence}; normalization: range → midpoint,
+ *   categorical words → category, "N people in line" → ~N min
+ * - change detection vs data/govt-readings.json (per source+precinct):
+ *   only CHANGED/NEW readings post to Slack; JS-walled pages report as
+ *   confidence 0 (plan §5: "Map-only: cannot extract")
+ * - every reading appends to data/observations.jsonl as domain "govt"
+ */
+import { readFileSync, existsSync, writeFileSync, mkdirSync, appendFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { openrouterChat } from "../src/describe/openrouter.js";
+import { settings } from "../src/config.js";
+
+const UA = "PizzaToThePolls/1.0 (civic-data wait-times; +https://polls.pizza)";
+const DRY = process.argv.includes("--dry");
+const DATA_DIR = resolve(process.env.DATA_DIR ?? "./data");
+const SOURCES_PATH = resolve(process.env.WAIT_TIME_SOURCES ?? "./config/govt-sources.jsonl");
+
+/** Screenshot actor (pay-per-event ≈ $0.0015) — the JS-wall fallback:
+ *  ArcGIS dashboards / Airtable galleries render client-side; the vision
+ *  model reads the rendered table from pixels. */
+async function screenshotUrl(url: string): Promise<string | null> {
+  if (!settings.apifyToken) return null;
+  try {
+    const res = await fetch(
+      `https://api.apify.com/v2/acts/moonweil~url-screenshot-api/run-sync-get-dataset-items?token=${encodeURIComponent(settings.apifyToken)}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url }),
+        signal: AbortSignal.timeout(180000),
+      },
+    );
+    if (!res.ok) return null;
+    const items = (await res.json()) as { screenshotUrl?: string }[];
+    return items[0]?.screenshotUrl ?? null;
+  } catch {
+    return null;
+  }
+}
+
+interface Source {
+  scope: string;
+  state: string;
+  county: string | null;
+  source_type: string;
+  url: string;
+  display_label: string;
+  notes?: string;
+}
+
+interface Reading {
+  precinct_name: string;
+  wait_minutes: number | null;
+  wait_category: string | null;
+  last_updated: string | null;
+  confidence: number;
+}
+
+interface ReadingState {
+  minutes: number | null;
+  category: string | null;
+  updated: string | null;
+  confidence: number;
+  at: string;
+}
+
+const pct = (n: number) => `${Math.round(n * 100)}%`;
+
+function loadSources(): Source[] {
+  return readFileSync(SOURCES_PATH, "utf8")
+    .split("\n")
+    .filter((l) => l.trim())
+    .map((l) => JSON.parse(l) as Source & { is_active: boolean })
+    .filter((s) => s.is_active !== false);
+}
+
+async function robotsAllows(url: URL): Promise<boolean> {
+  try {
+    const res = await fetch(new URL("/robots.txt", url.origin).toString(), {
+      headers: { "user-agent": UA },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return true;
+    const txt = (await res.text()).slice(0, 4000).toLowerCase();
+    const path = url.pathname;
+    // minimal: honor blanket disallows for our UA/star on this path
+    for (const block of txt.split(/\r?\n/)) {
+      const m = block.match(/^disallow:\s*(\S+)/);
+      if (m) {
+        const dis = m[1]!;
+        if (dis === "/" || (dis !== "" && path.startsWith(dis))) return false;
+      }
+    }
+    return true;
+  } catch {
+    return true; // fail open — fetching a public page, robots fetch itself failed
+  }
+}
+
+function htmlToFocusedText(html: string): string {
+  const stripped = html
+    .replace(/<(script|style|noscript)[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+  // locate wait-relevant region (± around first wait keyword), cap 6000 chars
+  const m = stripped.match(/.{0,1600}\bwait[a-z -]{0,12}.{0,4400}/i);
+  return (m ? m[0] : stripped.slice(0, 6000));
+}
+
+async function fetchPage(url: string): Promise<string | null> {
+  const u = new URL(url);
+  if (!(await robotsAllows(u))) {
+    console.log(`  [robots] ${url.slice(0, 70)} — disallowed, skipping`);
+    return null;
+  }
+  try {
+    const res = await fetch(url, {
+      headers: { "user-agent": UA, accept: "text/html,application/xhtml+xml" },
+      signal: AbortSignal.timeout(20000),
+      redirect: "follow",
+    });
+    if (!res.ok) {
+      console.log(`  [http ${res.status}] ${url.slice(0, 70)}`);
+      return null;
+    }
+    return await res.text();
+  } catch (err) {
+    console.log(`  [fetch fail] ${url.slice(0, 70)}: ${String(err).slice(0, 60)}`);
+    return null;
+  }
+}
+
+function normalizeRange(text: string): number | null {
+  // "20-30 min" → 25
+  const range = text.match(/(\d{1,3})\s*[-–]\s*(\d{1,3})\s*(min|minute)/i);
+  if (range) return Math.round((Number(range[1]) + Number(range[2])) / 2);
+  const m = text.match(/(\d{1,3})\s*(min|minute)/i);
+  if (m) return Number(m[1]);
+  return null;
+}
+
+async function extractReadings(text: string): Promise<Reading[]> {
+  const raw = await openrouterChat({
+    model: settings.textModel,
+    max_tokens: 700,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content:
+          "Extract polling-place wait times from this webpage text. Respond with strict JSON: " +
+          '{"readings": [{"precinct_name": <string>, "wait_minutes": <int minutes or null>, ' +
+          '"wait_category": <"short"|"medium"|"long"|null>, "last_updated": <string or null>, ' +
+          '"confidence": <0..1 how certain the reading is>}]. Rules: a range like "20-30 min" → midpoint. ' +
+          'Categorical words ("short","moderate","long") → wait_category. "N people in line" → ~N minutes. ' +
+          "If NO concrete wait times for specific places appear in the text, return an empty readings array. " +
+          "Do not invent numbers.",
+      },
+      { role: "user", content: text.slice(0, 6000) },
+    ],
+  });
+  try {
+    const j = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as {
+      readings?: unknown[];
+    };
+    return (j.readings ?? [])
+      .map((r) => r as Record<string, unknown>)
+      .map((r) => {
+        const name = String(r.precinct_name ?? "").trim() || "(unnamed location)";
+        const rawMin = r.wait_minutes;
+        let minutes =
+          typeof rawMin === "number" ? rawMin : typeof rawMin === "string" ? normalizeRange(rawMin) : null;
+        if (minutes != null && (minutes < 0 || minutes > 600)) minutes = null;
+        const cat = ["short", "medium", "long"].includes(String(r.wait_category))
+          ? String(r.wait_category)
+          : null;
+        const conf = Math.min(Math.max(Number(r.confidence ?? 0), 0), 1);
+        return {
+          precinct_name: name,
+          wait_minutes: minutes,
+          wait_category: cat,
+          last_updated: typeof r.last_updated === "string" ? r.last_updated : null,
+          confidence: conf,
+        } satisfies Reading;
+      });
+  } catch {
+    return [];
+  }
+}
+
+/** Vision extraction: read a rendered screenshot's wait-time table.
+ *  JS-walled sources (ArcGIS/Airtable render client-side) fall back to
+ *  this — screenshot (browser) + flash-lite reads the pixels. */
+async function visionExtractReadings(shotUrl: string): Promise<Reading[]> {
+  const imgRes = await fetch(shotUrl, { signal: AbortSignal.timeout(30000) });
+  if (!imgRes.ok) return [];
+  const b64 = Buffer.from(await imgRes.arrayBuffer()).toString("base64");
+  const raw = await openrouterChat({
+    model: settings.visionModel,
+    max_tokens: 900,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You read screenshots of polling wait-time tables. Output strict JSON only: " +
+          '{"readings":[{"place":<site name>,"wait":"<e.g. 25 min / 20-30 min / No Wait>"}],"page_title":<string>,"has_data":<boolean>}',
+      },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "Extract every visible wait-time entry from this screenshot. Place names exactly as shown." },
+          { type: "image_url", image_url: { url: `data:image/png;base64,${b64}` } },
+        ],
+      },
+    ],
+  });
+  try {
+    const j = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as {
+      readings?: { place?: unknown; wait?: unknown }[];
+    };
+    return (j.readings ?? [])
+      .map((r) => {
+        const name = String(r.place ?? "").trim() || "(unnamed location)";
+        const waitStr = String(r.wait ?? "");
+        const minutes = normalizeRange(`${waitStr} min`);
+        const cat = /no wait|none/i.test(waitStr)
+          ? "short"
+          : /short/i.test(waitStr)
+            ? "short"
+            : /long/i.test(waitStr)
+              ? "long"
+              : null;
+        return {
+          precinct_name: name,
+          wait_minutes: minutes,
+          wait_category: cat,
+          last_updated: null,
+          confidence: 0.75,
+        } satisfies Reading;
+      })
+      .filter((r) => r.wait_minutes != null || r.wait_category != null);
+  } catch {
+    return [];
+  }
+}
+
+async function slackPost(text: string): Promise<void> {
+  if (!settings.slackWebhookUrl) return;
+  try {
+    await fetch(settings.slackWebhookUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        text,
+        username: "feedflag",
+        icon_url: "https://github.com/pizza-to-the-polls.png",
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+  } catch (err) {
+    console.warn(`  [slack fail] ${String(err).slice(0, 80)}`);
+  }
+}
+
+function loadState(): Record<string, ReadingState> {
+  const p = join(DATA_DIR, "govt-readings.json");
+  if (!existsSync(p)) return {};
+  try {
+    return JSON.parse(readFileSync(p, "utf8")) as Record<string, ReadingState>;
+  } catch {
+    return {};
+  }
+}
+
+const main = async () => {
+  if (!settings.openrouterKey) throw new Error("OPENROUTER_API_KEY not configured");
+  const sources = loadSources();
+  const state = loadState();
+  const next: Record<string, ReadingState> = {};
+  let totalChanged = 0;
+
+  for (const s of sources) {
+    const label = `${s.state} ${s.county ?? "(statewide)"} — ${s.display_label.slice(0, 48)}`;
+    console.log(`[govt] ${label}`);
+    try {
+    const html = await fetchPage(s.url);
+    if (html == null) {
+      console.log(`  no content — JS-walled, down, or robots-blocked; reporting stale`);
+      // carry forward last known readings (no update)
+      for (const [k, v] of Object.entries(state)) {
+        if (k.startsWith(s.url)) next[k] = v;
+      }
+      continue;
+    }
+    const text = htmlToFocusedText(html);
+    let readings = await extractReadings(text);
+    let method = readings.length > 0 ? "text" : null;
+    if (readings.length === 0) {
+      // JS-walled (ArcGIS dashboards / Airtable galleries render client-side):
+      // fall back to screenshot + vision extraction (plan §5 “Map-only” case)
+      console.log(`  text path empty — trying screenshot+vision`);
+      const shot = await screenshotUrl(s.url);
+      if (shot) {
+        readings = await visionExtractReadings(shot);
+        method = readings.length > 0 ? "vision" : null;
+      }
+    }
+    if (readings.length === 0) {
+      console.log(`  0 readings (JS-walled even via screenshot, or no data published)`);
+    } else {
+      console.log(`  ${readings.length} reading(s) via ${method}`);
+    }
+    const changes: string[] = [];
+    for (const r of readings) {
+      const key = `${s.url}#${r.precinct_name}`;
+      const prev = state[key];
+      const changed =
+        !prev || prev.minutes !== r.wait_minutes || prev.category !== r.wait_category;
+      next[key] = {
+        minutes: r.wait_minutes,
+        category: r.wait_category,
+        updated: r.last_updated,
+        confidence: r.confidence,
+        at: new Date().toISOString(),
+      };
+      if (changed) {
+        totalChanged++;
+        const val = r.wait_minutes != null ? `${r.wait_minutes} min` : r.wait_category ?? "?";
+        const was = prev
+          ? prev.minutes != null
+            ? ` (was ${prev.minutes} min)`
+            : prev.category
+              ? ` (was ${prev.category})`
+              : " (new)"
+          : " (new)";
+        changes.push(`• ${r.precinct_name.slice(0, 50)}: ${val}${was} — ${pct(r.confidence)}`);
+      }
+    }
+    if (changes.length > 0 && !DRY) {
+      const msg =
+        `:stopwatch: *Wait-time update* — ${s.state} ${s.county ?? ""}\n` +
+        changes.slice(0, 12).join("\n") +
+        `\n<${s.url}|${s.display_label.slice(0, 60)}>`;
+      await slackPost(msg);
+      console.log(`  posted ${changes.length} change(s)`);
+    } else if (changes.length > 0) {
+      console.log(`  [dry] ${changes.length} change(s) not posted`);
+    }
+    // observations for the bus (domain govt)
+    if (!DRY) {
+      mkdirSync(DATA_DIR, { recursive: true });
+      const lines = readings
+        .map((r) =>
+          JSON.stringify({
+            schema: "feedflag/observation@1",
+            domain: "govt",
+            source_ref: `${s.url}#${r.precinct_name}`,
+            url: s.url,
+            author: s.display_label,
+            platform: "govt",
+            observed_at: new Date().toISOString(),
+            posted_at: r.last_updated ?? undefined,
+            location: { raw: r.precinct_name, state: s.state, county: s.county ?? undefined },
+            signal_kind: "wait_time_reading",
+            wait_minutes: r.wait_minutes,
+            wait_category: r.wait_category,
+            confidence: r.confidence,
+            provider: settings.textModel,
+            relevant: true,
+          }),
+        )
+        .join("\n");
+      if (lines) appendFileSync(join(DATA_DIR, "observations.jsonl"), lines + "\n");
+    }
+    } catch (err) {
+      // one source's failure must not sink the run — carry forward its state
+      console.log(`  [source failed] ${String(err).slice(0, 100)}`);
+      for (const [k, v] of Object.entries(state)) {
+        if (k.startsWith(s.url)) next[k] = v;
+      }
+    }
+    // persist state incrementally — a crash mid-run keeps completed sources
+    if (!DRY) {
+      mkdirSync(DATA_DIR, { recursive: true });
+      writeFileSync(join(DATA_DIR, "govt-readings.json"), JSON.stringify(next, null, 2));
+    }
+  }
+
+  console.log(
+    `[govt] extraction complete: ${sources.length} sources, ${Object.keys(next).length} tracked readings, ${totalChanged} changed${DRY ? " (dry)" : ""}`,
+  );
+};
+
+main().catch((err) => {
+  console.error(`[govt] FATAL: ${err?.stack ?? err}`);
+  process.exit(1);
+});

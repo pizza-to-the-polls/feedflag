@@ -17,21 +17,37 @@ const SYSTEM_PROMPT = [
 
 export async function openrouterChat(body: Record<string, unknown>): Promise<string> {
   if (!settings.openrouterKey) throw new Error("OPENROUTER_API_KEY not configured");
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${settings.openrouterKey}`,
-      "content-type": "application/json",
-      "HTTP-Referer": "https://github.com/duncombe/feedflag",
-      "X-Title": "feedflag",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    throw new Error(`OpenRouter ${JSON.stringify(body.model)} ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  let lastErr: unknown;
+  // 2 attempts with backoff — upstream providers rate-limit bursty small calls
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${settings.openrouterKey}`,
+          "content-type": "application/json",
+          "HTTP-Referer": "https://github.com/pizza-to-the-polls/feedflag",
+          "X-Title": "feedflag",
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(120000),
+      });
+      if (res.status === 429 && attempt === 0) {
+        await new Promise((r) => setTimeout(r, 25000));
+        continue;
+      }
+      if (!res.ok) {
+        throw new Error(`OpenRouter ${JSON.stringify(body.model)} ${res.status}: ${(await res.text()).slice(0, 300)}`);
+      }
+      const j: any = await res.json();
+      return j.choices?.[0]?.message?.content ?? "";
+    } catch (err) {
+      lastErr = err;
+      if (attempt === 1) throw err;
+      await new Promise((r) => setTimeout(r, 25000));
+    }
   }
-  const j: any = await res.json();
-  return j.choices?.[0]?.message?.content ?? "";
+  throw lastErr ?? new Error("openrouterChat failed");
 }
 
 async function toDataUrl(url: string): Promise<string> {
