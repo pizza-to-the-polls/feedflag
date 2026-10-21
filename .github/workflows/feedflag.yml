@@ -79,6 +79,7 @@ jobs:
             exit 0
           fi
           npx tsx scripts/digest.ts --hours 26 > /tmp/digest.md
+          npx tsx scripts/extract-wait-times.ts --report-only >> /tmp/digest.md
           COMMENT_URL=$(gh issue comment "$FINDINGS_ISSUE" --body-file /tmp/digest.md)
           if [ -n "$SLACK_WEBHOOK_URL" ]; then
             npx tsx scripts/digest.ts --hours 26 --slack > /tmp/slack.json

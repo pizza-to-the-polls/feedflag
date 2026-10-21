@@ -521,6 +521,8 @@ function methodOf(s: Source): string {
 }
 
 const REPORT = process.argv.includes("--report");
+/** Board from committed state only — no extraction, no keys needed. */
+const REPORT_ONLY = process.argv.includes("--report-only");
 
 async function reportBoard(sources: Source[], state: Record<string, ReadingState>): Promise<void> {
   console.log("\n## Evaluation board (stress test: actable? agrees? dispatchable?)\n");
@@ -554,6 +556,10 @@ async function reportBoard(sources: Source[], state: Record<string, ReadingState
 }
 
 const main = async () => {
+  if (REPORT_ONLY) {
+    await reportBoard(loadSources(), loadState());
+    return;
+  }
   if (!settings.openrouterKey) throw new Error("OPENROUTER_API_KEY not configured");
   const sources = loadSources();
   const state = loadState();
