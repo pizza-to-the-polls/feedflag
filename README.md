@@ -258,6 +258,35 @@ Three ways to give feedback, ranked by friction:
 Ground-truth crowd rows (`domain:"crowd"`) are excluded from flags/queue/report —
 there's no classifier pick to correct.
 
+## Verifying the tracked sources (human-checkable links)
+
+Every tracked county source, with the public page a person can open and eyeball:
+
+| # | County | What we track | Verify it yourself |
+|---|--------|---------------|--------------------|
+| 1 | TX Tarrant | wait-times page + GIS app | [county wait-times page](https://www.tarrantcountytx.gov/en/elections/current-election-information/wait-times.html) · [GIS lookup](https://gisit.tarrantcounty.com/tcvotingwaittime/) |
+| 2 | TX Travis | current-election page (wait-time maps) | [votetravis.gov](https://votetravis.gov/current-election-information/current-election/) |
+| 3 | TX Dallas | ArcGIS Experience (map-interact TBD) | [Experience map](https://experience.arcgis.com/experience/2fe81f8ed7a1474fb75777b5a99e586a/page/Main-Page) |
+| 4 | NC Guilford | wait-time dashboard (REST) | [county early-voting page](https://www.guilfordcountync.gov/government/board-elections/early-voting) · [dashboard](https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7) · [raw data table](https://services5.arcgis.com/RR1v7NWFfwk98pUn/arcgis/rest/services/Early_Voting_Locations/FeatureServer/0/query?where=1%3D1&outFields=Station,Address,Wait&returnGeometry=false&f=html) |
+| 5 | NC Wake | Airtable wait-time tracker | [wakevotesearly.com](https://www.wakevotesearly.com) · [Airtable tracker](https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh) |
+| 6 | TX Harris | official WaitTimes app (its own JSON API) | [harrisvotes app](https://app.harrisvotes.com/WaitTimes?lang=en-US) — search an address, popup shows the estimated wait |
+| 7 | TX Bexar | Election Wait Times app | [maps.bexar.org](https://maps.bexar.org/ElectionWaitTimes/) |
+| 8 | TX El Paso | per-site "Current Wait Time" (server-rendered) | [early-voting locations](https://epcountyvotestx.gov/voter-information/early-voting-locations) |
+| 9 | NC Durham | locator + wait-times | [dcovotes locator](https://www.dcovotes.dconc.gov/voters/voting/early-voting) |
+| 10 | NV Clark | locator webmap + public Experience (REST: `VoteCenterWaitTimes/2`) | [locator](https://elections.clarkcountynv.gov/VoteCentersVoter/index.html) · [public Experience](https://experience.arcgis.com/experience/4a7186f2cc5e41469037f7b1601790cf/) · [raw data table](https://maps.clarkcountynv.gov/arcgis/rest/services/Elections/VoteCenterWaitTimes/FeatureServer/2/query?where=Election_Code%3D%2726GE%27&outFields=SITE_NAME,WAIT_TIME,Last_Refresh&returnGeometry=false&f=html) |
+| 11 | FL Miami-Dade | wait-times page | [votemiamidade](https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page) |
+| 12 | GA Fulton | dashboard (REST) | [dashboard](https://www.arcgis.com/apps/dashboards/1a86b03b27fa48188bf3699c4eccfb20) · [raw data table](https://services1.arcgis.com/AQDHTHDrZzfsFsB5/arcgis/rest/services/Fulton_EarlyVoting_2026/FeatureServer/0/query?where=1%3D1&outFields=precinct_location_name,wait_current&returnGeometry=false&f=html) |
+
+The `f=html` "raw data table" links are the exact FeatureServer queries the extractor runs,
+rendered as a plain table in any browser — no GIS, no clicks.
+
+**Verification lesson (2026-10-21):** Clark's numbers were caught wrong by eyeballing the
+county's public Experience against our Slack posts — we were reading
+`PollingPlaces/FeatureServer/0` (stale/test numbers: 80-106 min) while the public apps read
+`Elections/VoteCenterWaitTimes/2` ("Voting Centers_Prod" webmap, Election_Code `26GE`,
+fresh `Last_Refresh` stamps). Config fixed; the county's public app is always ground truth
+for which service to read.
+
 ## Caveats
 
 - Scraping IG/TikTok is against platform ToS; Apify/RSSHub routes degrade
