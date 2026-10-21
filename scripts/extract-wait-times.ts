@@ -64,6 +64,22 @@ interface Source {
   url: string;
   display_label: string;
   notes?: string;
+  /** Structured REST extraction (the map app's own backend API) — preferred
+ *  path when found: no browser, no vision, exact fields. */
+  rest?: {
+    type: "arcgis" | "json-post";
+    url: string;
+    /** json-post: form-encoded body */
+    form?: Record<string, string>;
+    /** json-post: path to records array ("a.b") */
+    recordsPath?: string;
+    nameField: string;
+    waitMinutesField?: string;
+    waitTextField?: string;
+    lineCountField?: string;
+    peopleField?: string;
+    updatedField?: string;
+  };
 }
 
 interface Reading {
@@ -158,6 +174,9 @@ function normalizeRange(text: string): number | null {
   if (range) return Math.round((Number(range[1]) + Number(range[2])) / 2);
   const m = text.match(/(\d{1,3})\s*(min|minute)/i);
   if (m) return Number(m[1]);
+  // bare number (no unit) — e.g. Guilford FeatureServer Wait:"30"
+  const bare = text.match(/^(\d{1,3})$/);
+  if (bare) return Number(bare[1]);
   return null;
 }
 
@@ -266,6 +285,80 @@ async function visionExtractReadings(shotUrl: string): Promise<Reading[]> {
   }
 }
 
+/** Structured REST extraction — read the map app's own backend API.
+ *  ("Map-interact, option 2": apps like HarrisVotes/Bexar/Clark/Guilford
+ *  are consumers of JSON endpoints we can consume directly — no browser.)
+ *  Returns [] on any failure so callers fall through to text/vision. */
+async function restExtractReadings(s: Source): Promise<Reading[]> {
+  const r = s.rest;
+  if (!r) return [];
+  try {
+    let records: Record<string, unknown>[] = [];
+    if (r.type === "arcgis") {
+      const res = await fetch(r.url, {
+        headers: { "user-agent": UA, accept: "application/json" },
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) return [];
+      const j = (await res.json()) as { features?: { attributes?: Record<string, unknown> }[] };
+      records = (j.features ?? []).map((f) => f.attributes ?? {});
+    } else {
+      const body = new URLSearchParams(r.form ?? {}).toString();
+      const res = await fetch(r.url, {
+        method: "POST",
+        headers: { "user-agent": UA, "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
+        body,
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) return [];
+      const j = (await res.json()) as Record<string, unknown>;
+      let node: unknown = j;
+      if (r.recordsPath) {
+        for (const part of r.recordsPath.split(".")) {
+          node = (node as Record<string, unknown>)?.[part];
+          if (node == null) break;
+        }
+      }
+      records = Array.isArray(node) ? (node as Record<string, unknown>[]) : [];
+    }
+    return records
+      .map((rec) => {
+        const name = String(rec[r.nameField] ?? "").trim();
+        const rawMin = r.waitMinutesField != null ? rec[r.waitMinutesField] : undefined;
+        let minutes: number | null =
+          typeof rawMin === "number" ? rawMin : rawMin != null ? normalizeRange(String(rawMin)) : null;
+        if (minutes != null && (minutes < 0 || minutes > 600)) minutes = null;
+        const text = r.waitTextField != null ? String(rec[r.waitTextField] ?? "") : "";
+        if (minutes == null && text) minutes = normalizeRange(text);
+        const cat =
+          minutes == null
+            ? /short|no wait|zero/i.test(text)
+              ? "short"
+              : /long/i.test(text)
+                ? "long"
+                : null
+            : null;
+        const people = r.peopleField != null ? rec[r.peopleField] : undefined;
+        const lines = r.lineCountField != null ? rec[r.lineCountField] : undefined;
+        const extra =
+          people != null && Number(people) > 0 ? ` (${people} in line)` : lines != null ? ` (${lines} lines)` : "";
+        return {
+          precinct_name: (name || "(unnamed)") + extra,
+          wait_minutes: minutes,
+          wait_category: cat,
+          last_updated:
+            r.updatedField != null && rec[r.updatedField] != null
+              ? String(rec[r.updatedField])
+              : null,
+          confidence: 0.95, // structured API — near-certain
+        } satisfies Reading;
+      })
+      .filter((x) => x.wait_minutes != null || x.wait_category != null);
+  } catch {
+    return [];
+  }
+}
+
 async function slackPost(text: string): Promise<void> {
   if (!settings.slackWebhookUrl) return;
   try {
@@ -305,7 +398,11 @@ const main = async () => {
     const label = `${s.state} ${s.county ?? "(statewide)"} — ${s.display_label.slice(0, 48)}`;
     console.log(`[govt] ${label}`);
     try {
-    const html = await fetchPage(s.url);
+    let readings = await restExtractReadings(s);
+    let method: string | null = readings.length > 0 ? "rest" : null;
+    let html: string | null = null;
+    if (readings.length === 0) {
+      html = await fetchPage(s.url);
     if (html == null) {
       console.log(`  no content — JS-walled, down, or robots-blocked; reporting stale`);
       // carry forward last known readings (no update)
@@ -314,10 +411,13 @@ const main = async () => {
       }
       continue;
     }
-    const text = htmlToFocusedText(html);
-    let readings = await extractReadings(text);
-    let method = readings.length > 0 ? "text" : null;
-    if (readings.length === 0) {
+    } // end rest-miss → html path
+    if (readings.length === 0 && html != null) {
+      const text = htmlToFocusedText(html);
+      readings = await extractReadings(text);
+      method = readings.length > 0 ? "text" : null;
+    }
+    if (readings.length === 0 && html != null) {
       // JS-walled (ArcGIS dashboards / Airtable galleries render client-side):
       // fall back to screenshot + vision extraction (plan §5 “Map-only” case)
       console.log(`  text path empty — trying screenshot+vision`);
