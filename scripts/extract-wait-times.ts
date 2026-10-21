@@ -64,6 +64,10 @@ interface Source {
   url: string;
   display_label: string;
   notes?: string;
+  /** Best public page for HUMAN verification (not the extraction URL —
+ *  REST sources' url is a JSON API; the locator app may render blank).
+ *  Falls back to url. */
+  verify_url?: string;
   /** PASSED human verification (checked against the county's public page) —
  *  eligible for the volunteer-facing feed. Vetting channel gets everything. */
   graduated?: boolean;
@@ -512,14 +516,14 @@ const main = async () => {
         `:stopwatch: *Wait-time update* — ${s.state} ${s.county ?? ""}` +
         `${s.graduated ? " ✅" : " 🧪"}\n` +
         vetChanges.slice(0, 14).join("\n") +
-        `\n${linkLine(s.url, s.display_label)}`;
+        `\n${linkLine(s.verify_url ?? s.url, s.display_label)}`;
       await slackPost(msg, "vetting");
     }
     if (!DRY && volChanges.length > 0) {
       const msg =
         `:stopwatch: *Wait-time update* — ${s.state} ${s.county ?? ""} (verified source)\n` +
         volChanges.slice(0, 14).join("\n") +
-        `\n${linkLine(s.url, s.display_label)}`;
+        `\n${linkLine(s.verify_url ?? s.url, s.display_label)}`;
       await slackPost(msg, "vols");
       console.log(`  posted ${vetChanges.length} vetting / ${volChanges.length} vol change(s)`);
     } else if (vetChanges.length > 0) {
