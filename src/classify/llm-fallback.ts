@@ -24,7 +24,10 @@ export const llmFallbackProvider: DecisionProvider = {
             "Classify a social-media post for relevance. " +
             `Respond with strict JSON: {"category": <one of ${categories.map((c) => `"${c}"`).join(", ")}>, ` +
             `"relevant": <boolean>, "confidence": <0..1 float reflecting how well the evidence supports the category>}. ` +
-            `Use category "irrelevant" unless the post matches one of the other categories.`,
+            `Use category "irrelevant" unless the post matches one of the other categories. ` +
+            "RULES: poll_line_report / wait_time_page_mention require a US election, explicit " +
+            "line/queue/wait evidence at a specific polling place, and NOT news coverage " +
+            "(news -> press_mention). Generic #ivoted civic-pride and non-US posts -> irrelevant.",
         },
         { role: "user", content: JSON.stringify(renderInput(d)) },
       ],
