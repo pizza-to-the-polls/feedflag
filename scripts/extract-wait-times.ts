@@ -382,6 +382,13 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
  *  not). Volunteer channel only ever gets >= MIN_POST_MINUTES. */
 const VETTING_MIN_MINUTES = 15;
 
+/** Footer link for the source. Incoming-webhook `text` renders literally —
+ *  mrkdwn angle-bracket links (`<url|label>`) show as raw text and the link
+ *  dies. Plain URL on its own line auto-links. */
+function linkLine(url: string, label: string): string {
+  return `Source: ${url} (${label.slice(0, 60)})`;
+}
+
 function volChannelLine(r: Reading, prev: ReadingState | undefined): string {
   const val = r.wait_minutes != null ? `${r.wait_minutes} min` : r.wait_category ?? "?";
   const was = prev
@@ -505,14 +512,14 @@ const main = async () => {
         `:stopwatch: *Wait-time update* — ${s.state} ${s.county ?? ""}` +
         `${s.graduated ? " ✅" : " 🧪"}\n` +
         vetChanges.slice(0, 14).join("\n") +
-        `\n<${s.url}|${s.display_label.slice(0, 60)}>`;
+        `\n${linkLine(s.url, s.display_label)}`;
       await slackPost(msg, "vetting");
     }
     if (!DRY && volChanges.length > 0) {
       const msg =
         `:stopwatch: *Wait-time update* — ${s.state} ${s.county ?? ""} (verified source)\n` +
         volChanges.slice(0, 14).join("\n") +
-        `\n<${s.url}|${s.display_label.slice(0, 60)}>`;
+        `\n${linkLine(s.url, s.display_label)}`;
       await slackPost(msg, "vols");
       console.log(`  posted ${vetChanges.length} vetting / ${volChanges.length} vol change(s)`);
     } else if (vetChanges.length > 0) {

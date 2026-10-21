@@ -138,7 +138,7 @@ if (SLACK) {
         f.signal_kind +
         " @" +
         (f.author ?? "?") +
-        (f.url ? " — <" + f.url + ">" : ""),
+        (f.url ? " — " + f.url : ""),
     );
   }
   parts.push(
