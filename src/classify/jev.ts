@@ -74,10 +74,12 @@ export const jevProvider: DecisionProvider = {
             ']>, "confidence": <calibrated 0..1 probability that the category is correct>}. ' +
             "Confidence must reflect actual uncertainty: high (>=0.9) only when the evidence " +
             "unambiguously supports the category. RULES: " +
-            "poll_line_report / wait_time_page_mention require (1) a US election (non-US posts — " +
-            "Canada, UK, etc. — are irrelevant), (2) explicit evidence of a physical line, queue, " +
+            "ALL categories require a US election post — non-US posts (Pakistan, " +
+            "Canada, UK, etc.) are ALWAYS irrelevant. " +
+            "poll_line_report / wait_time_page_mention additionally require " +
+            "(1) explicit evidence of a physical line, queue, " +
             "or wait at a specific polling place (generic #ivoted civic-pride posts do NOT " +
-            "count), and (3) NOT news/press coverage of lines (news coverage -> press_mention). " +
+            "count), and (2) NOT news/press coverage of lines (news coverage -> press_mention). " +
             "When in doubt, choose irrelevant with low confidence.",
         },
         {

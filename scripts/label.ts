@@ -20,6 +20,7 @@
 import { readFileSync, existsSync, appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { observationId } from "../src/util.js";
+import { loadFeedsConfig } from "../src/config.js";
 
 const DATA_DIR = process.env.DATA_DIR ?? "./data";
 
@@ -111,7 +112,7 @@ const byId = new Map(obs.map((o) => [idOf(o), o]));
 const labeledIds = new Set(labels.map((l) => l.id));
 
 if (process.argv.includes("--report")) {
-  const flagged = obs.filter((o) => o.relevant && o.confidence >= FLAG_CONFIDENCE && o.domain === "social");
+  const flagged = obs.filter((o) => o.relevant && o.confidence >= FLAG_CONFIDENCE && o.domain === "social" && (!FLAG_CATEGORIES || FLAG_CATEGORIES.includes(o.signal_kind)));
   const lab = labels
     .map((l) => ({ l, o: byId.get(l.id) }))
     .filter((x): x is { l: Label; o: Obs } => !!x.o);
@@ -160,7 +161,7 @@ if (process.argv.includes("--report")) {
 const hours = Number(arg("hours") ?? 25);
 const since = Date.now() - hours * 3600 * 1000;
 const queue = obs
-  .filter((o) => o.relevant && o.confidence >= FLAG_CONFIDENCE && o.domain === "social")
+  .filter((o) => o.relevant && o.confidence >= FLAG_CONFIDENCE && o.domain === "social" && (!FLAG_CATEGORIES || FLAG_CATEGORIES.includes(o.signal_kind)))
   .filter((o) => new Date(o.observed_at).getTime() >= since)
   .filter((o) => !labeledIds.has(idOf(o)))
   .sort((a, b) => b.observed_at.localeCompare(a.observed_at));

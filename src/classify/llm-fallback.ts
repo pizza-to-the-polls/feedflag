@@ -25,9 +25,11 @@ export const llmFallbackProvider: DecisionProvider = {
             `Respond with strict JSON: {"category": <one of ${categories.map((c) => `"${c}"`).join(", ")}>, ` +
             `"relevant": <boolean>, "confidence": <0..1 float reflecting how well the evidence supports the category>}. ` +
             `Use category "irrelevant" unless the post matches one of the other categories. ` +
-            "RULES: poll_line_report / wait_time_page_mention require a US election, explicit " +
+            "RULES: ALL categories require a US election post — non-US posts (Pakistan, " +
+            "Canada, UK, etc.) are ALWAYS irrelevant regardless of category. " +
+            "poll_line_report / wait_time_page_mention additionally require explicit " +
             "line/queue/wait evidence at a specific polling place, and NOT news coverage " +
-            "(news -> press_mention). Generic #ivoted civic-pride and non-US posts -> irrelevant.",
+            "(news -> press_mention). Generic #ivoted civic-pride -> irrelevant.",
         },
         { role: "user", content: JSON.stringify(renderInput(d)) },
       ],

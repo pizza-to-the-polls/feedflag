@@ -9,6 +9,12 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { observationId } from "../src/util.js";
+import { loadFeedsConfig } from "../src/config.js";
+
+// Flag-worthy categories mirror the pipeline's flagCategories policy —
+// the digest table shows what the flag feed would show (line-related only;
+// press/community noise labels away from Slack and stays in the bus).
+const FLAG_CATEGORIES = loadFeedsConfig().flagCategories ?? undefined;
 
 const FLAG_CONFIDENCE = Number(process.env.FLAG_CONFIDENCE ?? 0.7);
 
@@ -106,7 +112,8 @@ const flagged = obs.filter(
   (o) =>
     o.relevant &&
     o.confidence >= FLAG_CONFIDENCE &&
-    o.domain !== "crowd" &&
+    o.domain === "social" &&
+    (!FLAG_CATEGORIES || FLAG_CATEGORIES.includes(o.signal_kind)) &&
     !wrongLabels.has(observationId({ source_ref: o.source_ref, observed_at: o.observed_at, domain: o.domain })),
 );
 const mediaOf = (o: Obs): string | undefined => {
