@@ -64,6 +64,9 @@ interface Source {
   url: string;
   display_label: string;
   notes?: string;
+  /** PASSED human verification (checked against the county's public page) —
+ *  eligible for the volunteer-facing feed. Vetting channel gets everything. */
+  graduated?: boolean;
   /** Structured REST extraction (the map app's own backend API) — preferred
  *  path when found: no browser, no vision, exact fields. */
   rest?: {
@@ -359,10 +362,28 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
   }
 }
 
-async function slackPost(text: string): Promise<void> {
-  if (!settings.slackWebhookUrl) return;
+/** Vetting floor: changed readings >= this post to the VETTING channel
+ *  (source-health noise is the point of vetting; pure no-wait flapping is
+ *  not). Volunteer channel only ever gets >= MIN_POST_MINUTES. */
+const VETTING_MIN_MINUTES = 15;
+
+function volChannelLine(r: Reading, prev: ReadingState | undefined): string {
+  const val = r.wait_minutes != null ? `${r.wait_minutes} min` : r.wait_category ?? "?";
+  const was = prev
+    ? prev.minutes != null
+      ? ` (was ${prev.minutes} min)`
+      : prev.category
+        ? ` (was ${prev.category})`
+        : " (new)"
+    : " (new)";
+  return `• ${r.precinct_name.slice(0, 50)}: ${val}${was} — ${pct(r.confidence)}`;
+}
+
+async function slackPost(text: string, channel: "vetting" | "vols" = "vetting"): Promise<void> {
+  const url = channel === "vols" && settings.volsWebhookUrl ? settings.volsWebhookUrl : settings.slackWebhookUrl;
+  if (!url) return;
   try {
-    await fetch(settings.slackWebhookUrl, {
+    await fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
@@ -432,7 +453,8 @@ const main = async () => {
     } else {
       console.log(`  ${readings.length} reading(s) via ${method}`);
     }
-    const changes: string[] = [];
+    const volChanges: string[] = [];
+    const vetChanges: string[] = [];
     for (const r of readings) {
       const key = `${s.url}#${r.precinct_name}`;
       const prev = state[key];
@@ -446,32 +468,39 @@ const main = async () => {
         confidence: r.confidence,
         at: new Date().toISOString(),
       };
-      // ...but only POST when the reading is worth acting on: a line >= 1 hour
-      // (short waits / "No Wait" churn is noise — the dispatch signal is LONG lines)
-      const postable =
-        (r.wait_minutes ?? -1) >= MIN_POST_MINUTES || r.wait_category === "long";
-      if (changed && postable) {
+      if (!changed) continue;
+      const line = volChannelLine(r, prev);
+      const mins = r.wait_minutes ?? -1;
+      // VOL FEED (graduated sources only): dispatch signal = lines >= 1 hour.
+      // Everything else lives in vetting.
+      if (mins >= MIN_POST_MINUTES || r.wait_category === "long") {
         totalChanged++;
-        const val = r.wait_minutes != null ? `${r.wait_minutes} min` : r.wait_category ?? "?";
-        const was = prev
-          ? prev.minutes != null
-            ? ` (was ${prev.minutes} min)`
-            : prev.category
-              ? ` (was ${prev.category})`
-              : " (new)"
-          : " (new)";
-        changes.push(`• ${r.precinct_name.slice(0, 50)}: ${val}${was} — ${pct(r.confidence)}`);
+        if (s.graduated) volChanges.push(line);
+        vetChanges.push(line);
+      } else if (mins >= VETTING_MIN_MINUTES) {
+        // sub-60min churn with a floor — vetting sees it (source health), vols don't
+        vetChanges.push(line);
       }
     }
-    if (changes.length > 0 && !DRY) {
+    if (!DRY && vetChanges.length > 0) {
       const msg =
-        `:stopwatch: *Wait-time update* — ${s.state} ${s.county ?? ""}\n` +
-        changes.slice(0, 12).join("\n") +
+        `:stopwatch: *Wait-time update* — ${s.state} ${s.county ?? ""}` +
+        `${s.graduated ? " ✅" : " 🧪"}\n` +
+        vetChanges.slice(0, 14).join("\n") +
         `\n<${s.url}|${s.display_label.slice(0, 60)}>`;
-      await slackPost(msg);
-      console.log(`  posted ${changes.length} change(s)`);
-    } else if (changes.length > 0) {
-      console.log(`  [dry] ${changes.length} change(s) not posted`);
+      await slackPost(msg, "vetting");
+    }
+    if (!DRY && volChanges.length > 0) {
+      const msg =
+        `:stopwatch: *Wait-time update* — ${s.state} ${s.county ?? ""} (verified source)\n` +
+        volChanges.slice(0, 14).join("\n") +
+        `\n<${s.url}|${s.display_label.slice(0, 60)}>`;
+      await slackPost(msg, "vols");
+      console.log(`  posted ${vetChanges.length} vetting / ${volChanges.length} vol change(s)`);
+    } else if (vetChanges.length > 0) {
+      console.log(
+        `  [dry] ${vetChanges.length} vetting / ${volChanges.length} vol change(s) not posted`,
+      );
     }
     // observations for the bus (domain govt)
     if (!DRY) {

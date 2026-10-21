@@ -67,6 +67,7 @@ export const settings = {
   jevKey: env.JEV_API_KEY || "",
   zapierCatchUrl: (env.ZAPIER_CATCH_URL || "").replace(/\/+$/, ""),
   slackWebhookUrl: env.SLACK_WEBHOOK_URL || "",
+  volsWebhookUrl: env.SLACK_VOLS_WEBHOOK_URL || "",
   pizzabaseUrl: (env.PIZZABASE_API_URL || "").replace(/\/+$/, ""),
   pizzabaseKey: env.PIZZABASE_API_KEY || "",
   siteReportsMax: positiveInt(env.SITE_REPORTS_MAX, 50),

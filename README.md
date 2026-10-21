@@ -287,6 +287,25 @@ county's public Experience against our Slack posts — we were reading
 fresh `Last_Refresh` stamps). Config fixed; the county's public app is always ground truth
 for which service to read.
 
+## Two-tier feeds: vetting → graduated (vol-facing)
+
+Low report volume means human vetting carries the calibration load. Two channels:
+
+| | **Vetting channel** (`SLACK_WEBHOOK_URL`) | **Volunteer channel** (`SLACK_VOLS_WEBHOOK_URL`) |
+|---|---|---|
+| Audience | PTP staff, pre-election | Volunteers, election week |
+| Govt readings | changed readings ≥ **15 min** (🧪 unverified sources included — churn is the point: you smell-test the source) | changed readings ≥ **60 min** from **graduated sources only** (✅ verified vs the county's public page) |
+| Social flags | current `FLAG_CONFIDENCE` | **none yet** — measured precision is 0% (labels corpus); social graduates only when `npm run label -- --report` earns it |
+
+- **Graduation is a human decision**, recorded as `graduated: true` on the source in
+  `config/govt-sources.jsonl` (mirrors `wait_time_sources.is_active`/`last_verified_at`
+  in the pizzabase schema — the DB anticipated this).
+- Graduated so far (verified 2026-10-21): **Clark NV, Guilford NC, Wake NC, Harris TX, El Paso TX**.
+  Ungraduated on purpose: Tarrant GIS + Miami-Dade (vision-extracted, not yet eyeballed vs public page).
+- `SLACK_VOLS_WEBHOOK_URL` unset → single-channel mode (vol-eligible lines post to the vetting channel).
+- Honest timeline: graduation decisions locked **before Nov 1** (DST bump day); the election-day
+  hot mode sweeps both channels every 15 min.
+
 ## Caveats
 
 - Scraping IG/TikTok is against platform ToS; Apify/RSSHub routes degrade
