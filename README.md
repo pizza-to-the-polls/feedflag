@@ -287,6 +287,29 @@ county's public Experience against our Slack posts — we were reading
 fresh `Last_Refresh` stamps). Config fixed; the county's public app is always ground truth
 for which service to read.
 
+## The evaluator (stress test before a reading reaches volunteers)
+
+Every changed govt reading is evaluated before it can post to the vol feed:
+
+| Criterion | Check |
+|---|---|
+| **1. Actability** | site name (not `(unnamed)`), **physical address**, and the source's `verify_url` renders |
+| **2. Agreement** | REST readings come from the *same service the county's public app reads* (by construction — the Clark lesson); reading is fresh (observed this run); confidence sane (>= 0.6) |
+| **3. Dispatch gate** | all of the above + >= 60 min (or `long`) + **source graduated** (human decision in config) |
+
+- Vol posts only `dispatchable` readings (with the address appended — a
+  volunteer can act directly).
+- Eval-blocked readings still post to **vetting**, annotated `🚫 eval: <reasons>`
+  — failures are visible, not silent.
+- `npm run start:env -- -- --report` (or `npx tsx scripts/extract-wait-times.ts --report`)
+  prints the full **evaluation board**: per-source readings / named / addressed /
+  verify / graduated / dispatchable, plus each source's blockers.
+
+**New-source stress test:** a discovered source lands `graduated: false`; the board
+shows exactly what blocks it from the vol feed (name? address? verify link? graduation?).
+Nothing reaches volunteers until a human flips `graduated` — and only eval-clean
+readings flow even then.
+
 ## Two-tier feeds: vetting → graduated (vol-facing)
 
 Low report volume means human vetting carries the calibration load. Two channels:

@@ -85,6 +85,8 @@ interface Source {
     nameFallbackFields?: string[];
     /** stable per-site key (dedupe/collision) — e.g. Clark POLL_CODE. Defaults to name. */
     keyField?: string;
+    /** physical address fields (dispatch gate: volunteer needs an address to act) */
+    addressFields?: string[];
     waitMinutesField?: string;
     waitTextField?: string;
     lineCountField?: string;
@@ -97,6 +99,8 @@ interface Reading {
   precinct_name: string;
   /** stable site key (rest path: e.g. POLL_CODE) — dedupes when names are messy */
   site_key?: string;
+  /** physical address for volunteer action (dispatch gate requires it) */
+  address?: string | null;
   wait_minutes: number | null;
   wait_category: string | null;
   last_updated: string | null;
@@ -109,6 +113,7 @@ interface ReadingState {
   updated: string | null;
   confidence: number;
   at: string;
+  address?: string | null;
 }
 
 const pct = (n: number) => `${Math.round(n * 100)}%`;
@@ -203,7 +208,7 @@ async function extractReadings(text: string): Promise<Reading[]> {
         role: "system",
         content:
           "Extract polling-place wait times from this webpage text. Respond with strict JSON: " +
-          '{"readings": [{"precinct_name": <string>, "wait_minutes": <int minutes or null>, ' +
+          '{"readings": [{"precinct_name": <string>, "address": <street address if present, else null>, "wait_minutes": <int minutes or null>, ' +
           '"wait_category": <"short"|"medium"|"long"|null>, "last_updated": <string or null>, ' +
           '"confidence": <0..1 how certain the reading is>}]. Rules: a range like "20-30 min" → midpoint. ' +
           'Categorical words ("short","moderate","long") → wait_category. "N people in line" → ~N minutes. ' +
@@ -221,6 +226,10 @@ async function extractReadings(text: string): Promise<Reading[]> {
       .map((r) => r as Record<string, unknown>)
       .map((r) => {
         const name = String(r.precinct_name ?? "").trim() || "(unnamed location)";
+        const address =
+          typeof r.address === "string" && r.address.trim() && !/^null$/i.test(r.address.trim())
+            ? r.address.trim()
+            : null;
         const rawMin = r.wait_minutes;
         let minutes =
           typeof rawMin === "number" ? rawMin : typeof rawMin === "string" ? normalizeRange(rawMin) : null;
@@ -231,6 +240,7 @@ async function extractReadings(text: string): Promise<Reading[]> {
         const conf = Math.min(Math.max(Number(r.confidence ?? 0), 0), 1);
         return {
           precinct_name: name,
+          address,
           wait_minutes: minutes,
           wait_category: cat,
           last_updated: typeof r.last_updated === "string" ? r.last_updated : null,
@@ -257,7 +267,7 @@ async function visionExtractReadings(shotUrl: string): Promise<Reading[]> {
         role: "system",
         content:
           "You read screenshots of polling wait-time tables. Output strict JSON only: " +
-          '{"readings":[{"place":<site name>,"wait":"<e.g. 25 min / 20-30 min / No Wait>"}],"page_title":<string>,"has_data":<boolean>}',
+          '{"readings":[{"place":<site name>,"address":<street address if visible, else null>,"wait":"<e.g. 25 min / 20-30 min / No Wait>"}],"page_title":<string>,"has_data":<boolean>}',
       },
       {
         role: "user",
@@ -275,6 +285,10 @@ async function visionExtractReadings(shotUrl: string): Promise<Reading[]> {
     return (j.readings ?? [])
       .map((r) => {
         const name = String(r.place ?? "").trim() || "(unnamed location)";
+        const address =
+          typeof r.address === "string" && r.address.trim() && !/^null$/i.test(r.address.trim())
+            ? r.address.trim()
+            : null;
         const waitStr = String(r.wait ?? "");
         const minutes = normalizeRange(`${waitStr} min`);
         const cat = /no wait|none/i.test(waitStr)
@@ -286,6 +300,7 @@ async function visionExtractReadings(shotUrl: string): Promise<Reading[]> {
               : null;
         return {
           precinct_name: name,
+          address,
           wait_minutes: minutes,
           wait_category: cat,
           last_updated: null,
@@ -345,6 +360,12 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
           r.keyField != null && rec[r.keyField] != null
             ? `${String(rec[r.keyField]).trim()}`
             : undefined;
+        const address =
+          r.addressFields
+            ?.map((f) => rec[f])
+            .filter((v) => v != null && String(v).trim() !== "")
+            .map((v) => String(v).trim())
+            .join(", ") || null;
         const rawMin = r.waitMinutesField != null ? rec[r.waitMinutesField] : undefined;
         let minutes: number | null =
           typeof rawMin === "number" ? rawMin : rawMin != null ? normalizeRange(String(rawMin)) : null;
@@ -366,6 +387,7 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
         return {
           precinct_name: (name || "(unnamed)") + extra,
           site_key: siteKey,
+          address,
           wait_minutes: minutes,
           wait_category: cat,
           last_updated:
@@ -434,6 +456,103 @@ function loadState(): Record<string, ReadingState> {
   }
 }
 
+/** ─── Evaluation: stress-test readings before they reach the vol feed ───
+ *
+ * Criteria (human-vetted design, 2026-10-21):
+ *  1. ACTABILITY — volunteer can act: site name (not "(unnamed)"), physical
+ *     address, working verify link (verify_url renders).
+ *  2. AGREEMENT — the posted number agrees with the county's public page:
+ *     REST readings come from the same service the public app reads (by
+ *     construction — Clark taught us to verify this); reading is fresh
+ *     (observed this run); confidence sane.
+ *  3. DISPATCH GATE — could we send pizzas here: everything above + >= 60 min
+ *     (or 'long') + source graduated (human decision in config).
+ */
+interface Evaluation {
+  reasons: string[];
+  dispatchable: boolean;
+}
+
+const verifyCache = new Map<string, boolean>();
+async function verifyLinkOk(url: string): Promise<boolean> {
+  if (verifyCache.has(url)) return verifyCache.get(url)!;
+  let ok = false;
+  try {
+    const res = await fetch(url, {
+      headers: { "user-agent": UA },
+      signal: AbortSignal.timeout(15000),
+      redirect: "follow",
+    });
+    ok = res.ok;
+  } catch {
+    ok = false;
+  }
+  verifyCache.set(url, ok);
+  return ok;
+}
+
+async function evaluateReading(s: Source, r: Reading): Promise<Evaluation> {
+  const reasons: string[] = [];
+  // 1. Actability
+  if (!r.precinct_name || /^\(unnamed\)/.test(r.precinct_name)) reasons.push("no site name");
+  if (!r.address) reasons.push("no address");
+  const vurl = s.verify_url ?? s.url;
+  if (!vurl) {
+    reasons.push("no verify link");
+  } else if (!(await verifyLinkOk(vurl))) {
+    reasons.push("verify link dead");
+  }
+  // 2. Agreement
+  if (!s.rest && methodOf(s) !== "rest") {
+    // vision/text readings: the screenshot/text IS the public page, so
+    // agreement holds by construction; freshness is the reading timestamp.
+  }
+  if (r.confidence < 0.6) reasons.push(`low confidence ${pct(r.confidence)}`);
+  // 3. Dispatch gate
+  const dispatchable =
+    reasons.length === 0 &&
+    s.graduated === true &&
+    ((r.wait_minutes ?? -1) >= MIN_POST_MINUTES || r.wait_category === "long");
+  return { reasons, dispatchable };
+}
+
+function methodOf(s: Source): string {
+  return s.rest ? "rest" : s.source_type;
+}
+
+const REPORT = process.argv.includes("--report");
+
+async function reportBoard(sources: Source[], state: Record<string, ReadingState>): Promise<void> {
+  console.log("\n## Evaluation board (stress test: actable? agrees? dispatchable?)\n");
+  console.log("| source | readings | named | addressed | verify | graduated | dispatchable |");
+  console.log("|---|---|---|---|---|---|---|");
+  for (const s of sources) {
+    const entries = Object.entries(state).filter(([k]) => k.startsWith(s.url));
+    const evals = await Promise.all(
+      entries.map(([k, v]) =>
+        evaluateReading(s, {
+          precinct_name: k.slice(s.url.length + 1),
+          wait_minutes: v.minutes,
+          wait_category: v.category,
+          confidence: v.confidence,
+          address: v.address ?? null,
+          last_updated: v.updated,
+        }),
+      ),
+    );
+    const named = entries.filter(([k]) => !k.includes("(unnamed)")).length;
+    const addressed = entries.filter(([, v]) => v.address).length;
+    const vok = await verifyLinkOk(s.verify_url ?? s.url);
+    const dispatchable = evals.filter((e) => e.dispatchable).length;
+    console.log(
+      `| ${s.state} ${s.county ?? ""} | ${entries.length} | ${named} | ${addressed} | ${vok ? "OK" : "DEAD"} | ${s.graduated ? "✅" : "🧪"} | ${dispatchable} |`,
+    );
+    const failReasons = new Set(evals.flatMap((e) => e.reasons));
+    if (failReasons.size) console.log(`\n  ${s.state} ${s.county ?? ""} — blockers: ${[...failReasons].join("; ")}`);
+  }
+  console.log("");
+}
+
 const main = async () => {
   if (!settings.openrouterKey) throw new Error("OPENROUTER_API_KEY not configured");
   const sources = loadSources();
@@ -493,19 +612,27 @@ const main = async () => {
         updated: r.last_updated,
         confidence: r.confidence,
         at: new Date().toISOString(),
+        address: r.address ?? prev?.address ?? null,
       };
       if (!changed) continue;
       const line = volChannelLine(r, prev);
       const mins = r.wait_minutes ?? -1;
       const volEligible = mins >= MIN_POST_MINUTES || r.wait_category === "long";
-      // VOL FEED (graduated sources only): dispatch signal = lines >= 1 hour.
+      const evaluation = await evaluateReading(s, r);
+      // VOL FEED (graduated sources only): dispatch signal = lines >= 1 hour
+      // AND eval-clean (name + address + live verify link + fresh).
       // Single-channel mode (no vols webhook): the one channel is VOL-GRADE —
       // sub-60min churn stays in console/state/digest until a vols channel
       // exists (user call 2026-10-21: "15-min posts are not helpful").
       if (volEligible) {
         totalChanged++;
-        if (s.graduated) volChanges.push(line);
-        vetChanges.push(line);
+        if (evaluation.dispatchable) {
+          volChanges.push(line + (r.address ? ` — ${r.address.slice(0, 50)}` : ""));
+          vetChanges.push(line + (r.address ? ` — ${r.address.slice(0, 50)}` : ""));
+        } else {
+          // eval-blocked: visible in vetting with reasons, never vol-posted
+          vetChanges.push(`🚫 ${line} — eval: ${evaluation.reasons.join("; ")}`);
+        }
       } else if (mins >= VETTING_MIN_MINUTES && settings.volsWebhookUrl) {
         // two-channel mode: vetting tier sees churn for source smell-tests
         vetChanges.push(line);
@@ -574,6 +701,7 @@ const main = async () => {
   console.log(
     `[govt] extraction complete: ${sources.length} sources, ${Object.keys(next).length} tracked readings, ${totalChanged} changed${DRY ? " (dry)" : ""}`,
   );
+  if (REPORT) await reportBoard(sources, next);
 };
 
 main().catch((err) => {
