@@ -1,0 +1,59 @@
+name: feedflag-electionday
+
+# ELECTION-DAY HOT MODE — 15-minute extraction of every seeded gov source.
+# Runs all month but exits in seconds unless the date matches (guard runs
+# BEFORE npm ci). Cost when live: ~8 screenshots + flash-lite per pass ≈
+# $0.03 × 96 passes/day ≈ $3/day — the plan's "top sources every 15 min"
+# scaled to our 8-source pilot.
+#
+# NOTE (DST): after Nov 1 2026 the meal-time crons in feedflag.yml fire an
+# hour EARLY local — this workflow covers Nov 2-4 around the clock so poll
+# close (ET/CT/PT) is inside its window regardless.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: feedflag-electionday
+  cancel-in-progress: false
+
+jobs:
+  hot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Date guard (live only Nov 2-4 2026)
+        run: |
+          if [[ "$(date -u +%Y-%m-%d)" =~ 2026-11-0[234] ]]; then
+            echo "election-day window: HOT"
+          else
+            echo "not in window — skipping (guard, no cost)"
+            exit 0
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Extract gov wait times (hot)
+        env:
+          WAIT_TIME_SOURCES: ./config/govt-sources.jsonl
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: npx tsx scripts/extract-wait-times.ts
+      - name: Persist extraction state
+        run: |
+          if [ -f data/govt-readings.json ]; then
+            git config user.name "feedflag-bot"
+            git config user.email "feedflag-bot@users.noreply.github.com"
+            git add -f data/govt-readings.json data/observations.jsonl
+            git commit -m "chore(data): election-day hot extraction [skip ci]" || true
+            git push
+          fi

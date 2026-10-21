@@ -25,6 +25,10 @@ import { openrouterChat } from "../src/describe/openrouter.js";
 import { settings } from "../src/config.js";
 
 const UA = "PizzaToThePolls/1.0 (civic-data wait-times; +https://polls.pizza)";
+/** Lines under this many minutes don't post to Slack (churn noise).
+ *  >= 1h is the dispatch-relevant signal. Everything still records to state
+ *  + the observation bus. */
+const MIN_POST_MINUTES = 60;
 const DRY = process.argv.includes("--dry");
 const DATA_DIR = resolve(process.env.DATA_DIR ?? "./data");
 const SOURCES_PATH = resolve(process.env.WAIT_TIME_SOURCES ?? "./config/govt-sources.jsonl");
@@ -334,6 +338,7 @@ const main = async () => {
       const prev = state[key];
       const changed =
         !prev || prev.minutes !== r.wait_minutes || prev.category !== r.wait_category;
+      // record EVERYTHING in state (change detection needs the full picture)
       next[key] = {
         minutes: r.wait_minutes,
         category: r.wait_category,
@@ -341,7 +346,11 @@ const main = async () => {
         confidence: r.confidence,
         at: new Date().toISOString(),
       };
-      if (changed) {
+      // ...but only POST when the reading is worth acting on: a line >= 1 hour
+      // (short waits / "No Wait" churn is noise — the dispatch signal is LONG lines)
+      const postable =
+        (r.wait_minutes ?? -1) >= MIN_POST_MINUTES || r.wait_category === "long";
+      if (changed && postable) {
         totalChanged++;
         const val = r.wait_minutes != null ? `${r.wait_minutes} min` : r.wait_category ?? "?";
         const was = prev

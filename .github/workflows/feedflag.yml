@@ -90,7 +90,7 @@ jobs:
       - name: Persist pipeline state
         run: |
           changed=""
-          for f in data/seen.json data/flagged.jsonl data/observations.jsonl data/reports-sync.json data/labels.jsonl; do
+          for f in data/seen.json data/flagged.jsonl data/observations.jsonl data/reports-sync.json data/labels.jsonl data/govt-readings.json; do
             [ -f "$f" ] && changed="$changed $f"
           done
           if [ -n "$changed" ]; then

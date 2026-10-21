@@ -10,6 +10,8 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { observationId } from "../src/util.js";
 
+const FLAG_CONFIDENCE = Number(process.env.FLAG_CONFIDENCE ?? 0.7);
+
 const HOURS = Number(
   (() => {
     const i = process.argv.indexOf("--hours");
@@ -103,7 +105,7 @@ const wrongLabels = loadLabels();
 const flagged = obs.filter(
   (o) =>
     o.relevant &&
-    o.confidence >= 0.7 &&
+    o.confidence >= FLAG_CONFIDENCE &&
     o.domain !== "crowd" &&
     !wrongLabels.has(observationId({ source_ref: o.source_ref, observed_at: o.observed_at, domain: o.domain })),
 );
