@@ -1,10 +1,11 @@
 name: feedflag-electionday
 
 # ELECTION-DAY HOT MODE — 15-minute extraction of every seeded gov source.
-# Runs all month but exits in seconds unless the date matches (guard runs
-# BEFORE npm ci). Cost when live: ~8 screenshots + flash-lite per pass ≈
-# $0.03 × 96 passes/day ≈ $3/day — the plan's "top sources every 15 min"
-# scaled to our 8-source pilot.
+# Runs all month but skips in seconds unless the date matches (guard output
+# gates every step; nothing past the guard runs out of window — npm ci,
+# screenshots, LLM calls all skipped). Cost when live: ~8 screenshots +
+# flash-lite per pass ≈ $0.03 × 96 passes/day ≈ $3/day — the plan's
+# "top sources every 15 min" scaled to our 8-source pilot.
 #
 # NOTE (DST): after Nov 1 2026 the meal-time crons in feedflag.yml fire an
 # hour EARLY local — this workflow covers Nov 2-4 around the clock so poll
@@ -28,20 +29,26 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Date guard (live only Nov 2-4 2026)
+        id: guard
         run: |
           if [[ "$(date -u +%Y-%m-%d)" =~ 2026-11-0[234] ]]; then
+            echo "hot=true" >> "$GITHUB_OUTPUT"
             echo "election-day window: HOT"
           else
-            echo "not in window — skipping (guard, no cost)"
-            exit 0
+            echo "hot=false" >> "$GITHUB_OUTPUT"
+            echo "not in window — skipping (no steps run past guard)"
           fi
       - uses: actions/checkout@v4
+        if: steps.guard.outputs.hot == 'true'
       - uses: actions/setup-node@v4
+        if: steps.guard.outputs.hot == 'true'
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+        if: steps.guard.outputs.hot == 'true'
       - name: Extract gov wait times (hot)
+        if: steps.guard.outputs.hot == 'true'
         env:
           WAIT_TIME_SOURCES: ./config/govt-sources.jsonl
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
@@ -49,6 +56,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: npx tsx scripts/extract-wait-times.ts
       - name: Persist extraction state
+        if: steps.guard.outputs.hot == 'true'
         run: |
           if [ -f data/govt-readings.json ]; then
             git config user.name "feedflag-bot"
