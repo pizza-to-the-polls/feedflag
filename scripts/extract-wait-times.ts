@@ -383,7 +383,7 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
         const people = r.peopleField != null ? rec[r.peopleField] : undefined;
         const lines = r.lineCountField != null ? rec[r.lineCountField] : undefined;
         const extra =
-          people != null && Number(people) > 0 ? ` (${people} in line)` : lines != null ? ` (${lines} lines)` : "";
+          people != null && Number(people) > 0 ? ` (${people} in line)` : "";
         return {
           precinct_name: (name || "(unnamed)") + extra,
           site_key: siteKey,

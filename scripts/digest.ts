@@ -39,6 +39,8 @@ interface Obs {
   confidence: number;
   provider: string;
   relevant: boolean;
+  wait_minutes?: number | null;
+  location?: { raw?: string; city?: string; county?: string; state?: string };
   description?: {
     caption?: string;
     item?: { mediaUrls?: string[]; videoUrl?: string };
@@ -133,24 +135,42 @@ if (SLACK) {
     ":pizza: *Feedflag digest — last " + HOURS + "h*",
   );
   parts.push(
-    obs.length + " observations (" + [...byDomain.entries()].map(([d, n]) => n + " " + d).join(", ") + ") · *" + flagged.length + " flagged* ≥70%",
+    obs.length + " observations (" + [...byDomain.entries()].map(([d, n]) => n + " " + d).join(", ") + ")",
   );
-  for (const f of flagged) {
-    const id8 = observationId({ source_ref: f.source_ref, observed_at: f.observed_at, domain: f.domain });
+  // govt: compact per-source line — sites tracked, any >= 60min lines hot now
+  const govt = obs.filter((o) => o.domain === "govt");
+  if (govt.length) {
+    const hot = govt.filter((o) => (o.wait_minutes ?? 0) >= 60);
+    const counties = [...new Set(govt.map((o) => `${o.author ?? ""}`.replace(/ ?Wait Time.*/i, "")))];
     parts.push(
-      "• [" + id8 + "] " +
-        pct(f.confidence) +
-        " " +
-        (KIND_EMOJI[f.signal_kind] ?? "") +
-        f.signal_kind +
-        " @" +
-        (f.author ?? "?") +
-        (f.url ? " — " + f.url : ""),
+      ":stopwatch: " + govt.length + " gov readings (" + counties.slice(0, 6).join(" · ") +
+        (counties.length > 6 ? " +" + (counties.length - 6) : "") + ")" +
+        (hot.length ? " — *" + hot.length + " ≥60min now:" : " — none ≥60min"),
     );
+    for (const h of hot.slice(0, 6)) {
+      parts.push(
+        "  • " + (h.location?.raw ?? "(unnamed)").slice(0, 40) +
+          ": " + h.wait_minutes + " min" +
+          (h.location?.county || h.location?.state ? ` (${[h.location.city, h.location.county, h.location.state].filter(Boolean).join(", ")})` : ""),
+      );
+    }
   }
-  parts.push(
-    "Feedback: `npm run label -- --add <ID>=right|wrong[:category]` — or tell Pi in chat which [ID]s were wrong",
-  );
+  if (flagged.length) {
+    parts.push(":triangular_flag_on_post: " + flagged.length + " social flag(s):");
+    for (const f of flagged) {
+      parts.push(
+        "  • " +
+          pct(f.confidence) +
+          " " +
+          (KIND_EMOJI[f.signal_kind] ?? "") +
+          f.signal_kind +
+          " @" +
+          (f.author ?? "?") +
+          " — " +
+          f.url,
+      );
+    }
+  }
   // JSON payload (not bare text): embeds up to 4 flagged thumbnails via
   // attachments.image_url. Workflow posts this with --data-binary @file.
   const images = flagged
