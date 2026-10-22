@@ -443,7 +443,7 @@ async function slackPost(text: string, channel: "vetting" | "vols" = "vetting"):
       body: JSON.stringify({
         text,
         username: "feedflag",
-        icon_url: "https://github.com/pizza-to-the-polls.png",
+        icon_emoji: ":feedflag:",
       }),
       signal: AbortSignal.timeout(15000),
     });

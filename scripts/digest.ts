@@ -181,7 +181,7 @@ if (SLACK) {
     JSON.stringify({
       text: parts.join("\n"),
       username: "feedflag",
-      icon_url: "https://github.com/pizza-to-the-polls.png",
+      icon_emoji: ":feedflag:",
       attachments: images.length
         ? images.map((image) => ({ color: "#E01B5D", fallback: "flagged media", image_url: image }))
         : undefined,

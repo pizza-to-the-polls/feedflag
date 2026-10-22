@@ -86,7 +86,7 @@ jobs:
           COMMENT_URL=$(gh issue comment "$FINDINGS_ISSUE" --body-file /tmp/digest.md)
           if [ -n "$SLACK_WEBHOOK_URL" ]; then
             npx tsx scripts/digest.ts --hours 26 --slack > /tmp/slack.json
-            jq --arg d "$COMMENT_URL" '.text += "\nDetails: " + $d' /tmp/slack.json > /tmp/slack-payload.json
+            jq --arg d "$COMMENT_URL" '.text += "\nDetails: " + $d | .icon_emoji = ":feedflag:"' /tmp/slack.json > /tmp/slack-payload.json
             curl -s --max-time 15 -o /dev/null -w "slack post: %{http_code}\n" -X POST \
               -H 'Content-Type: application/json' \
               --data-binary @/tmp/slack-payload.json \

@@ -68,6 +68,11 @@ export const settings = {
   zapierCatchUrl: (env.ZAPIER_CATCH_URL || "").replace(/\/+$/, ""),
   slackWebhookUrl: env.SLACK_WEBHOOK_URL || "",
   volsWebhookUrl: env.SLACK_VOLS_WEBHOOK_URL || "",
+  slackBotToken: env.SLACK_BOT_TOKEN || "",
+  slackFlagChannels: (env.SLACK_FLAG_CHANNELS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
   pizzabaseUrl: (env.PIZZABASE_API_URL || "").replace(/\/+$/, ""),
   pizzabaseKey: env.PIZZABASE_API_KEY || "",
   siteReportsMax: positiveInt(env.SITE_REPORTS_MAX, 50),
