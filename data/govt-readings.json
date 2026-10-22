@@ -1,10 +1,42 @@
 {
+  "https://gisit.tarrantcounty.com/tcvotingwaittime/#Southwest Community Center": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:22:36.796Z",
+    "address": "6300 Welch Avenue, Ft. Worth"
+  },
+  "https://gisit.tarrantcounty.com/tcvotingwaittime/#Everman Civic Center": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:22:36.935Z",
+    "address": "213 N Race St, Everman"
+  },
+  "https://gisit.tarrantcounty.com/tcvotingwaittime/#Dionne Phillips Bagsby Southwest Subcourthouse": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:22:36.935Z",
+    "address": "6551 Granbury Road, Fort Worth"
+  },
+  "https://gisit.tarrantcounty.com/tcvotingwaittime/#Crouch Event Center in Bicentennial": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:22:36.935Z",
+    "address": "900 East Glendale Street, Crowley"
+  },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Old Courthouse - Coleman Conference Room": {
     "minutes": 30,
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.724Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "301 W Market St, Greensboro"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Ag Center (Parn)": {
@@ -12,7 +44,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "3309 Burlington Rd, Greensboro"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Barber Park (Simkins Pavilion)": {
@@ -20,7 +52,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "1500 Barber Park Dr, Greensboro"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Brown Recreation Center": {
@@ -28,7 +60,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "302 E Vandalia Rd, Greensboro"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Bur-Mil Club": {
@@ -36,7 +68,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "5834 Bur-Mil Club Rd, Greensboro"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Charlotte Hawkins Brown (Kimball Hall)": {
@@ -44,7 +76,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "6134 Burlington Rd, Gibsonville"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Craft Recreation Center": {
@@ -52,7 +84,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "3911 Yanceyville St, Greensboro"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Deep River Recreation Center": {
@@ -60,7 +92,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "1529 Skeet Club Rd, High Point"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Jamestown Town Hall": {
@@ -68,7 +100,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "301 E Main St, Jamestown"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Leonard Recreation Center": {
@@ -76,7 +108,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "6324 Ballinger Rd, Greensboro"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Lewis Recreation Center": {
@@ -84,7 +116,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "3110 Forest Lawn Dr, Greensboro"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#NC A&T University (Dudley Building)": {
@@ -92,7 +124,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "202 University Cir, Greensboro"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Oak Ridge Townhall": {
@@ -100,7 +132,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "8315 Linville Rd, Oak Ridge"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Pleasant Garden Community Center": {
@@ -108,7 +140,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "5024 Alliance Church Rd, Pleasant Garden"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Roy B. Culler, Jr. Senior Center": {
@@ -116,7 +148,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "921 Eastchester Dr, Suite #1230, High Point"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#UNCG (Kaplan Center-Wellness)": {
@@ -124,7 +156,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "1301 W Gate City Blvd, Greensboro"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Washington Terrace Park": {
@@ -132,7 +164,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "101 Gordon St, High Point"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Allen Jay Recreation Center": {
@@ -140,7 +172,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "1073 E Springfield Rd, High Point"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Gateway Research Park": {
@@ -148,7 +180,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "5900 Summit Ave, Browns Summit"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Gibsonville Community Center": {
@@ -156,7 +188,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "314 10th St, Gibsonville"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Greensboro Complex Special Events Center": {
@@ -164,7 +196,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "1921 W Gate City Blvd, Greensboro"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Griffin Recreation Center": {
@@ -172,7 +204,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "5301 Hilltop Rd, Greensboro"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#GTCC Cameron Campus": {
@@ -180,7 +212,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "7908 Leabourne Rd, Colfax"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Northeast Park": {
@@ -188,7 +220,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "3441 NE Park Dr, Gibsonville"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Northern Guilford Middle School": {
@@ -196,7 +228,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "616 Simpson-Calhoun Rd, Greensboro"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Stokesdale Town Hall": {
@@ -204,7 +236,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "8325 Angel-Pardue Rd, Stokesdale"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Summerfield Community Center": {
@@ -212,7 +244,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "5404 Centerfield Rd, Summerfield"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Trotter Active Adult Center": {
@@ -220,7 +252,7 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "3906 Betula St, Greensboro"
   },
   "https://www.arcgis.com/apps/dashboards/366db50595a64452a55052bc08eee5d7#Union Square Campus": {
@@ -228,87 +260,199 @@
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:35.732Z",
+    "at": "2026-10-22T23:23:43.081Z",
     "address": "124 E Gate City Blvd, Greensboro"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Optimist Community Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:07.752Z",
+    "address": "5900 Whittier Dr, Raleigh, NC 27609"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#John M. Brown Community Ce...": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:07.910Z",
+    "address": "53 Hunter St, Apex, NC 27502"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Laurel Hills Community Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:07.910Z",
+    "address": "3808 Edwards Mill Rd, Raleigh, NC 2..."
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Knightdale Recreation Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:07.910Z",
+    "address": "102 Lawson Ridge Rd, Knightdale, N..."
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Abbotts Creek Community Ce...": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:07.910Z",
+    "address": "9950 Durant Rd, Raleigh, NC 27614"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Wendell Community Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:07.910Z",
+    "address": "601 W 3rd St, Wendell, NC 27591"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Lake Lynn Community Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:07.910Z",
+    "address": "7921 Ray Rd, Raleigh, NC 27613"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#John Chavis Memorial Park C...": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:07.910Z",
+    "address": "505 Martin Luther King Jr Blvd, Raleig..."
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#NCSU Western Boulevard Bus...": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:07.910Z",
+    "address": "1220 Varsity Dr, Raleigh, NC 27606"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Cary Senior Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:07.910Z",
+    "address": "120 Maury Odell Pl, Cary, NC 27513"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#W.E. Hunt Recreation Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:07.910Z",
+    "address": "301 Stinson Ave, Holly Springs, NC 2..."
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Wake County Commons Buil...": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:07.910Z",
+    "address": "4011 Carya Dr, Raleigh, NC 27610"
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Wake Technical Community C...": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:07.910Z",
+    "address": "4723 Advantage Way, Raleigh, NC 27..."
+  },
+  "https://airtable.com/appAL6KsUEvshj4br/shrQkIIFla4bjdGzh#Avery Street Recreation Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:07.910Z",
+    "address": "125 Avery St, Garner, NC 27529"
   },
   "https://app.harrisvotes.com/WaitTimes?lang=en-US#Harris County Attorney Conference Center (5 in line)": {
     "minutes": 7,
     "category": null,
-    "updated": "2026-10-22T15:24:37.1933333",
+    "updated": "2026-10-22T18:24:07.7533333",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:38.157Z",
+    "at": "2026-10-22T23:24:08.344Z",
     "address": "1019 Congress Avenue, Houston"
   },
   "https://app.harrisvotes.com/WaitTimes?lang=en-US#BakerRipley Ripley House (5 in line)": {
     "minutes": 7,
     "category": null,
-    "updated": "2026-10-22T15:24:37.1933333",
+    "updated": "2026-10-22T18:24:07.7533333",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:38.157Z",
+    "at": "2026-10-22T23:24:08.344Z",
     "address": "4410 Navigation Boulevard, Houston"
   },
   "https://app.harrisvotes.com/WaitTimes?lang=en-US#Moody Park Community Center (5 in line)": {
     "minutes": 7,
     "category": null,
-    "updated": "2026-10-22T15:24:37.1933333",
+    "updated": "2026-10-22T18:24:07.7533333",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:38.157Z",
+    "at": "2026-10-22T23:24:08.344Z",
     "address": "3725 Fulton Street, Houston"
   },
-  "https://app.harrisvotes.com/WaitTimes?lang=en-US#Metropolitan MultiService Center (35 in line)": {
-    "minutes": 30,
+  "https://app.harrisvotes.com/WaitTimes?lang=en-US#Metropolitan MultiService Center (15 in line)": {
+    "minutes": 22,
     "category": null,
-    "updated": "2026-10-22T15:24:37.1933333",
+    "updated": "2026-10-22T18:24:07.7533333",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:38.157Z",
+    "at": "2026-10-22T23:24:08.344Z",
     "address": "1475 West Gray Street, Houston"
   },
   "https://app.harrisvotes.com/WaitTimes?lang=en-US#TSU Barbara Jordan Mickey Leland School of Public Affairs (10 in line)": {
     "minutes": 7,
     "category": null,
-    "updated": "2026-10-22T15:24:37.1933333",
+    "updated": "2026-10-22T18:24:07.7533333",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:38.157Z",
+    "at": "2026-10-22T23:24:08.448Z",
     "address": "3401 Cleburne Street, Houston"
   },
   "https://app.harrisvotes.com/WaitTimes?lang=en-US#Wheeler Avenue Baptist Church Fellowship Hall (5 in line)": {
     "minutes": 7,
     "category": null,
-    "updated": "2026-10-22T15:24:37.1933333",
+    "updated": "2026-10-22T18:24:07.7533333",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:38.157Z",
+    "at": "2026-10-22T23:24:08.448Z",
     "address": "3826 Wheeler Avenue Building D, Houston"
   },
   "https://app.harrisvotes.com/WaitTimes?lang=en-US#University of Houston Student Center (10 in line)": {
     "minutes": 7,
     "category": null,
-    "updated": "2026-10-22T15:24:37.1933333",
+    "updated": "2026-10-22T18:24:07.7533333",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:38.157Z",
+    "at": "2026-10-22T23:24:08.448Z",
     "address": "4455 University Drive, Houston"
   },
   "https://app.harrisvotes.com/WaitTimes?lang=en-US#Denver Harbor Community Center (5 in line)": {
     "minutes": 7,
     "category": null,
-    "updated": "2026-10-22T15:24:37.1933333",
+    "updated": "2026-10-22T18:24:07.7533333",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:38.157Z",
+    "at": "2026-10-22T23:24:08.448Z",
     "address": "6402 Market Street, Houston"
   },
   "https://app.harrisvotes.com/WaitTimes?lang=en-US#Kashmere MultiService Center (5 in line)": {
     "minutes": 7,
     "category": null,
-    "updated": "2026-10-22T15:24:37.1933333",
+    "updated": "2026-10-22T18:24:07.7533333",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:38.157Z",
+    "at": "2026-10-22T23:24:08.448Z",
     "address": "4802 Lockwood Drive, Houston"
   },
   "https://app.harrisvotes.com/WaitTimes?lang=en-US#Shrine of The Black Madonna Cultural and Event Center (5 in line)": {
     "minutes": 7,
     "category": null,
-    "updated": "2026-10-22T15:24:37.1933333",
+    "updated": "2026-10-22T18:24:07.7533333",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:38.157Z",
+    "at": "2026-10-22T23:24:08.448Z",
     "address": "5309 Martin Luther King Boulevard, Houston"
   },
   "https://epcountyvotestx.gov/voter-information/early-voting-locations#Agua Dulce Community Center": {
@@ -316,7 +460,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.9,
-    "at": "2026-10-22T20:24:42.159Z",
+    "at": "2026-10-22T23:24:19.884Z",
     "address": "15371 Kentwood Ave. 79928"
   },
   "https://epcountyvotestx.gov/voter-information/early-voting-locations#Arlington Park Shelter": {
@@ -324,7 +468,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.9,
-    "at": "2026-10-22T20:24:42.159Z",
+    "at": "2026-10-22T23:24:19.884Z",
     "address": "10350 Pasadena Cir. 79924"
   },
   "https://epcountyvotestx.gov/voter-information/early-voting-locations#Bassett Place": {
@@ -332,7 +476,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.9,
-    "at": "2026-10-22T20:24:42.159Z",
+    "at": "2026-10-22T23:24:19.884Z",
     "address": "6101 Gateway West 79925"
   },
   "https://epcountyvotestx.gov/voter-information/early-voting-locations#Canutillo Nutrition Center": {
@@ -340,7 +484,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.9,
-    "at": "2026-10-22T20:24:42.159Z",
+    "at": "2026-10-22T23:24:19.884Z",
     "address": "7351 Bosque Rd. 79835"
   },
   "https://epcountyvotestx.gov/voter-information/early-voting-locations#Carl L. Robinson Heat Retreat": {
@@ -348,7 +492,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.9,
-    "at": "2026-10-22T20:24:42.160Z",
+    "at": "2026-10-22T23:24:19.884Z",
     "address": "5509 Will Ruth Ave. 79924"
   },
   "https://epcountyvotestx.gov/voter-information/early-voting-locations#Chayo Apodaca Community Center": {
@@ -356,7 +500,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.9,
-    "at": "2026-10-22T20:24:42.160Z",
+    "at": "2026-10-22T23:24:19.884Z",
     "address": "341 N. Moon Rd. 79927"
   },
   "https://epcountyvotestx.gov/voter-information/early-voting-locations#City of San Elizario Municipal Court": {
@@ -364,7 +508,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.9,
-    "at": "2026-10-22T20:24:42.160Z",
+    "at": "2026-10-22T23:24:19.884Z",
     "address": "12004 Socorro Rd. Suite B, 79849"
   },
   "https://epcountyvotestx.gov/voter-information/early-voting-locations#Clint Junior High School": {
@@ -372,7 +516,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.9,
-    "at": "2026-10-22T20:24:42.160Z",
+    "at": "2026-10-22T23:24:19.884Z",
     "address": "12625 Alameda Ave. 79836"
   },
   "https://epcountyvotestx.gov/voter-information/early-voting-locations#Commissioner's Corner": {
@@ -380,7 +524,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.9,
-    "at": "2026-10-22T20:24:42.160Z",
+    "at": "2026-10-22T23:24:19.884Z",
     "address": "10700 Montana Ave. 79936"
   },
   "https://epcountyvotestx.gov/voter-information/early-voting-locations#Dorris Van Doren Library": {
@@ -388,7 +532,7 @@
     "category": "medium",
     "updated": null,
     "confidence": 0.9,
-    "at": "2026-10-22T20:24:42.160Z",
+    "at": "2026-10-22T23:24:19.884Z",
     "address": "551 Redd Rd. 79912"
   },
   "https://epcountyvotestx.gov/voter-information/early-voting-locations#EPCC Administrative Services Center": {
@@ -396,271 +540,359 @@
     "category": "short",
     "updated": null,
     "confidence": 0,
-    "at": "2026-10-22T20:24:42.160Z",
+    "at": "2026-10-22T23:24:19.884Z",
     "address": "9050 Viscount Blvd. 79925"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#804": {
     "minutes": 0,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "7225 ARROYO CROSSING PKWY., LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#805": {
     "minutes": 0,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "4100 BLUE DIAMOND RD., LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#827": {
     "minutes": 30,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "7060 W WINDMILL LN, LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#837": {
     "minutes": 70,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "3890 S. MARYLAND PKWY, LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#904": {
     "minutes": 60,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "1300 W. SUNSET RD., HENDERSON"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#917": {
     "minutes": 0,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "8275 SPRING MOUNTAIN RD., LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#921": {
     "minutes": 0,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "240 S. WATER ST., HENDERSON"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#929": {
     "minutes": 15,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "2250 LAS VEGAS BLVD. NORTH, NORTH LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#932": {
     "minutes": 15,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "200 MICHAEL WENDELL WAY, SEARCHLIGHT"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#936": {
     "minutes": 10,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "101 N. PAVILION CENTER DR., LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#943": {
     "minutes": 30,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "1725 N. RAINBOW BLVD., LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#950": {
     "minutes": 65,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "6255 W. FLAMINGO RD., LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#963": {
     "minutes": 1,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "4025 ALLEN LN, NORTH LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#979": {
     "minutes": 19,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "9107 DEL WEBB BLVD., LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#967": {
     "minutes": 0,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "495 S. MAIN ST., LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#812": {
     "minutes": 0,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "4505 S MARYLAND PKWY, LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#838": {
     "minutes": 0,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "3050 E. CENTENNIAL PKWY, NORTH LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#842": {
     "minutes": 60,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "1300 NEVADA STATE DRIVE, HENDERSON"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#867": {
     "minutes": 0,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "3075 N. WALNUT RD., LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#876": {
     "minutes": 15,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "4701 N. DURANGO DR., LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#887": {
     "minutes": 13,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "6375 W. CHARLESTON BLVD., LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#808": {
     "minutes": 11,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "2851 E. BONANZA RD., LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#815": {
     "minutes": 10,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "6050 N. DECATUR BLVD., NORTH LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#1235": {
     "minutes": 10,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "2100 BONNIE LN, LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#10707": {
     "minutes": 10,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "1650 S. PAVILION DR., LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#1578": {
     "minutes": 30,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "6105 N. DURANGO DR., LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#1576": {
     "minutes": 0,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "3930 CAMBRIDGE ST., LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#10712": {
     "minutes": 45,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "2980 Robindale Rd., HENDERSON"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#10694": {
     "minutes": 0,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "6500 IKEA WAY, LAS VEGAS"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#10727": {
     "minutes": 30,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "4337 Las Vegas Blvd N. Building A, Las Vegas"
   },
   "https://elections.clarkcountynv.gov/VoteCentersVoter/index.html#1602": {
     "minutes": 45,
     "category": null,
-    "updated": "1792703700000",
+    "updated": "1792714500000",
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:42.842Z",
+    "at": "2026-10-22T23:24:20.530Z",
     "address": "9855 GILESPIE STREET, Las Vegas"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#*Arcola Lakes Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:31.321Z",
+    "address": "8240 NW 7th Avenue\nMiami, FL 33150"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Coral Gables Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:31.588Z",
+    "address": "3443 Segovia Street\nCoral Gables, FL 33134"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Coral Reef Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:31.588Z",
+    "address": "9211 SW 152nd Street\nMiami, FL 33157"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Florida International University\n(Student Academic Success Center)": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:31.588Z",
+    "address": "11200 SW 8th Street"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Joseph Caleb Center Community Meeting Room": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:31.588Z",
+    "address": "5400 NW 22nd Avenue - Building A\nMiami, FL 33142"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Kendale Lakes Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:31.588Z",
+    "address": "15205 SW 88th Street\nMiami, FL 33196"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Kendall Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:31.588Z",
+    "address": "9101 SW 97th Avenue\nMiami, FL 33176"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Lemon City Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:31.588Z",
+    "address": "430 NE 61st Street"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#North Miami Public Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:31.588Z",
+    "address": "835 NE 132nd Street\nNorth Miami, FL 33161"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#North Shore Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:31.588Z",
+    "address": "7501 Collins Avenue\nMiami Beach, FL 33141"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Northeast Dade-Aventura Branch Library": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:31.588Z",
+    "address": "2930 Aventura Boulevard\nAventura, FL 33180"
+  },
+  "https://www.votemiamidade.gov/elections/voters/early-voting-wait-times.page#Office of the Supervisor of Elections": {
+    "minutes": 0,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-22T23:24:31.588Z",
+    "address": "2700 NW 87th Avenue\nDoral, FL 33172"
   },
   "https://www.arcgis.com/apps/dashboards/1a86b03b27fa48188bf3699c4eccfb20#(unnamed)": {
     "minutes": 0,
     "category": null,
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.396Z",
-    "address": null
-  },
-  "https://www.arcgis.com/apps/dashboards/1a86b03b27fa48188bf3699c4eccfb20#Drop Box Location": {
-    "minutes": 2,
-    "category": null,
-    "updated": null,
-    "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.396Z",
+    "at": "2026-10-22T23:24:31.745Z",
     "address": null
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#St. John the Baptist Catholic Church (P-2)": {
@@ -668,7 +900,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "835 2nd Ave NW, New Brighton"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Redeeming Love Church (P-6)": {
@@ -676,7 +908,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2425 White Bear Ave N, Maplewood"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Mount Airy Hi-Rise (W-1 P-13)": {
@@ -684,7 +916,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "200 Arch St E, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#St Peter's Lutheran Church (W-3 P-12)": {
@@ -692,7 +924,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "530 Victoria St S, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Sunny Square Neighborhood Center (P-8)": {
@@ -700,7 +932,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2200 Sunnyside Terrace, New Brighton"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Merriam Park Recreation Center (W-4 P-4 & P-5)": {
@@ -708,7 +940,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2000 St Anthony Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#River of God Church (P-1)": {
@@ -716,7 +948,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2490 7th Ave E, North Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Front Ave Hi-Rise (W-5 P-3)": {
@@ -724,7 +956,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "727 Front Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Gladstone Fire Station (P-4)": {
@@ -732,7 +964,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "1955 Clarence St, Maplewood"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Church of the Redeemer (W-1 P-4)": {
@@ -740,7 +972,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "739 Lafond Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#St. Bernard - Parish Hall (W-5 P-6)": {
@@ -748,7 +980,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "147 Geranium Ave W, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#GracePoint Church (P-8)": {
@@ -756,7 +988,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2351 Rice Creek Rd, New Brighton"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Prince Of Peace Lutheran Church (P-7)": {
@@ -764,7 +996,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2561 Victoria St N, Roseville"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Silverwood Park Event Center (P-1)": {
@@ -772,7 +1004,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2500 County Rd E, Saint Anthony"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Emmanuel Christian Center (P-1R)": {
@@ -780,7 +1012,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "7777 University Ave NE, Spring Lake Park"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#North End Community Center": {
@@ -788,7 +1020,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "145 Lawson Ave W, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Luther Seminary Olson Campus Center (W-4 P-1)": {
@@ -796,7 +1028,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "1490 Fulham St, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Jimmy Lee Recreation Center (W-1 P-2 & P-6)": {
@@ -804,7 +1036,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "270 Lexington Pkwy N, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#East Metro Regional Public Safety Training Center (P-10)": {
@@ -812,7 +1044,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "1881 Century Ave N, Maplewood"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Blaine City Hall (W-1 P-10)": {
@@ -820,7 +1052,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "10801 Town Square Dr NE, Blaine"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Merriam Park Recreation Center (W-4 P-5)": {
@@ -828,7 +1060,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2000 St Anthony Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Dayton's Bluff Recreation Center (W-7 P-1)": {
@@ -836,7 +1068,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "800 Conway St, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#White Bear Lake Armory (W-2 P-1)": {
@@ -844,7 +1076,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2228 4th St, White Bear Lake"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#North Heights Lutheran Chruch (P-3)": {
@@ -852,7 +1084,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "1700 Highway 96 W, Arden Hills"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Vadnais Heights South Fire Station (P-4)": {
@@ -860,7 +1092,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "3595 Arcade St N, Vadnais Heights"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#McNeely Hall - St. Thomas University (W-4 P-5)": {
@@ -868,7 +1100,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2060 Summit Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#United Church of Christ (P-7)": {
@@ -876,7 +1108,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "1000 Long Lake Rd, New Brighton"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Mount Zion Temple (W-1 P-10)": {
@@ -884,7 +1116,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "1300 Summit Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#First Covenant Church (W-6 P-2)": {
@@ -892,7 +1124,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "1280 Arcade St, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Roseville Covenant Church (P-2)": {
@@ -900,7 +1132,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2865 Hamline Ave N, Roseville"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Highland Senior High School (W-3 P-14)": {
@@ -908,7 +1140,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "1015 Snelling Ave S, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Maplewood Community Center (P-9)": {
@@ -916,7 +1148,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2100 White Bear Ave N, Maplewood"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#North Heights Lutheran Church (P-2)": {
@@ -924,7 +1156,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "1700 Highway 96 W, Arden Hills"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Roseville Covenant Church (P-1 & P-2)": {
@@ -932,7 +1164,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2865 Hamline Ave N, Roseville"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#St. Matthew's Parish Center (W-2 P-13)": {
@@ -940,7 +1172,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "490 Hall Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Bethel Christian Fellowship (W-1 P-1)": {
@@ -948,7 +1180,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "1466 Portland Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#White Bear Area YMCA (W-5 P-1)": {
@@ -956,7 +1188,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2100 Orchard Ln, White Bear Lake"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Battle Creek Recreation Center (W-7 P-12)": {
@@ -964,7 +1196,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "75 Winthrop St S, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Gladstone Community Center (P-3)": {
@@ -972,7 +1204,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "1945 Manton St, Maplewood"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Mounds Theater (W-7 P-5)": {
@@ -980,7 +1212,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "1029 Hudson Rd, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Central Presbyterian Church (W-2 P-9 & P-10)": {
@@ -988,7 +1220,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "500 Cedar St, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Landmark Center (W-2 P-11)": {
@@ -996,7 +1228,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "75 5th St W, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#River Of God Church (P-1)": {
@@ -1004,7 +1236,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2490 7th Ave E, North Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Salvation Army (W-2 P-8)": {
@@ -1012,7 +1244,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "401 7th St W, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Groveland Recreation Center (W-4 P-7)": {
@@ -1020,7 +1252,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2021 St Clair Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Shoreview City Hall (P-3)": {
@@ -1028,7 +1260,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "4600 Victoria St N, Shoreview"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#North Dale Recreation Center (W-5 P-1)": {
@@ -1036,7 +1268,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "1414 St Albans St N, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Lutheran Church of Peace (P-13)": {
@@ -1044,7 +1276,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "47 Century Ave S, Maplewood"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Maplewood Community Center/YMCA (P-5)": {
@@ -1052,7 +1284,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2100 White Bear Ave N, Maplewood"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#East African Elementary Magnet School (W-1 P-9)": {
@@ -1060,7 +1292,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "437 Edmund Ave W, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Ramsey County Library - White Bear Lake (W-2 P-1)": {
@@ -1068,7 +1300,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.914Z",
     "address": "2150 2nd St, White Bear Lake"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Otter Lake Elementary School (P-1 & P-5)": {
@@ -1076,7 +1308,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1401 County Road H2 E, White Bear Township"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Wellington Place (W-3 P-11)": {
@@ -1084,7 +1316,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "2235 Rockwood Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Mounds View Community Center (Mounds View P-1,P-2,P-3 & P-4)": {
@@ -1092,7 +1324,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "5394 Edgewood Dr, Mounds View"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Mounds Park United Methodist Church (W-7 P-4)": {
@@ -1100,7 +1332,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1049 Euclid St, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Roseville City Hall (P-3)": {
@@ -1108,7 +1340,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "2660 Civic Center Dr, Roseville"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Vadnais Heights Commons (P-3)": {
@@ -1116,7 +1348,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "655 County Road F E, Vadnais Heights"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Tamarack Nature Center (P-1 & P-5)": {
@@ -1124,7 +1356,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "5287 Otter Lake Rd, White Bear Township"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Hazel Park Recreation Center (W-7 P-2)": {
@@ -1132,7 +1364,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "945 Hazel St N, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Christ The King Lutheran Church (P-5)": {
@@ -1140,7 +1372,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1900 7th St NW, New Brighton"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Mounds Park United Methodist Church (W-7 P-5)": {
@@ -1148,7 +1380,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1049 Euclid St, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Martin Luther King Recreation Center (W-1 P-2)": {
@@ -1156,7 +1388,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "271 Mackubin St, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#El Rio Vista Recreation Center (W-2 P-10)": {
@@ -1164,7 +1396,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "179 Robie St E, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Sunrise Park Middle School Gym (W-3 P-2)": {
@@ -1172,7 +1404,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "2399 Cedar Ave, White Bear Lake"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Montreal High Rise (W-2 P-6)": {
@@ -1180,7 +1412,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1085 Montreal Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Ramsey County Library (P-9)": {
@@ -1188,7 +1420,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "2180 Hamline Ave N, Roseville"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Hope Community Academy (W-5 P-10)": {
@@ -1196,7 +1428,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "720 Payne Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#West 7th Community Center (W-2 P-4)": {
@@ -1204,7 +1436,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "265 Oneida St, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Ramsey County Library - White Bear Lake": {
@@ -1212,7 +1444,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "2150 2nd St, White Bear Lake"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Eagle Brook Church (P-2)": {
@@ -1220,7 +1452,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "2401 Buffalo St, White Bear Township"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Parkway Middle School (W-7 P-2)": {
@@ -1228,7 +1460,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1363 Bush Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Jie Ming Academy (W-3 P-11)": {
@@ -1236,7 +1468,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1845 Sheridan Ave W, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Bethlehem Lutheran Church in the Midway (W-4 P-9)": {
@@ -1244,7 +1476,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "436 Roy St N, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#New Brighton Community Center (P-5)": {
@@ -1252,7 +1484,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "400 10th St NW, New Brighton"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Mounds View Community Center (P-3)": {
@@ -1260,7 +1492,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "5394 Edgewood Dr, Mounds View"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Lyngblomsten Care Center (W-4 P-11)": {
@@ -1268,7 +1500,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1415 Almond Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Maplewood Community Center/YMCA (P-5 & P-11)": {
@@ -1276,7 +1508,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "2100 White Bear Ave N, Maplewood"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Conway Recreation Center (W-7 P-11)": {
@@ -1284,7 +1516,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "2090 Conway Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#McDonough Community Center (W-5 P-5)": {
@@ -1292,7 +1524,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1544 Timberlake Rd, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Faith Church (P-5)": {
@@ -1300,7 +1532,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1600 Silver Lake Rd, New Brighton"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Duluth and Case Recreation Center (W-6 P-5)": {
@@ -1308,7 +1540,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1020 Duluth St, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Landmark Center (W-2 P-7)": {
@@ -1316,7 +1548,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "75 5th St W, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Lake Johanna Fire Department (P-7)": {
@@ -1324,7 +1556,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "5545 Lexington Ave N, Shoreview"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#St. Stephanus Lutheran Church (W-1 P-16)": {
@@ -1332,7 +1564,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "739 Lafond Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Heritage Hall (Gem Lake P-1 & White Bear Town P-4)": {
@@ -1340,7 +1572,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "4200 Otter Lake Rd, White Bear Township"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Jimmy Lee Recreation Center (W-1 P-6)": {
@@ -1348,7 +1580,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "270 Lexington Pkwy N, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Salvation Army (W-2 P-7)": {
@@ -1356,7 +1588,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "401 7th St W, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#New Brighton Community Center (P-6)": {
@@ -1364,7 +1596,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "400 10th St NW, New Brighton"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#St. Jerome's School (P-2)": {
@@ -1372,7 +1604,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "384 Roselawn Ave E, Maplewood"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Humboldt High School (W-2 P-14)": {
@@ -1380,7 +1612,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "640 Humboldt Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Ravoux Hi-Rise (W-1 P-11)": {
@@ -1388,7 +1620,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "280 Ravoux St, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Sunrise Park Middle School Gym (W-3 P-1 & P-2)": {
@@ -1396,7 +1628,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "2399 Cedar Ave, White Bear Lake"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Church of the Holy Childhood (W-5 P-10)": {
@@ -1404,7 +1636,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1435 Midway Pkwy, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#RosePointe (P-6)": {
@@ -1412,7 +1644,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "2555 Hamline Ave N, Roseville"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Edgerton Elementary School (P-3)": {
@@ -1420,7 +1652,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1929 Edgerton St, Maplewood"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Como Park - Streetcar Station (W-4 P-12)": {
@@ -1428,7 +1660,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1224 Lexington Pkwy N, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Early Childhood Hub West (W-1 P-1)": {
@@ -1436,7 +1668,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1317 Charles Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Tamarack Nature Center (P-5)": {
@@ -1444,7 +1676,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "5287 Otter Lake Rd, White Bear Township"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Centennial United Methodist Church (P-1)": {
@@ -1452,7 +1684,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1524 County Road C2 W, Roseville"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Shepherd of the Hills Lutheran Church (P-1 & P-2)": {
@@ -1460,7 +1692,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "3920 Victoria St N, Shoreview"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Incarnation Lutheran Church (P-5)": {
@@ -1468,7 +1700,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "4880 Hodgson Rd, Shoreview"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Martin Luther King Recreation Center (W-1 P-12)": {
@@ -1476,7 +1708,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "271 Mackubin St, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#West 7th Community Center (W-2 P-3)": {
@@ -1484,7 +1716,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "265 Oneida St, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Roseville Lutheran Church (P-9)": {
@@ -1492,7 +1724,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1215 Roselawn Ave W, Roseville"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Eastside Community Lutheran Church (W-6 P-5)": {
@@ -1500,7 +1732,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1212 Earl St N, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Merriam Park Recreation Center (W-4 P-4)": {
@@ -1508,7 +1740,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "2000 St Anthony Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Salem Covenent Church (P-3)": {
@@ -1516,7 +1748,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "2655 5th St NW, New Brighton"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Falcon Heights United Church Of Christ (P-2)": {
@@ -1524,7 +1756,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1795 Holton St, Falcon Heights"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Mounds View Community Center (P-1R)": {
@@ -1532,7 +1764,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "5394 Edgewood Dr, Mounds View"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Beaver Lake Lutheran Church (P-12)": {
@@ -1540,7 +1772,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "2280 Stillwater Ave E, Maplewood"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Rice Street Library (W-1 P-10)": {
@@ -1548,7 +1780,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1011 Rice St, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Humboldt High School - Door 26 (W-2 P-11 & P-12)": {
@@ -1556,7 +1788,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "640 Humboldt Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#North Dale Recreation Center (W-5 P-1 & P-2)": {
@@ -1564,7 +1796,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1414 St Albans St N, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Lauderdale City Hall (P-1)": {
@@ -1572,7 +1804,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1891 Walnut St, Lauderdale"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#St. John the Baptist Catholic Church (P-3)": {
@@ -1580,7 +1812,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "835 2nd Ave NW, New Brighton"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Ramsey Middle School (W-4 P-10)": {
@@ -1588,7 +1820,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1700 Summit Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Cowern Elementary School (P-3)": {
@@ -1596,7 +1828,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "2131 Margaret St N, North Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Montreal Hi-Rise (W-3 P-5)": {
@@ -1604,7 +1836,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "1085 Montreal Ave, Saint Paul"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#Ramsey County Library (P-8)": {
@@ -1612,7 +1844,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "3025 Southlawn Dr, Maplewood"
   },
   "https://gis.ramseycountymn.gov/server/rest/services/Boundary/BOUND_Precinct_ViewOnly/FeatureServer/5/query?where=WaitTime%20IS%20NOT%20NULL&outFields=Name,PrecinctName,fulladdr,municipality,WaitTime,Status,earlyvoting&returnGeometry=false&f=json#St. Christopher Episcopal Church (P-7)": {
@@ -1620,7 +1852,7 @@
     "category": "short",
     "updated": null,
     "confidence": 0.95,
-    "at": "2026-10-22T20:24:45.822Z",
+    "at": "2026-10-22T23:24:31.915Z",
     "address": "2300 Hamline Ave N, Roseville"
   }
 }
