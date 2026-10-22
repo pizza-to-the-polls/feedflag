@@ -20,7 +20,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: feedflag-electionday
+  # shared with govwatch: queue, never race the state commit
+  group: feedflag-gov
   cancel-in-progress: false
 
 jobs:
