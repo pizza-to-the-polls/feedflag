@@ -18,8 +18,8 @@ on:
     # Cost: ~32 runs/day ≈ 2,400 Actions min/mo (~$3–8/mo over the 2k free tier)
     # + ~$2–5/day Apify (result-floor) + cents captions.
     # DST ends Nov 1: bump window +1 UTC (12:00–03:59) before election day.
-    - cron: "*/30 11-23 * * *" # 7:00am–10:30pm ET
-    - cron: "*/30 0-2 * * *"  # …through 10:30pm ET
+    - cron: "7-52/30 11-23 * * *" # 7:00am–10:30pm ET
+    - cron: "7-52/30 0-2 * * *"  # …through 10:30pm ET
   workflow_dispatch: {}
 
 permissions:

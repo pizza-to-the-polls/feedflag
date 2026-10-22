@@ -11,7 +11,7 @@ name: feedflag-govwatch
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "13-58/30 * * * *"
   workflow_dispatch: {}
 
 permissions:
