@@ -27,3 +27,5 @@
 {"id":"5b165317","verdict":"wrong","correct_category":"irrelevant","note":"user: 'the two insta ones are trash' — press/poll-worker recruitment noise, not dispatch-relevant (2026-10-22)","labeled_at":"2026-10-21T23:34:14.899Z"}
 {"id":"b888c3da","verdict":"wrong","correct_category":"irrelevant","note":"user: 'the two insta ones are trash' — press/poll-worker recruitment noise, not dispatch-relevant (2026-10-22)","labeled_at":"2026-10-21T23:34:14.900Z"}
 {"id":"b467307e","verdict":"wrong","correct_category":"irrelevant","note":"user: 'the two insta ones are trash' — press/poll-worker recruitment noise, not dispatch-relevant (2026-10-22)","labeled_at":"2026-10-21T23:34:14.900Z"}
+{"id":"f79ae22f","verdict":"right","note":"slack :+1: in #C0CA7FBQBJQ","labeled_at":"2026-10-22T15:51:51.847Z","via":"slack-reaction"}
+{"id":"f79ae22f","verdict":"wrong","note":"slack :-1: in #C0CA7FBQBJQ","labeled_at":"2026-10-22T15:51:59.183Z","via":"slack-reaction"}

@@ -61,10 +61,12 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_VOLS_WEBHOOK_URL: ${{ secrets.SLACK_VOLS_WEBHOOK_URL }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_FLAG_CHANNELS: ${{ secrets.SLACK_FLAG_CHANNELS }}
         run: npx tsx scripts/extract-wait-times.ts
       - name: Collect Slack reactions
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_FLAG_CHANNELS: ${{ secrets.SLACK_FLAG_CHANNELS }}
         run: npx tsx scripts/collect-reactions.ts || echo "reaction collection skipped"
       - name: Post findings digest
         env:

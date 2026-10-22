@@ -91,19 +91,28 @@ const main = async () => {
   let newLabels = 0;
   let newCursor = loadCursor();
 
-  const channels = await api<{ channels: { id: string; name: string; is_member?: boolean }[] }>(
-    "conversations.list",
-    { types: "public_channel,private_channel", limit: 200, team_id: undefined },
-  );
-  const members = (channels?.channels ?? []).filter((c) => c.is_member);
+  // Configured channels first (bot lacks channels:read — invite-only membership);
+  // fall back to users.conversations if unset.
+  const configured = (process.env.SLACK_FLAG_CHANNELS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((id) => ({ id, name: id }));
+  const members = configured.length
+    ? configured
+    : ((await api<{ channels: { id: string; name: string; is_member?: boolean }[] }>(
+        "users.conversations",
+        { types: "public_channel,private_channel", limit: 100 },
+      ))?.channels ?? []).filter((c) => c.is_member);
   if (!members.length) {
-    console.log("[reactions] bot is in no channels — invite feedflag to the flags channel");
+    console.log("[reactions] no channels configured and bot is in none — set SLACK_FLAG_CHANNELS or invite feedflag");
     return;
   }
 
   for (const ch of members) {
     let hasMore = true;
     let latest = newCursor;
+    let newest = newCursor;
     while (hasMore) {
       const hist = await api<{ messages: { ts: string; text: string; username?: string; bot_id?: string }[]; has_more: boolean }>(
         "conversations.history",
@@ -126,7 +135,9 @@ const main = async () => {
           const verdict = rx.name === "thumbsup" || rx.name === "+1" ? "right" : "wrong";
           if (idMatch) {
             const id = idMatch[1]!;
-            if (labeled.has(id)) continue;
+            // a fresh reaction is newer human truth than a stale label — allow
+            // override (the loadLabels skip only guards batch double-processing)
+            void labeled;
             appendLabel({ id, verdict, note: `slack :${rx.name}: in #${ch.name}`, labeled_at: new Date().toISOString(), via: "slack-reaction" });
             labeled.add(id); newLabels++;
           } else if (sourceMatch && verdict === "wrong") {
@@ -135,11 +146,17 @@ const main = async () => {
           }
         }
       }
-      hasMore = hist.has_more && (hist.messages?.length ?? 0) > 0;
-      if (hasMore) {
-        latest = String(Number.parseFloat(hist.messages?.[0]?.ts ?? "0"));
+      const newestTs = hist.messages?.[0]?.ts;
+      if (newestTs && (!newest || Number.parseFloat(newestTs) > Number.parseFloat(newest))) {
+        newest = newestTs;
       }
-      if ((hist.messages?.length ?? 0) < 100) hasMore = false;
+      hasMore = hist.has_more && (hist.messages?.length ?? 0) >= 100;
+      if (hasMore) {
+        latest = String(Number.parseFloat(newestTs ?? "0"));
+      }
+    }
+    if (newest && (!newCursor || Number.parseFloat(newest) > Number.parseFloat(newCursor))) {
+      newCursor = newest;
     }
     console.log(`[reactions] #${ch.name}: scanned (labels now: ${newLabels} new)`);
   }
