@@ -187,13 +187,15 @@ async function fetchPage(url: string): Promise<string | null> {
 }
 
 function normalizeRange(text: string): number | null {
+  // "About 30 minutes" / "Approximately 45 min" — strip leading words
+  const stripped = text.replace(/^[^0-9]{0,20}/, "");
   // "20-30 min" → 25
-  const range = text.match(/(\d{1,3})\s*[-–]\s*(\d{1,3})\s*(min|minute)/i);
+  const range = stripped.match(/(\d{1,3})\s*[-–]\s*(\d{1,3})\s*(min|minute)/i);
   if (range) return Math.round((Number(range[1]) + Number(range[2])) / 2);
-  const m = text.match(/(\d{1,3})\s*(min|minute)/i);
+  const m = stripped.match(/(\d{1,3})\s*(min|minute)/i);
   if (m) return Number(m[1]);
   // bare number (no unit) — e.g. Guilford FeatureServer Wait:"30"
-  const bare = text.match(/^(\d{1,3})$/);
+  const bare = stripped.match(/^(\d{1,3})\b/);
   if (bare) return Number(bare[1]);
   return null;
 }
@@ -325,7 +327,7 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
     if (r.type === "arcgis") {
       const res = await fetch(r.url, {
         headers: { "user-agent": UA, accept: "application/json" },
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(45000),
       });
       if (!res.ok) return [];
       const j = (await res.json()) as { features?: { attributes?: Record<string, unknown> }[] };
@@ -374,12 +376,16 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
         if (minutes == null && text) minutes = normalizeRange(text);
         const cat =
           minutes == null
-            ? /short|no wait|zero/i.test(text)
+            ? /short|no wait|zero|closed/i.test(text)
               ? "short"
               : /long/i.test(text)
                 ? "long"
                 : null
             : null;
+        // "Closed" is a valid reading (site exists, not open) — record 0-min so
+        // change detection sees Closed→30min when polls open. Don't drop on null minutes
+        // when the text carries a status word.
+        const minutes2 = minutes ?? (/closed/i.test(text) ? 0 : null);
         const people = r.peopleField != null ? rec[r.peopleField] : undefined;
         const lines = r.lineCountField != null ? rec[r.lineCountField] : undefined;
         const extra =
@@ -388,7 +394,7 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
           precinct_name: (name || "(unnamed)") + extra,
           site_key: siteKey,
           address,
-          wait_minutes: minutes,
+          wait_minutes: minutes ?? minutes2,
           wait_category: cat,
           last_updated:
             r.updatedField != null && rec[r.updatedField] != null
