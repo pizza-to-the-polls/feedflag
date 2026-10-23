@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Social feed reader (IG/X/TikTok) -> OpenRouter vision captions -> JEV relevance classification -> Slack via Zapier",
-  "engines": { "node": ">=22" },
+  "engines": { "node": ">=24.22.1" },
   "scripts": {
     "start": "tsx src/index.ts",
     "start:env": "node --env-file=.env --import tsx src/index.ts",
