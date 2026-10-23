@@ -42,6 +42,11 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_FLAG_CHANNELS: ${{ secrets.SLACK_FLAG_CHANNELS }}
         run: npx tsx scripts/extract-wait-times.ts
+      - name: Emit observations to pizzabase DB
+        env:
+          PIZZABASE_API_URL: ${{ secrets.PIZZABASE_API_URL }}
+          PIZZABASE_API_KEY: ${{ secrets.PIZZABASE_API_KEY }}
+        run: npx tsx scripts/emit-to-db.ts --hours 26 || echo "emit skipped (non-fatal)"
       - name: Collect Slack reactions
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
