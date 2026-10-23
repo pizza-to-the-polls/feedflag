@@ -108,5 +108,11 @@ jobs:
             git config user.email "feedflag-bot@users.noreply.github.com"
             git add -f -- $changed
             git commit -m "chore(data): feedflag run state [skip ci]"
-            git push
+            # CI-vs-CI race: govwatch pushes data/ commits too — rebase+retry
+            # instead of failing the run (two failures overnight from this)
+            for i in 1 2 3; do
+              git pull --rebase -q origin main && git push -q origin main && break
+              echo "push attempt $i raced; retrying"
+              sleep 15
+            done
           fi
