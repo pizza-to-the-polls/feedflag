@@ -10,7 +10,8 @@
     "start:env": "node --env-file=.env --import tsx src/index.ts",
     "digest": "tsx scripts/digest.ts",
     "label": "tsx scripts/label.ts",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "test": "tsx scripts/test-workflow-crons.ts"
   },
   "dependencies": {
     "fast-xml-parser": "^4.5.0",
