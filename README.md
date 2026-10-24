@@ -357,4 +357,4 @@ src/
   notify/           Zapier catch hook + Slack webhook + message formatting
   store/jsonl.ts    seen.json dedupe + flagged.jsonl + observations.jsonl
 .github/workflows/feedflag.yml  every-30-min schedule (with state commit-back)
-```
+```# probe
