@@ -40,6 +40,9 @@ jobs:
             echo "not in window — skipping (no steps run past guard)"
           fi
       - uses: actions/checkout@v4
+        with:
+          # data branch carries pipeline state (main is protected, code only)
+          ref: data
         if: steps.guard.outputs.hot == 'true'
       - uses: actions/setup-node@v4
         if: steps.guard.outputs.hot == 'true'
@@ -70,5 +73,6 @@ jobs:
             git config user.email "feedflag-bot@users.noreply.github.com"
             git add -f data/govt-readings.json data/observations.jsonl
             git commit -m "chore(data): election-day hot extraction [skip ci]" || true
-            git push
+            # data/ state lives on the 'data' branch (main is protected)
+            git push -q origin HEAD:refs/heads/data || true
           fi

@@ -27,6 +27,9 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          # data branch carries pipeline state (main is protected, code only)
+          ref: data
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -63,6 +66,8 @@ jobs:
             git config user.email "feedflag-bot@users.noreply.github.com"
             git add -f -- $changed
             git commit -m "chore(data): govwatch extraction state [skip ci]" || true
-            git pull --rebase -q origin main || true
-            git push || true
+            # data/ state lives on the 'data' branch (main is protected)
+            git fetch -q origin refs/heads/data || true
+            git rebase -q FETCH_HEAD || true
+            git push -q origin HEAD:refs/heads/data || true
           fi
