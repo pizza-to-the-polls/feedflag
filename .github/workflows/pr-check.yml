@@ -1,0 +1,90 @@
+name: pr-check
+
+# PR quality gate — designed to be a REQUIRED status check on main.
+# Runs on every PR. No secrets are passed to PR context (a PR cannot
+# exfiltrate what the job doesn't have).
+#
+# Enforces (user decisions 2026-10-24, agents drafting PRs):
+#   1. typecheck + the cron/regression test suite
+#   2. YAML parse of every workflow touched or added
+#   3. workflow-file integrity: PRs must NOT touch .github/workflows/**
+#      (workflow changes go through a human directly, not agent PRs)
+#   4. secret-pattern scan of the diff (tokens, webhooks, AWS keys)
+#   5. no direct pushes to main with unreviewed workflows (belt+suspenders:
+#      the jobs gate above is primary)
+
+on:
+  pull_request:
+    paths-ignore:
+      - "data/**"
+  # push on main runs the same checks (state commits from the bot are
+  # data/-only, covered by paths-ignore above; anything else gates here)
+  push:
+    branches: [main]
+    paths-ignore:
+      - "data/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: pr-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # full history for diff-based checks
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Workflow integrity gate (no workflow edits via PR)
+        if: github.event_name == 'pull_request'
+        run: |
+          if git diff --name-only "${{ github.event.pull_request.base.sha }}"..."${{ github.event.pull_request.head.sha }}" -- .github/workflows/ | grep -q .; then
+            echo "::error::This PR modifies .github/workflows/ — workflow changes require direct human review, not agent PRs. Close this PR and make workflow changes directly on a branch the human pushes."
+            exit 1
+          fi
+          echo "no workflow changes ✓"
+
+      - name: Secret pattern scan (full diff)
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          PATTERNS='(xox[bpars]-[A-Za-z0-9-]{10,}|sk-[A-Za-z0-9_-]{20,}|sk-or-[A-Za-z0-9-]{20,}|apify_api_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|hooks\.slack\.com/services/[A-Za-z0-9/]+|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----)'
+          if git diff --name-only "${{ github.event.pull_request.base.sha }}"..."${{ github.event.pull_request.head.sha }}" | grep -qv '^data/'; then
+            if git diff "${{ github.event.pull_request.base.sha }}"..."${{ github.event.pull_request.head.sha }}" -- . ':(exclude)data/*' | grep -E "$PATTERNS"; then
+              echo "::error::Secret-shaped string in diff — rotate the secret if it is real, then push again."
+              exit 1
+            fi
+          fi
+          echo "no secrets in diff ✓"
+
+      - name: YAML parse (all workflows)
+        run: |
+          npx --yes js-yaml .github/workflows/*.yml > /dev/null
+          echo "workflows parse ✓"
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Cron/regression tests
+        run: npm test
+
+      - name: Cron windows still sane (election-day coverage)
+        run: |
+          # cheap sanity that the hot mode + govwatch keep 24h coverage
+          grep -q '11-56/15' .github/workflows/feedflag-electionday.yml
+          grep -q '/30' .github/workflows/feedflag-govwatch.yml
+          echo "schedule coverage ✓"
