@@ -431,8 +431,6 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
         // when the text carries a status word.
         const minutes2 = minutes ?? (/closed/i.test(text) ? 0 : null);
         const people = r.peopleField != null ? rec[r.peopleField] : undefined;
-        const lines =
-          r.lineCountField != null ? rec[r.lineCountField] : undefined;
         const extra =
           people != null && Number(people) > 0 ? ` (${people} in line)` : "";
         return {

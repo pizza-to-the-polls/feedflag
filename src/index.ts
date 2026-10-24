@@ -20,7 +20,7 @@ console.log(
 );
 
 runPipeline(opts)
-  .then((r) => process.exit(0))
+  .then(() => process.exit(0))
   .catch((err) => {
     console.error(`[feedflag] FATAL: ${err?.stack ?? err}`);
     process.exit(1);

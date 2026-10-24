@@ -1,15 +1,10 @@
-name: pr-check
+name: Test
 
-# PR quality gate — REQUIRED status check on main (ruleset: agents merge
-# directly once this passes; workflow changes stay human-reviewed).
+# House pattern (pizzabase/polls.pizza): ONE required check named `test`.
+# Runs the full quality stack in one job — prettier → lint → tsc → tests —
+# plus feedflag-specific gates (workflow integrity, secret scan, schedule
+# sanity), all inside the same job so agents only need one green check.
 # No secrets reach PR context — a PR cannot exfiltrate what the job lacks.
-#
-# Gates (user decisions 2026-10-24, agents draft PRs + can merge):
-#   1. formatting (prettier), typecheck, cron/regression tests
-#   2. YAML parse of every workflow
-#   3. workflow integrity: PRs must NOT touch .github/workflows/**
-#   4. secret-pattern scan of the full diff
-#   5. schedule coverage sanity (election-day + govwatch windows)
 
 on:
   pull_request:
@@ -25,12 +20,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: pr-check-${{ github.ref }}
+  group: test-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  check:
-    name: pr-check
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -38,9 +32,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Read Node version
+        id: read_version
+        run: echo "NODE_VER=$(cat .nvmrc)" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ steps.read_version.outputs.NODE_VER }}
           cache: npm
 
       - run: npm ci
@@ -74,8 +72,10 @@ jobs:
           [ "$rc" = 0 ] && echo "workflows parse ✓" || exit 1
 
       - name: Format check (prettier)
-        run: |
-          npx --yes prettier --check "src/**/*.ts" "scripts/**/*.ts"
+        run: npx --yes prettier --check "src/**/*.ts" "scripts/**/*.ts"
+
+      - name: Lint
+        run: npm run lint
 
       - name: Typecheck
         run: npx tsc --noEmit

@@ -4,21 +4,27 @@
   "private": true,
   "type": "module",
   "description": "Social feed reader (IG/X/TikTok) -> OpenRouter vision captions -> JEV relevance classification -> Slack via Zapier",
-  "engines": { "node": ">=24.22.1" },
+  "engines": {
+    "node": ">=24.22.1"
+  },
   "scripts": {
     "start": "tsx src/index.ts",
     "start:env": "node --env-file=.env --import tsx src/index.ts",
     "digest": "tsx scripts/digest.ts",
     "label": "tsx scripts/label.ts",
     "check": "tsc --noEmit",
-    "test": "tsx scripts/test-workflow-crons.ts"
+    "test": "tsx scripts/test-workflow-crons.ts",
+    "lint": "eslint src scripts"
   },
   "dependencies": {
     "fast-xml-parser": "^4.5.0",
     "tsx": "^4.19.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.10.0",
-    "typescript": "^5.7.0"
+    "eslint": "^10.13.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.72.0"
   }
 }

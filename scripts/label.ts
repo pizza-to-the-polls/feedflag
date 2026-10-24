@@ -20,7 +20,6 @@
 import { readFileSync, existsSync, appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { observationId } from "../src/util.js";
-import { loadFeedsConfig } from "../src/config.js";
 
 const DATA_DIR = process.env.DATA_DIR ?? "./data";
 
