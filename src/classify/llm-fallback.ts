@@ -1,4 +1,8 @@
-import type { Classification, DecisionProvider, DescriptionSet } from "../types.js";
+import type {
+  Classification,
+  DecisionProvider,
+  DescriptionSet,
+} from "../types.js";
 import { settings } from "../config.js";
 import { openrouterChat } from "../describe/openrouter.js";
 import { renderInput } from "./render-input.js";
@@ -12,7 +16,10 @@ import { renderInput } from "./render-input.js";
  */
 export const llmFallbackProvider: DecisionProvider = {
   name: `llm-fallback:${settings.textModel}`,
-  async classify(d: DescriptionSet, categories: string[]): Promise<Classification> {
+  async classify(
+    d: DescriptionSet,
+    categories: string[],
+  ): Promise<Classification> {
     const raw = await openrouterChat({
       model: settings.textModel,
       max_tokens: 200,
@@ -41,14 +48,21 @@ export const llmFallbackProvider: DecisionProvider = {
       provider: `${settings.textModel}:parse-fail`,
     };
     try {
-      const j = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as {
+      const j = JSON.parse(
+        raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1),
+      ) as {
         category?: string;
         relevant?: boolean;
         confidence?: number | string;
       };
-      const category = categories.includes(String(j.category)) ? String(j.category) : "irrelevant";
+      const category = categories.includes(String(j.category))
+        ? String(j.category)
+        : "irrelevant";
       return {
-        relevant: typeof j.relevant === "boolean" ? j.relevant : category !== "irrelevant",
+        relevant:
+          typeof j.relevant === "boolean"
+            ? j.relevant
+            : category !== "irrelevant",
         confidence: Math.max(0, Math.min(1, Number(j.confidence ?? 0))),
         category,
         provider: settings.textModel,

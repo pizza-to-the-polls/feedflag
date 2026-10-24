@@ -84,9 +84,13 @@ if (process.argv.includes("--add")) {
   const note = arg("note");
   let applied = 0;
   for (const part of spec.split(",").filter((s) => s.trim())) {
-    const m = part.trim().match(/^([0-9a-f]{8})=(right|wrong)(?::([a-z_]+))?$/i);
+    const m = part
+      .trim()
+      .match(/^([0-9a-f]{8})=(right|wrong)(?::([a-z_]+))?$/i);
     if (!m) {
-      console.error(`! unparsed label spec: "${part.trim()}" — use <8-char-id>=right|wrong[:category]`);
+      console.error(
+        `! unparsed label spec: "${part.trim()}" — use <8-char-id>=right|wrong[:category]`,
+      );
       continue;
     }
     appendLabel({
@@ -100,48 +104,84 @@ if (process.argv.includes("--add")) {
     console.log(`✓ labeled ${m[1]} ${m[2]}${m[3] ? ` (→ ${m[3]})` : ""}`);
   }
   if (applied) {
-    console.error(`\n${applied} label(s) recorded in ${join(DATA_DIR, "labels.jsonl")} — commit them as regular work.`);
+    console.error(
+      `\n${applied} label(s) recorded in ${join(DATA_DIR, "labels.jsonl")} — commit them as regular work.`,
+    );
   }
   process.exit(applied ? 0 : 1);
 }
 
 const obs = loadObservations();
 const labels = loadLabels();
-const idOf = (o: Obs) => observationId({ source_ref: o.source_ref, observed_at: o.observed_at, domain: o.domain });
+const idOf = (o: Obs) =>
+  observationId({
+    source_ref: o.source_ref,
+    observed_at: o.observed_at,
+    domain: o.domain,
+  });
 const byId = new Map(obs.map((o) => [idOf(o), o]));
 const labeledIds = new Set(labels.map((l) => l.id));
 
 if (process.argv.includes("--report")) {
-  const flagged = obs.filter((o) => o.relevant && o.confidence >= FLAG_CONFIDENCE && o.domain === "social" && (!FLAG_CATEGORIES || FLAG_CATEGORIES.includes(o.signal_kind)));
+  const flagged = obs.filter(
+    (o) =>
+      o.relevant &&
+      o.confidence >= FLAG_CONFIDENCE &&
+      o.domain === "social" &&
+      (!FLAG_CATEGORIES || FLAG_CATEGORIES.includes(o.signal_kind)),
+  );
   const lab = labels
     .map((l) => ({ l, o: byId.get(l.id) }))
     .filter((x): x is { l: Label; o: Obs } => !!x.o);
   console.log(`## Classifier feedback report`);
-  console.log(`\n**${labels.length} labels** on **${flagged.length} lifetime flags** (labeled-matchable: ${lab.length})\n`);
+  console.log(
+    `\n**${labels.length} labels** on **${flagged.length} lifetime flags** (labeled-matchable: ${lab.length})\n`,
+  );
   if (lab.length === 0) {
-    console.log("No matched labels yet. Run `npm run label -- --list` and label a few flags.");
+    console.log(
+      "No matched labels yet. Run `npm run label -- --list` and label a few flags.",
+    );
     process.exit(0);
   }
   // Precision at thresholds (on labeled, delivered flags)
-  console.log(`**Precision @ FLAG_CONFIDENCE thresholds** (labeled flags only):\n`);
+  console.log(
+    `**Precision @ FLAG_CONFIDENCE thresholds** (labeled flags only):\n`,
+  );
   console.log(`| threshold | n labeled | precision |\n|---|---|---|`);
   let suggestion = "";
   for (const t of [0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9]) {
-    const rows = lab.filter((x) => x.o.confidence >= t && x.o.relevant && x.o.domain !== "crowd");
+    const rows = lab.filter(
+      (x) => x.o.confidence >= t && x.o.relevant && x.o.domain !== "crowd",
+    );
     const right = rows.filter((x) => x.l.verdict === "right").length;
     const p = rows.length ? right / rows.length : 0;
     if (rows.length) console.log(`| ${pct(t)} | ${rows.length} | ${pct(p)} |`);
-    if (!suggestion && rows.length >= 3 && p >= 0.9) suggestion = `FLAG_CONFIDENCE=${t} reaches ${pct(p)} precision on ${rows.length} labels`;
+    if (!suggestion && rows.length >= 3 && p >= 0.9)
+      suggestion = `FLAG_CONFIDENCE=${t} reaches ${pct(p)} precision on ${rows.length} labels`;
   }
-  if (!suggestion) suggestion = "insufficient labels at ≥90% precision yet — keep labeling (need ≥3 right per threshold)";
+  if (!suggestion)
+    suggestion =
+      "insufficient labels at ≥90% precision yet — keep labeling (need ≥3 right per threshold)";
   // Calibration buckets (stated vs actual — JEV_EXPLORATION §3)
-  console.log(`\n**Calibration** (stated confidence vs actual accuracy — Jev claims calibration):\n`);
+  console.log(
+    `\n**Calibration** (stated confidence vs actual accuracy — Jev claims calibration):\n`,
+  );
   console.log(`| stated conf bucket | n | actual accuracy |\n|---|---|---|`);
-  for (const [lo, hi] of [[0.6, 0.7], [0.7, 0.8], [0.8, 0.9], [0.9, 1.01]]) {
-    const rows = lab.filter((x) => x.o.confidence >= lo && x.o.confidence < hi && x.o.domain !== "crowd");
+  for (const [lo, hi] of [
+    [0.6, 0.7],
+    [0.7, 0.8],
+    [0.8, 0.9],
+    [0.9, 1.01],
+  ]) {
+    const rows = lab.filter(
+      (x) =>
+        x.o.confidence >= lo && x.o.confidence < hi && x.o.domain !== "crowd",
+    );
     if (!rows.length) continue;
     const right = rows.filter((x) => x.l.verdict === "right").length;
-    console.log(`| ${pct(lo)}–${pct(hi)} | ${rows.length} | ${pct(right / rows.length)} |`);
+    console.log(
+      `| ${pct(lo)}–${pct(hi)} | ${rows.length} | ${pct(right / rows.length)} |`,
+    );
   }
   // Confusion pairs
   const wrongs = lab.filter((x) => x.l.verdict === "wrong");
@@ -161,13 +201,24 @@ if (process.argv.includes("--report")) {
 const hours = Number(arg("hours") ?? 25);
 const since = Date.now() - hours * 3600 * 1000;
 const queue = obs
-  .filter((o) => o.relevant && o.confidence >= FLAG_CONFIDENCE && o.domain === "social" && (!FLAG_CATEGORIES || FLAG_CATEGORIES.includes(o.signal_kind)))
+  .filter(
+    (o) =>
+      o.relevant &&
+      o.confidence >= FLAG_CONFIDENCE &&
+      o.domain === "social" &&
+      (!FLAG_CATEGORIES || FLAG_CATEGORIES.includes(o.signal_kind)),
+  )
   .filter((o) => new Date(o.observed_at).getTime() >= since)
   .filter((o) => !labeledIds.has(idOf(o)))
   .sort((a, b) => b.observed_at.localeCompare(a.observed_at));
 
-console.log(`## Review queue — ${queue.length} unlabeled flags (last ${hours}h)\n`);
-if (!queue.length) console.log(`Nothing to label. (All flags labeled, or no flags in window.)\n`);
+console.log(
+  `## Review queue — ${queue.length} unlabeled flags (last ${hours}h)\n`,
+);
+if (!queue.length)
+  console.log(
+    `Nothing to label. (All flags labeled, or no flags in window.)\n`,
+  );
 for (const o of queue) {
   const media = o.description?.item?.mediaUrls?.[0];
   console.log(

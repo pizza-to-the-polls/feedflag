@@ -11,14 +11,17 @@ import { flagPayload } from "./format.js";
 export const zapierNotifier: Notifier = {
   name: "zapier-catch-hook",
   async notify(flag: FlaggedItem): Promise<void> {
-    if (!settings.zapierCatchUrl) throw new Error("ZAPIER_CATCH_URL not configured");
+    if (!settings.zapierCatchUrl)
+      throw new Error("ZAPIER_CATCH_URL not configured");
     const res = await fetch(settings.zapierCatchUrl, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(flagPayload(flag)),
     });
     if (!res.ok) {
-      throw new Error(`Zapier catch hook ${res.status}: ${(await res.text()).slice(0, 200)}`);
+      throw new Error(
+        `Zapier catch hook ${res.status}: ${(await res.text()).slice(0, 200)}`,
+      );
     }
   },
 };

@@ -19,7 +19,13 @@
  *   confidence 0 (plan §5: "Map-only: cannot extract")
  * - every reading appends to data/observations.jsonl as domain "govt"
  */
-import { readFileSync, existsSync, writeFileSync, mkdirSync, appendFileSync } from "node:fs";
+import {
+  readFileSync,
+  existsSync,
+  writeFileSync,
+  mkdirSync,
+  appendFileSync,
+} from "node:fs";
 import { join, resolve } from "node:path";
 import { openrouterChat } from "../src/describe/openrouter.js";
 import { settings } from "../src/config.js";
@@ -31,7 +37,9 @@ const UA = "PizzaToThePolls/1.0 (civic-data wait-times; +https://polls.pizza)";
 const MIN_POST_MINUTES = 60;
 const DRY = process.argv.includes("--dry");
 const DATA_DIR = resolve(process.env.DATA_DIR ?? "./data");
-const SOURCES_PATH = resolve(process.env.WAIT_TIME_SOURCES ?? "./config/govt-sources.jsonl");
+const SOURCES_PATH = resolve(
+  process.env.WAIT_TIME_SOURCES ?? "./config/govt-sources.jsonl",
+);
 
 /** Screenshot actor (pay-per-event ≈ $0.0015) — the JS-wall fallback:
  *  ArcGIS dashboards / Airtable galleries render client-side; the vision
@@ -65,14 +73,14 @@ interface Source {
   display_label: string;
   notes?: string;
   /** Best public page for HUMAN verification (not the extraction URL —
- *  REST sources' url is a JSON API; the locator app may render blank).
- *  Falls back to url. */
+   *  REST sources' url is a JSON API; the locator app may render blank).
+   *  Falls back to url. */
   verify_url?: string;
   /** PASSED human verification (checked against the county's public page) —
- *  eligible for the volunteer-facing feed. Vetting channel gets everything. */
+   *  eligible for the volunteer-facing feed. Vetting channel gets everything. */
   graduated?: boolean;
   /** Structured REST extraction (the map app's own backend API) — preferred
- *  path when found: no browser, no vision, exact fields. */
+   *  path when found: no browser, no vision, exact fields. */
   rest?: {
     type: "arcgis" | "json-post";
     url: string;
@@ -160,7 +168,7 @@ function htmlToFocusedText(html: string): string {
     .trim();
   // locate wait-relevant region (± around first wait keyword), cap 6000 chars
   const m = stripped.match(/.{0,1600}\bwait[a-z -]{0,12}.{0,4400}/i);
-  return (m ? m[0] : stripped.slice(0, 6000));
+  return m ? m[0] : stripped.slice(0, 6000);
 }
 
 async function fetchPage(url: string): Promise<string | null> {
@@ -181,7 +189,9 @@ async function fetchPage(url: string): Promise<string | null> {
     }
     return await res.text();
   } catch (err) {
-    console.log(`  [fetch fail] ${url.slice(0, 70)}: ${String(err).slice(0, 60)}`);
+    console.log(
+      `  [fetch fail] ${url.slice(0, 70)}: ${String(err).slice(0, 60)}`,
+    );
     return null;
   }
 }
@@ -221,22 +231,33 @@ async function extractReadings(text: string): Promise<Reading[]> {
     ],
   });
   try {
-    const j = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as {
+    const j = JSON.parse(
+      raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1),
+    ) as {
       readings?: unknown[];
     };
     return (j.readings ?? [])
       .map((r) => r as Record<string, unknown>)
       .map((r) => {
-        const name = String(r.precinct_name ?? "").trim() || "(unnamed location)";
+        const name =
+          String(r.precinct_name ?? "").trim() || "(unnamed location)";
         const address =
-          typeof r.address === "string" && r.address.trim() && !/^null$/i.test(r.address.trim())
+          typeof r.address === "string" &&
+          r.address.trim() &&
+          !/^null$/i.test(r.address.trim())
             ? r.address.trim()
             : null;
         const rawMin = r.wait_minutes;
         let minutes =
-          typeof rawMin === "number" ? rawMin : typeof rawMin === "string" ? normalizeRange(rawMin) : null;
+          typeof rawMin === "number"
+            ? rawMin
+            : typeof rawMin === "string"
+              ? normalizeRange(rawMin)
+              : null;
         if (minutes != null && (minutes < 0 || minutes > 600)) minutes = null;
-        const cat = ["short", "medium", "long"].includes(String(r.wait_category))
+        const cat = ["short", "medium", "long"].includes(
+          String(r.wait_category),
+        )
           ? String(r.wait_category)
           : null;
         const conf = Math.min(Math.max(Number(r.confidence ?? 0), 0), 1);
@@ -245,7 +266,8 @@ async function extractReadings(text: string): Promise<Reading[]> {
           address,
           wait_minutes: minutes,
           wait_category: cat,
-          last_updated: typeof r.last_updated === "string" ? r.last_updated : null,
+          last_updated:
+            typeof r.last_updated === "string" ? r.last_updated : null,
           confidence: conf,
         } satisfies Reading;
       });
@@ -274,21 +296,31 @@ async function visionExtractReadings(shotUrl: string): Promise<Reading[]> {
       {
         role: "user",
         content: [
-          { type: "text", text: "Extract every visible wait-time entry from this screenshot. Place names exactly as shown." },
-          { type: "image_url", image_url: { url: `data:image/png;base64,${b64}` } },
+          {
+            type: "text",
+            text: "Extract every visible wait-time entry from this screenshot. Place names exactly as shown.",
+          },
+          {
+            type: "image_url",
+            image_url: { url: `data:image/png;base64,${b64}` },
+          },
         ],
       },
     ],
   });
   try {
-    const j = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as {
+    const j = JSON.parse(
+      raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1),
+    ) as {
       readings?: { place?: unknown; wait?: unknown }[];
     };
     return (j.readings ?? [])
       .map((r) => {
         const name = String(r.place ?? "").trim() || "(unnamed location)";
         const address =
-          typeof r.address === "string" && r.address.trim() && !/^null$/i.test(r.address.trim())
+          typeof r.address === "string" &&
+          r.address.trim() &&
+          !/^null$/i.test(r.address.trim())
             ? r.address.trim()
             : null;
         const waitStr = String(r.wait ?? "");
@@ -330,13 +362,19 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
         signal: AbortSignal.timeout(45000),
       });
       if (!res.ok) return [];
-      const j = (await res.json()) as { features?: { attributes?: Record<string, unknown> }[] };
+      const j = (await res.json()) as {
+        features?: { attributes?: Record<string, unknown> }[];
+      };
       records = (j.features ?? []).map((f) => f.attributes ?? {});
     } else {
       const body = new URLSearchParams(r.form ?? {}).toString();
       const res = await fetch(r.url, {
         method: "POST",
-        headers: { "user-agent": UA, "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
+        headers: {
+          "user-agent": UA,
+          "content-type": "application/x-www-form-urlencoded",
+          accept: "application/json",
+        },
         body,
         signal: AbortSignal.timeout(30000),
       });
@@ -368,11 +406,17 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
             .filter((v) => v != null && String(v).trim() !== "")
             .map((v) => String(v).trim())
             .join(", ") || null;
-        const rawMin = r.waitMinutesField != null ? rec[r.waitMinutesField] : undefined;
+        const rawMin =
+          r.waitMinutesField != null ? rec[r.waitMinutesField] : undefined;
         let minutes: number | null =
-          typeof rawMin === "number" ? rawMin : rawMin != null ? normalizeRange(String(rawMin)) : null;
+          typeof rawMin === "number"
+            ? rawMin
+            : rawMin != null
+              ? normalizeRange(String(rawMin))
+              : null;
         if (minutes != null && (minutes < 0 || minutes > 600)) minutes = null;
-        const text = r.waitTextField != null ? String(rec[r.waitTextField] ?? "") : "";
+        const text =
+          r.waitTextField != null ? String(rec[r.waitTextField] ?? "") : "";
         if (minutes == null && text) minutes = normalizeRange(text);
         const cat =
           minutes == null
@@ -387,7 +431,8 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
         // when the text carries a status word.
         const minutes2 = minutes ?? (/closed/i.test(text) ? 0 : null);
         const people = r.peopleField != null ? rec[r.peopleField] : undefined;
-        const lines = r.lineCountField != null ? rec[r.lineCountField] : undefined;
+        const lines =
+          r.lineCountField != null ? rec[r.lineCountField] : undefined;
         const extra =
           people != null && Number(people) > 0 ? ` (${people} in line)` : "";
         return {
@@ -422,7 +467,8 @@ function linkLine(url: string, label: string): string {
 }
 
 function volChannelLine(r: Reading, prev: ReadingState | undefined): string {
-  const val = r.wait_minutes != null ? `${r.wait_minutes} min` : r.wait_category ?? "?";
+  const val =
+    r.wait_minutes != null ? `${r.wait_minutes} min` : (r.wait_category ?? "?");
   const was = prev
     ? prev.minutes != null
       ? ` (was ${prev.minutes} min)`
@@ -433,8 +479,14 @@ function volChannelLine(r: Reading, prev: ReadingState | undefined): string {
   return `• ${r.precinct_name.slice(0, 50)}: ${val}${was} — ${pct(r.confidence)}`;
 }
 
-async function slackPost(text: string, channel: "vetting" | "vols" = "vetting"): Promise<void> {
-  const url = channel === "vols" && settings.volsWebhookUrl ? settings.volsWebhookUrl : settings.slackWebhookUrl;
+async function slackPost(
+  text: string,
+  channel: "vetting" | "vols" = "vetting",
+): Promise<void> {
+  const url =
+    channel === "vols" && settings.volsWebhookUrl
+      ? settings.volsWebhookUrl
+      : settings.slackWebhookUrl;
   if (!url) return;
   try {
     await fetch(url, {
@@ -500,7 +552,8 @@ async function verifyLinkOk(url: string): Promise<boolean> {
 async function evaluateReading(s: Source, r: Reading): Promise<Evaluation> {
   const reasons: string[] = [];
   // 1. Actability
-  if (!r.precinct_name || /^\(unnamed\)/.test(r.precinct_name)) reasons.push("no site name");
+  if (!r.precinct_name || /^\(unnamed\)/.test(r.precinct_name))
+    reasons.push("no site name");
   if (!r.address) reasons.push("no address");
   const vurl = s.verify_url ?? s.url;
   if (!vurl) {
@@ -530,9 +583,16 @@ const REPORT = process.argv.includes("--report");
 /** Board from committed state only — no extraction, no keys needed. */
 const REPORT_ONLY = process.argv.includes("--report-only");
 
-async function reportBoard(sources: Source[], state: Record<string, ReadingState>): Promise<void> {
-  console.log("\n## Evaluation board (stress test: actable? agrees? dispatchable?)\n");
-  console.log("| source | readings | named | addressed | verify | graduated | dispatchable |");
+async function reportBoard(
+  sources: Source[],
+  state: Record<string, ReadingState>,
+): Promise<void> {
+  console.log(
+    "\n## Evaluation board (stress test: actable? agrees? dispatchable?)\n",
+  );
+  console.log(
+    "| source | readings | named | addressed | verify | graduated | dispatchable |",
+  );
   console.log("|---|---|---|---|---|---|---|");
   for (const s of sources) {
     const entries = Object.entries(state).filter(([k]) => k.startsWith(s.url));
@@ -556,7 +616,10 @@ async function reportBoard(sources: Source[], state: Record<string, ReadingState
       `| ${s.state} ${s.county ?? ""} | ${entries.length} | ${named} | ${addressed} | ${vok ? "OK" : "DEAD"} | ${s.graduated ? "✅" : "🧪"} | ${dispatchable} |`,
     );
     const failReasons = new Set(evals.flatMap((e) => e.reasons));
-    if (failReasons.size) console.log(`\n  ${s.state} ${s.county ?? ""} — blockers: ${[...failReasons].join("; ")}`);
+    if (failReasons.size)
+      console.log(
+        `\n  ${s.state} ${s.county ?? ""} — blockers: ${[...failReasons].join("; ")}`,
+      );
   }
   console.log("");
 }
@@ -566,7 +629,8 @@ const main = async () => {
     await reportBoard(loadSources(), loadState());
     return;
   }
-  if (!settings.openrouterKey) throw new Error("OPENROUTER_API_KEY not configured");
+  if (!settings.openrouterKey)
+    throw new Error("OPENROUTER_API_KEY not configured");
   const sources = loadSources();
   const state = loadState();
   const next: Record<string, ReadingState> = {};
@@ -576,126 +640,146 @@ const main = async () => {
     const label = `${s.state} ${s.county ?? "(statewide)"} — ${s.display_label.slice(0, 48)}`;
     console.log(`[govt] ${label}`);
     try {
-    let readings = await restExtractReadings(s);
-    let method: string | null = readings.length > 0 ? "rest" : null;
-    let html: string | null = null;
-    if (readings.length === 0) {
-      html = await fetchPage(s.url);
-    if (html == null) {
-      console.log(`  no content — JS-walled, down, or robots-blocked; reporting stale`);
-      // carry forward last known readings (no update)
-      for (const [k, v] of Object.entries(state)) {
-        if (k.startsWith(s.url)) next[k] = v;
-      }
-      continue;
-    }
-    } // end rest-miss → html path
-    if (readings.length === 0 && html != null) {
-      const text = htmlToFocusedText(html);
-      readings = await extractReadings(text);
-      method = readings.length > 0 ? "text" : null;
-    }
-    if (readings.length === 0 && html != null) {
-      // JS-walled (ArcGIS dashboards / Airtable galleries render client-side):
-      // fall back to screenshot + vision extraction (plan §5 “Map-only” case)
-      console.log(`  text path empty — trying screenshot+vision`);
-      const shot = await screenshotUrl(s.url);
-      if (shot) {
-        readings = await visionExtractReadings(shot);
-        method = readings.length > 0 ? "vision" : null;
-      }
-    }
-    if (readings.length === 0) {
-      console.log(`  0 readings (JS-walled even via screenshot, or no data published)`);
-    } else {
-      console.log(`  ${readings.length} reading(s) via ${method}`);
-    }
-    const volChanges: string[] = [];
-    const vetChanges: string[] = [];
-    for (const r of readings) {
-      const key = `${s.url}#${r.site_key ?? r.precinct_name}`;
-      const prev = state[key];
-      const changed =
-        !prev || prev.minutes !== r.wait_minutes || prev.category !== r.wait_category;
-      // record EVERYTHING in state (change detection needs the full picture)
-      next[key] = {
-        minutes: r.wait_minutes,
-        category: r.wait_category,
-        updated: r.last_updated,
-        confidence: r.confidence,
-        at: new Date().toISOString(),
-        address: r.address ?? prev?.address ?? null,
-      };
-      if (!changed) continue;
-      const line = volChannelLine(r, prev);
-      const mins = r.wait_minutes ?? -1;
-      const volEligible = mins >= MIN_POST_MINUTES || r.wait_category === "long";
-      const evaluation = await evaluateReading(s, r);
-      // VOL FEED (graduated sources only): dispatch signal = lines >= 1 hour
-      // AND eval-clean (name + address + live verify link + fresh).
-      // Single-channel mode (no vols webhook): the one channel is VOL-GRADE —
-      // sub-60min churn stays in console/state/digest until a vols channel
-      // exists (user call 2026-10-21: "15-min posts are not helpful").
-      if (volEligible) {
-        totalChanged++;
-        if (evaluation.dispatchable) {
-          volChanges.push(line + (r.address ? ` — ${r.address.slice(0, 50)}` : ""));
-          vetChanges.push(line + (r.address ? ` — ${r.address.slice(0, 50)}` : ""));
-        } else {
-          // eval-blocked: visible in vetting with reasons, never vol-posted
-          vetChanges.push(`🚫 ${line} — eval: ${evaluation.reasons.join("; ")}`);
+      let readings = await restExtractReadings(s);
+      let method: string | null = readings.length > 0 ? "rest" : null;
+      let html: string | null = null;
+      if (readings.length === 0) {
+        html = await fetchPage(s.url);
+        if (html == null) {
+          console.log(
+            `  no content — JS-walled, down, or robots-blocked; reporting stale`,
+          );
+          // carry forward last known readings (no update)
+          for (const [k, v] of Object.entries(state)) {
+            if (k.startsWith(s.url)) next[k] = v;
+          }
+          continue;
         }
-      } else if (mins >= VETTING_MIN_MINUTES && settings.volsWebhookUrl) {
-        // two-channel mode: vetting tier sees churn for source smell-tests
-        vetChanges.push(line);
+      } // end rest-miss → html path
+      if (readings.length === 0 && html != null) {
+        const text = htmlToFocusedText(html);
+        readings = await extractReadings(text);
+        method = readings.length > 0 ? "text" : null;
       }
-    }
-    if (!DRY && vetChanges.length > 0) {
-      const msg =
-        `:stopwatch: *Wait-time update* — ${s.state} ${s.county ?? ""}` +
-        `${s.graduated ? " ✅" : " 🧪"}\n` +
-        vetChanges.slice(0, 14).join("\n") +
-        `\n${linkLine(s.verify_url ?? s.url, s.display_label)}`;
-      await slackPost(msg, "vetting");
-    }
-    if (!DRY && volChanges.length > 0) {
-      const msg =
-        `:stopwatch: *Wait-time update* — ${s.state} ${s.county ?? ""} (verified source)\n` +
-        volChanges.slice(0, 14).join("\n") +
-        `\n${linkLine(s.verify_url ?? s.url, s.display_label)}`;
-      await slackPost(msg, "vols");
-      console.log(`  posted ${vetChanges.length} vetting / ${volChanges.length} vol change(s)`);
-    } else if (vetChanges.length > 0) {
-      console.log(
-        `  [dry] ${vetChanges.length} vetting / ${volChanges.length} vol change(s) not posted`,
-      );
-    }
-    // observations for the bus (domain govt)
-    if (!DRY) {
-      mkdirSync(DATA_DIR, { recursive: true });
-      const lines = readings
-        .map((r) =>
-          JSON.stringify({
-            schema: "feedflag/observation@1",
-            domain: "govt",
-            source_ref: `${s.url}#${r.site_key ?? r.precinct_name}`,
-            url: s.url,
-            author: s.display_label,
-            platform: "govt",
-            observed_at: new Date().toISOString(),
-            posted_at: r.last_updated ?? undefined,
-            location: { raw: r.precinct_name, state: s.state, county: s.county ?? undefined },
-            signal_kind: "wait_time_reading",
-            wait_minutes: r.wait_minutes,
-            wait_category: r.wait_category,
-            confidence: r.confidence,
-            provider: settings.textModel,
-            relevant: true,
-          }),
-        )
-        .join("\n");
-      if (lines) appendFileSync(join(DATA_DIR, "observations.jsonl"), lines + "\n");
-    }
+      if (readings.length === 0 && html != null) {
+        // JS-walled (ArcGIS dashboards / Airtable galleries render client-side):
+        // fall back to screenshot + vision extraction (plan §5 “Map-only” case)
+        console.log(`  text path empty — trying screenshot+vision`);
+        const shot = await screenshotUrl(s.url);
+        if (shot) {
+          readings = await visionExtractReadings(shot);
+          method = readings.length > 0 ? "vision" : null;
+        }
+      }
+      if (readings.length === 0) {
+        console.log(
+          `  0 readings (JS-walled even via screenshot, or no data published)`,
+        );
+      } else {
+        console.log(`  ${readings.length} reading(s) via ${method}`);
+      }
+      const volChanges: string[] = [];
+      const vetChanges: string[] = [];
+      for (const r of readings) {
+        const key = `${s.url}#${r.site_key ?? r.precinct_name}`;
+        const prev = state[key];
+        const changed =
+          !prev ||
+          prev.minutes !== r.wait_minutes ||
+          prev.category !== r.wait_category;
+        // record EVERYTHING in state (change detection needs the full picture)
+        next[key] = {
+          minutes: r.wait_minutes,
+          category: r.wait_category,
+          updated: r.last_updated,
+          confidence: r.confidence,
+          at: new Date().toISOString(),
+          address: r.address ?? prev?.address ?? null,
+        };
+        if (!changed) continue;
+        const line = volChannelLine(r, prev);
+        const mins = r.wait_minutes ?? -1;
+        const volEligible =
+          mins >= MIN_POST_MINUTES || r.wait_category === "long";
+        const evaluation = await evaluateReading(s, r);
+        // VOL FEED (graduated sources only): dispatch signal = lines >= 1 hour
+        // AND eval-clean (name + address + live verify link + fresh).
+        // Single-channel mode (no vols webhook): the one channel is VOL-GRADE —
+        // sub-60min churn stays in console/state/digest until a vols channel
+        // exists (user call 2026-10-21: "15-min posts are not helpful").
+        if (volEligible) {
+          totalChanged++;
+          if (evaluation.dispatchable) {
+            volChanges.push(
+              line + (r.address ? ` — ${r.address.slice(0, 50)}` : ""),
+            );
+            vetChanges.push(
+              line + (r.address ? ` — ${r.address.slice(0, 50)}` : ""),
+            );
+          } else {
+            // eval-blocked: visible in vetting with reasons, never vol-posted
+            vetChanges.push(
+              `🚫 ${line} — eval: ${evaluation.reasons.join("; ")}`,
+            );
+          }
+        } else if (mins >= VETTING_MIN_MINUTES && settings.volsWebhookUrl) {
+          // two-channel mode: vetting tier sees churn for source smell-tests
+          vetChanges.push(line);
+        }
+      }
+      if (!DRY && vetChanges.length > 0) {
+        const msg =
+          `:stopwatch: *Wait-time update* — ${s.state} ${s.county ?? ""}` +
+          `${s.graduated ? " ✅" : " 🧪"}\n` +
+          vetChanges.slice(0, 14).join("\n") +
+          `\n${linkLine(s.verify_url ?? s.url, s.display_label)}`;
+        await slackPost(msg, "vetting");
+      }
+      if (!DRY && volChanges.length > 0) {
+        const msg =
+          `:stopwatch: *Wait-time update* — ${s.state} ${s.county ?? ""} (verified source)\n` +
+          volChanges.slice(0, 14).join("\n") +
+          `\n${linkLine(s.verify_url ?? s.url, s.display_label)}`;
+        await slackPost(msg, "vols");
+        console.log(
+          `  posted ${vetChanges.length} vetting / ${volChanges.length} vol change(s)`,
+        );
+      } else if (vetChanges.length > 0) {
+        console.log(
+          `  [dry] ${vetChanges.length} vetting / ${volChanges.length} vol change(s) not posted`,
+        );
+      }
+      // observations for the bus (domain govt)
+      if (!DRY) {
+        mkdirSync(DATA_DIR, { recursive: true });
+        const lines = readings
+          .map((r) =>
+            JSON.stringify({
+              schema: "feedflag/observation@1",
+              domain: "govt",
+              source_ref: `${s.url}#${r.site_key ?? r.precinct_name}`,
+              url: s.url,
+              author: s.display_label,
+              platform: "govt",
+              observed_at: new Date().toISOString(),
+              posted_at: r.last_updated ?? undefined,
+              location: {
+                raw: r.precinct_name,
+                state: s.state,
+                county: s.county ?? undefined,
+              },
+              signal_kind: "wait_time_reading",
+              wait_minutes: r.wait_minutes,
+              wait_category: r.wait_category,
+              confidence: r.confidence,
+              provider: settings.textModel,
+              relevant: true,
+            }),
+          )
+          .join("\n");
+        if (lines)
+          appendFileSync(join(DATA_DIR, "observations.jsonl"), lines + "\n");
+      }
     } catch (err) {
       // one source's failure must not sink the run — carry forward its state
       console.log(`  [source failed] ${String(err).slice(0, 100)}`);
@@ -706,7 +790,10 @@ const main = async () => {
     // persist state incrementally — a crash mid-run keeps completed sources
     if (!DRY) {
       mkdirSync(DATA_DIR, { recursive: true });
-      writeFileSync(join(DATA_DIR, "govt-readings.json"), JSON.stringify(next, null, 2));
+      writeFileSync(
+        join(DATA_DIR, "govt-readings.json"),
+        JSON.stringify(next, null, 2),
+      );
     }
   }
 

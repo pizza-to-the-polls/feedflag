@@ -35,34 +35,49 @@ interface ReportJson {
   } | null;
 }
 
-async function fetchReportsPage(page: number, limit: number): Promise<ReportJson[]> {
+async function fetchReportsPage(
+  page: number,
+  limit: number,
+): Promise<ReportJson[]> {
   const url = `${settings.pizzabaseUrl}/reports?limit=${limit}&page=${page}`;
   const headers: Record<string, string> = { accept: "application/json" };
   // pizzabase checkAuthorization strips a "Basic " prefix (src/controller/helper.ts)
-  if (settings.pizzabaseKey) headers.authorization = `Basic ${settings.pizzabaseKey}`;
+  if (settings.pizzabaseKey)
+    headers.authorization = `Basic ${settings.pizzabaseKey}`;
   const res = await fetch(url, { headers });
-  if (!res.ok) throw new Error(`pizzabase /reports ${res.status} (wire a service token in pizzabase for machine auth)`);
+  if (!res.ok)
+    throw new Error(
+      `pizzabase /reports ${res.status} (wire a service token in pizzabase for machine auth)`,
+    );
   const j: unknown = await res.json();
   // pizzabase index() returns {results, count}; tolerate a bare array too
   const arr = Array.isArray(j)
     ? j
-    : ((j as { results?: unknown[] }).results ?? (j as { reports?: unknown[] }).reports ?? []);
+    : ((j as { results?: unknown[] }).results ??
+      (j as { reports?: unknown[] }).reports ??
+      []);
   return arr as ReportJson[];
 }
 
 /** Page back from newest until we cross `since` (client-side filter — the API
  *  filters by truck/order/location, not date). */
-export async function fetchSiteReportsSince(sinceIso: string, max: number): Promise<ReportJson[]> {
+export async function fetchSiteReportsSince(
+  sinceIso: string,
+  max: number,
+): Promise<ReportJson[]> {
   const since = new Date(sinceIso).getTime();
   const out: ReportJson[] = [];
   const pageSize = 100;
   for (let page = 0; page < 10; page++) {
     const batch = await fetchReportsPage(page, pageSize);
     if (batch.length === 0) break;
-    const fresh = batch.filter((r) => new Date(r.createdAt ?? 0).getTime() > since);
+    const fresh = batch.filter(
+      (r) => new Date(r.createdAt ?? 0).getTime() > since,
+    );
     out.push(...fresh);
     const oldest = new Date(batch[batch.length - 1]?.createdAt ?? 0).getTime();
-    if (fresh.length < batch.length || oldest <= since || out.length >= max) break;
+    if (fresh.length < batch.length || oldest <= since || out.length >= max)
+      break;
   }
   return out.slice(0, max);
 }

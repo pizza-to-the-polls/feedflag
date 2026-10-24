@@ -15,8 +15,11 @@ const SYSTEM_PROMPT = [
   "Answer in 2-3 short factual sentences.",
 ].join(" ");
 
-export async function openrouterChat(body: Record<string, unknown>): Promise<string> {
-  if (!settings.openrouterKey) throw new Error("OPENROUTER_API_KEY not configured");
+export async function openrouterChat(
+  body: Record<string, unknown>,
+): Promise<string> {
+  if (!settings.openrouterKey)
+    throw new Error("OPENROUTER_API_KEY not configured");
   let lastErr: unknown;
   // 2 attempts with backoff — upstream providers rate-limit bursty small calls
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -37,7 +40,9 @@ export async function openrouterChat(body: Record<string, unknown>): Promise<str
         continue;
       }
       if (!res.ok) {
-        throw new Error(`OpenRouter ${JSON.stringify(body.model)} ${res.status}: ${(await res.text()).slice(0, 300)}`);
+        throw new Error(
+          `OpenRouter ${JSON.stringify(body.model)} ${res.status}: ${(await res.text()).slice(0, 300)}`,
+        );
       }
       const j: any = await res.json();
       return j.choices?.[0]?.message?.content ?? "";
@@ -52,7 +57,8 @@ export async function openrouterChat(body: Record<string, unknown>): Promise<str
 
 async function toDataUrl(url: string): Promise<string> {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`media fetch ${res.status} for ${url.slice(0, 120)}`);
+  if (!res.ok)
+    throw new Error(`media fetch ${res.status} for ${url.slice(0, 120)}`);
   const ct = res.headers.get("content-type") ?? "image/jpeg";
   if (!ct.startsWith("image/")) throw new Error(`non-image content-type ${ct}`);
   const b64 = Buffer.from(await res.arrayBuffer()).toString("base64");
@@ -68,7 +74,16 @@ async function frameFromVideo(videoUrl: string): Promise<string> {
     const res = await fetch(videoUrl);
     if (!res.ok) throw new Error(`video fetch ${res.status}`);
     await writeFile(input, Buffer.from(await res.arrayBuffer()));
-    await run("ffmpeg", ["-y", "-i", input, "-frames:v", "1", "-q:v", "3", frame]);
+    await run("ffmpeg", [
+      "-y",
+      "-i",
+      input,
+      "-frames:v",
+      "1",
+      "-q:v",
+      "3",
+      frame,
+    ]);
     const b64 = (await readFile(frame)).toString("base64");
     return `data:image/jpeg;base64,${b64}`;
   } finally {
@@ -107,7 +122,9 @@ export async function describeItem(item: FeedItem): Promise<DescriptionSet> {
     try {
       sources.push(await frameFromVideo(item.videoUrl));
     } catch (err) {
-      console.warn(`[feedflag] video frame failed ${item.id}: ${String(err).slice(0, 120)}`);
+      console.warn(
+        `[feedflag] video frame failed ${item.id}: ${String(err).slice(0, 120)}`,
+      );
     }
   }
   const imageDescriptions: string[] = [];
@@ -115,13 +132,16 @@ export async function describeItem(item: FeedItem): Promise<DescriptionSet> {
     try {
       imageDescriptions.push(await captionDataUrl(s));
     } catch (err) {
-      console.warn(`[feedflag] caption failed ${item.id}: ${String(err).slice(0, 120)}`);
+      console.warn(
+        `[feedflag] caption failed ${item.id}: ${String(err).slice(0, 120)}`,
+      );
       imageDescriptions.push("(image present, caption unavailable)");
     }
   }
   // Actor-provided AI video description (e.g. clockworks videoMeta): text
   // evidence without vision captioning — append to the description set.
-  if (item.aiSummary) imageDescriptions.push(`[AI video description] ${item.aiSummary}`);
+  if (item.aiSummary)
+    imageDescriptions.push(`[AI video description] ${item.aiSummary}`);
   return {
     item,
     caption: item.caption,

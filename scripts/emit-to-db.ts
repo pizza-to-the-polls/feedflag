@@ -56,7 +56,8 @@ function toIsoTimestamp(v: unknown): string | null {
   }
   const s = String(v);
   const d = new Date(s);
-  if (!Number.isNaN(d.getTime()) && /\d{4}-\d{2}-\d{2}/.test(s)) return d.toISOString();
+  if (!Number.isNaN(d.getTime()) && /\d{4}-\d{2}-\d{2}/.test(s))
+    return d.toISOString();
   // pure epoch string ("1792642500000")
   if (/^\d{12,14}$/.test(s)) {
     const d2 = new Date(Number(s));
@@ -86,9 +87,13 @@ function toApi(o: Obs): Record<string, unknown> {
   };
 }
 
-async function post(observations: Record<string, unknown>[]): Promise<{ inserted: number; skipped: number } | null> {
+async function post(
+  observations: Record<string, unknown>[],
+): Promise<{ inserted: number; skipped: number } | null> {
   if (!API || !TOKEN) {
-    console.log("[emit] PIZZABASE_API_URL / PIZZABASE_API_KEY unset — skipping (non-fatal)");
+    console.log(
+      "[emit] PIZZABASE_API_URL / PIZZABASE_API_KEY unset — skipping (non-fatal)",
+    );
     return null;
   }
   try {
@@ -102,11 +107,18 @@ async function post(observations: Record<string, unknown>[]): Promise<{ inserted
       signal: AbortSignal.timeout(30000),
     });
     if (!res.ok) {
-      console.warn(`[emit] POST ${res.status}: ${(await res.text()).slice(0, 150)}`);
+      console.warn(
+        `[emit] POST ${res.status}: ${(await res.text()).slice(0, 150)}`,
+      );
       return null;
     }
-    const j = (await res.json()) as { inserted?: number; skipped?: number; errors?: string[] };
-    if (j.errors?.length) console.warn(`[emit] API errors: ${j.errors.slice(0, 2).join("; ")}`);
+    const j = (await res.json()) as {
+      inserted?: number;
+      skipped?: number;
+      errors?: string[];
+    };
+    if (j.errors?.length)
+      console.warn(`[emit] API errors: ${j.errors.slice(0, 2).join("; ")}`);
     return { inserted: j.inserted ?? 0, skipped: j.skipped ?? 0 };
   } catch (err) {
     console.warn(`[emit] POST failed: ${String(err).slice(0, 120)}`);
@@ -156,7 +168,9 @@ const main = async () => {
       sent += chunk.length;
     }
   }
-  console.log(`[emit] ${sent}/${batch.length} sent → inserted ${inserted}, skipped ${skipped}`);
+  console.log(
+    `[emit] ${sent}/${batch.length} sent → inserted ${inserted}, skipped ${skipped}`,
+  );
 };
 
 main().catch((err) => {

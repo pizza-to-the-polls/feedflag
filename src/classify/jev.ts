@@ -1,4 +1,8 @@
-import type { Classification, DecisionProvider, DescriptionSet } from "../types.js";
+import type {
+  Classification,
+  DecisionProvider,
+  DescriptionSet,
+} from "../types.js";
 import { settings } from "../config.js";
 import { openrouterChat } from "../describe/openrouter.js";
 import { renderInput } from "./render-input.js";
@@ -28,16 +32,22 @@ function parseJevResponse(content: string, categories: string[]): JevChoice {
   const candidates: string[] = [];
   const first = content.indexOf("{");
   const last = content.lastIndexOf("}");
-  if (first !== -1 && last > first) candidates.push(content.slice(first, last + 1));
+  if (first !== -1 && last > first)
+    candidates.push(content.slice(first, last + 1));
   // Then a bare "category: 0.82" style line, and any JSON object in the text
   for (const candidate of candidates) {
     try {
-      const j = JSON.parse(candidate) as { category?: unknown; confidence?: unknown };
+      const j = JSON.parse(candidate) as {
+        category?: unknown;
+        confidence?: unknown;
+      };
       if (typeof j.category === "string" && categories.includes(j.category)) {
         const conf = Number(j.confidence);
         return {
           category: j.category,
-          confidence: Number.isFinite(conf) ? Math.min(Math.max(conf, 0), 1) : 0,
+          confidence: Number.isFinite(conf)
+            ? Math.min(Math.max(conf, 0), 1)
+            : 0,
         };
       }
     } catch {
@@ -58,9 +68,13 @@ function parseJevResponse(content: string, categories: string[]): JevChoice {
 
 export const jevProvider: DecisionProvider = {
   name: "jev",
-  async classify(d: DescriptionSet, categories: string[]): Promise<Classification> {
+  async classify(
+    d: DescriptionSet,
+    categories: string[],
+  ): Promise<Classification> {
     if (!settings.jevModel) throw new Error("JEV_MODEL not configured");
-    if (!settings.openrouterKey) throw new Error("OPENROUTER_API_KEY not configured");
+    if (!settings.openrouterKey)
+      throw new Error("OPENROUTER_API_KEY not configured");
     const content = await openrouterChat({
       model: settings.jevModel,
       messages: [

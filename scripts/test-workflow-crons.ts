@@ -115,12 +115,20 @@ console.log("workflow-cron regression tests\n");
 
   // Both crons fire on the same :07/:37 minute pattern (no hour fires twice or never).
   for (const c of crons) {
-    assert.deepEqual(c.minutes, [7, 37], `${workflow}: minute pattern of "${c.raw}"`);
+    assert.deepEqual(
+      c.minutes,
+      [7, 37],
+      `${workflow}: minute pattern of "${c.raw}"`,
+    );
   }
 
   // Local-time spot checks under EST (UTC-5, post-Nov 1): window endpoints.
   assert.equal((24 + 12 - 5) % 24, 7, "12:00 UTC == 7:00am ET after fall-back");
-  assert.equal((3 - 5 + 24) % 24, 22, "03:00 UTC == 10:00pm ET after fall-back (window to 03:59)");
+  assert.equal(
+    (3 - 5 + 24) % 24,
+    22,
+    "03:00 UTC == 10:00pm ET after fall-back (window to 03:59)",
+  );
 
   // Greppable DST provenance comment (issue #8 acceptance criterion).
   const text = readFileSync(join(WORKFLOWS_DIR, workflow), "utf8");
@@ -130,7 +138,9 @@ console.log("workflow-cron regression tests\n");
     `${workflow}: must contain greppable "bumped 2026-11-01" comment`,
   );
 
-  console.log(`  ✓ ${workflow}: window 12:00–03:59 UTC (7am–11pm ET, EST), contiguous, DST comment present`);
+  console.log(
+    `  ✓ ${workflow}: window 12:00–03:59 UTC (7am–11pm ET, EST), contiguous, DST comment present`,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -149,7 +159,9 @@ console.log("workflow-cron regression tests\n");
       `${workflow}: 15-min minute pattern of "${c.raw}"`,
     );
   }
-  console.log(`  ✓ ${workflow}: 24h coverage (every 15 min) — unaffected by DST`);
+  console.log(
+    `  ✓ ${workflow}: 24h coverage (every 15 min) — unaffected by DST`,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -162,9 +174,15 @@ console.log("workflow-cron regression tests\n");
 
   assert.equal(hours, "*", `${workflow}: must cover all 24 UTC hours`);
   for (const c of crons) {
-    assert.deepEqual(c.minutes, [13, 43], `${workflow}: minute pattern of "${c.raw}"`);
+    assert.deepEqual(
+      c.minutes,
+      [13, 43],
+      `${workflow}: minute pattern of "${c.raw}"`,
+    );
   }
-  console.log(`  ✓ ${workflow}: 24h coverage (every 30 min) — unaffected by DST`);
+  console.log(
+    `  ✓ ${workflow}: 24h coverage (every 30 min) — unaffected by DST`,
+  );
 }
 
 console.log("\nAll workflow-cron regression tests passed.");

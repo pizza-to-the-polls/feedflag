@@ -10,7 +10,9 @@ import { slackNotifier } from "./slack.js";
 export function resolveNotifier(): Notifier | null {
   if (settings.zapierCatchUrl) return zapierNotifier;
   if (settings.slackWebhookUrl) {
-    console.warn("[feedflag] ZAPIER_CATCH_URL unset — posting direct to Slack webhook");
+    console.warn(
+      "[feedflag] ZAPIER_CATCH_URL unset — posting direct to Slack webhook",
+    );
     return slackNotifier;
   }
   return null;

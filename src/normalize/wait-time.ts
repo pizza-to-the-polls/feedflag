@@ -20,20 +20,20 @@ export async function normalizeWaitText(text: string): Promise<NormalizedWait> {
   let raw: string;
   try {
     raw = await openrouterChat({
-    model: settings.textModel,
-    max_tokens: 120,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content:
-          'Normalize a polling-place wait-time description. Respond with strict JSON: ' +
-          '{"wait_minutes": <int minutes or null>, "wait_category": <"short"|"medium"|"long"|null>}. ' +
-          'Rules: a range like "20-30 min" -> midpoint (25). Categorical words ("short","moderate","long") ' +
-          '-> wait_category. "N people in line" -> ~N minutes. If unparseable, both null.',
-      },
-      { role: "user", content: t },
-    ],
+      model: settings.textModel,
+      max_tokens: 120,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "Normalize a polling-place wait-time description. Respond with strict JSON: " +
+            '{"wait_minutes": <int minutes or null>, "wait_category": <"short"|"medium"|"long"|null>}. ' +
+            'Rules: a range like "20-30 min" -> midpoint (25). Categorical words ("short","moderate","long") ' +
+            '-> wait_category. "N people in line" -> ~N minutes. If unparseable, both null.',
+        },
+        { role: "user", content: t },
+      ],
     });
   } catch {
     // Ground-truth reports must survive normalizer hiccups — emit with
@@ -41,7 +41,9 @@ export async function normalizeWaitText(text: string): Promise<NormalizedWait> {
     return {};
   }
   try {
-    const j = JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as {
+    const j = JSON.parse(
+      raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1),
+    ) as {
       wait_minutes?: number | string | null;
       wait_category?: string | null;
     };

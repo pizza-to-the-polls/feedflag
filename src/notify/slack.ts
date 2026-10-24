@@ -5,7 +5,9 @@ import { flagText } from "./format.js";
 /** First embeddable image URL for a flagged post (fresh CDN URLs — hotlinked,
  *  never stored; video-only posts fall back to a link). */
 export function flagMediaUrl(f: FlaggedItem): string | undefined {
-  const imgs = f.description.item.mediaUrls.filter((u) => /\.(jpe?g|png|webp)([?#]|$)/i.test(u));
+  const imgs = f.description.item.mediaUrls.filter((u) =>
+    /\.(jpe?g|png|webp)([?#]|$)/i.test(u),
+  );
   return imgs[0] ?? f.description.item.mediaUrls[0] ?? undefined;
 }
 
@@ -32,7 +34,9 @@ export const slackNotifier: Notifier = {
           ...(image ? { blocks: undefined } : {}),
         };
         if (image) {
-          body.attachments = [{ color: "#E01B5D", fallback: "flagged media", image_url: image }];
+          body.attachments = [
+            { color: "#E01B5D", fallback: "flagged media", image_url: image },
+          ];
         }
         const res = await fetch("https://slack.com/api/chat.postMessage", {
           method: "POST",
@@ -44,7 +48,9 @@ export const slackNotifier: Notifier = {
           signal: AbortSignal.timeout(15000),
         });
         if (!res.ok) {
-          throw new Error(`Slack chat.postMessage ${res.status} (ch ${channel})`);
+          throw new Error(
+            `Slack chat.postMessage ${res.status} (ch ${channel})`,
+          );
         }
       }
       return;
@@ -55,11 +61,17 @@ export const slackNotifier: Notifier = {
     const res = await fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ text, username: "feedflag", icon_emoji: ":feedflag:" }),
+      body: JSON.stringify({
+        text,
+        username: "feedflag",
+        icon_emoji: ":feedflag:",
+      }),
       signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) {
-      throw new Error(`Slack webhook ${res.status}: ${(await res.text()).slice(0, 200)}`);
+      throw new Error(
+        `Slack webhook ${res.status}: ${(await res.text()).slice(0, 200)}`,
+      );
     }
   },
 };

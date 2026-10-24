@@ -13,7 +13,10 @@ export class SeenStore {
     await mkdir(settings.dataDir, { recursive: true });
     if (!existsSync(this.path)) return;
     try {
-      const raw = JSON.parse(await readFile(this.path, "utf8")) as Record<string, string>;
+      const raw = JSON.parse(await readFile(this.path, "utf8")) as Record<
+        string,
+        string
+      >;
       this.seen = new Map(Object.entries(raw));
     } catch {
       this.seen = new Map();
@@ -48,7 +51,9 @@ export async function appendFlagged(flag: FlaggedItem): Promise<void> {
 }
 
 /** Append normalized, aggregator-ready records (see docs in README "Future scope"). */
-export async function appendObservations(observations: Observation[]): Promise<void> {
+export async function appendObservations(
+  observations: Observation[],
+): Promise<void> {
   if (observations.length === 0) return;
   await mkdir(settings.dataDir, { recursive: true });
   const lines = observations.map((o) => JSON.stringify(o)).join("\n") + "\n";
@@ -69,5 +74,8 @@ export async function readSyncStamp(): Promise<string> {
 export async function writeSyncStamp(): Promise<void> {
   await mkdir(settings.dataDir, { recursive: true });
   const path = join(settings.dataDir, "reports-sync.json");
-  await writeFile(path, JSON.stringify({ since: new Date().toISOString() }, null, 2));
+  await writeFile(
+    path,
+    JSON.stringify({ since: new Date().toISOString() }, null, 2),
+  );
 }

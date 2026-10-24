@@ -116,11 +116,21 @@ const flagged = obs.filter(
     o.confidence >= FLAG_CONFIDENCE &&
     o.domain === "social" &&
     (!FLAG_CATEGORIES || FLAG_CATEGORIES.includes(o.signal_kind)) &&
-    !wrongLabels.has(observationId({ source_ref: o.source_ref, observed_at: o.observed_at, domain: o.domain })),
+    !wrongLabels.has(
+      observationId({
+        source_ref: o.source_ref,
+        observed_at: o.observed_at,
+        domain: o.domain,
+      }),
+    ),
 );
 const mediaOf = (o: Obs): string | undefined => {
   const urls = o.description?.item?.mediaUrls ?? [];
-  return urls.find((u) => /\.(jpe?g|png|webp)([?#]|$)/i.test(u)) ?? urls[0] ?? undefined;
+  return (
+    urls.find((u) => /\.(jpe?g|png|webp)([?#]|$)/i.test(u)) ??
+    urls[0] ??
+    undefined
+  );
 };
 const byDomain = new Map<string, number>();
 const byKind = new Map<string, number>();
@@ -131,32 +141,48 @@ for (const o of obs) {
 
 if (SLACK) {
   const parts: string[] = [];
+  parts.push(":pizza: *Feedflag digest — last " + HOURS + "h*");
   parts.push(
-    ":pizza: *Feedflag digest — last " + HOURS + "h*",
-  );
-  parts.push(
-    obs.length + " observations (" + [...byDomain.entries()].map(([d, n]) => n + " " + d).join(", ") + ")",
+    obs.length +
+      " observations (" +
+      [...byDomain.entries()].map(([d, n]) => n + " " + d).join(", ") +
+      ")",
   );
   // govt: compact per-source line — sites tracked, any >= 60min lines hot now
   const govt = obs.filter((o) => o.domain === "govt");
   if (govt.length) {
     const hot = govt.filter((o) => (o.wait_minutes ?? 0) >= 60);
-    const counties = [...new Set(govt.map((o) => `${o.author ?? ""}`.replace(/ ?Wait Time.*/i, "")))];
+    const counties = [
+      ...new Set(
+        govt.map((o) => `${o.author ?? ""}`.replace(/ ?Wait Time.*/i, "")),
+      ),
+    ];
     parts.push(
-      ":stopwatch: " + govt.length + " gov readings (" + counties.slice(0, 6).join(" · ") +
-        (counties.length > 6 ? " +" + (counties.length - 6) : "") + ")" +
+      ":stopwatch: " +
+        govt.length +
+        " gov readings (" +
+        counties.slice(0, 6).join(" · ") +
+        (counties.length > 6 ? " +" + (counties.length - 6) : "") +
+        ")" +
         (hot.length ? " — *" + hot.length + " ≥60min now:" : " — none ≥60min"),
     );
     for (const h of hot.slice(0, 6)) {
       parts.push(
-        "  • " + (h.location?.raw ?? "(unnamed)").slice(0, 40) +
-          ": " + h.wait_minutes + " min" +
-          (h.location?.county || h.location?.state ? ` (${[h.location.city, h.location.county, h.location.state].filter(Boolean).join(", ")})` : ""),
+        "  • " +
+          (h.location?.raw ?? "(unnamed)").slice(0, 40) +
+          ": " +
+          h.wait_minutes +
+          " min" +
+          (h.location?.county || h.location?.state
+            ? ` (${[h.location.city, h.location.county, h.location.state].filter(Boolean).join(", ")})`
+            : ""),
       );
     }
   }
   if (flagged.length) {
-    parts.push(":triangular_flag_on_post: " + flagged.length + " social flag(s):");
+    parts.push(
+      ":triangular_flag_on_post: " + flagged.length + " social flag(s):",
+    );
     for (const f of flagged) {
       parts.push(
         "  • " +
@@ -183,7 +209,11 @@ if (SLACK) {
       username: "feedflag",
       icon_emoji: ":feedflag:",
       attachments: images.length
-        ? images.map((image) => ({ color: "#E01B5D", fallback: "flagged media", image_url: image }))
+        ? images.map((image) => ({
+            color: "#E01B5D",
+            fallback: "flagged media",
+            image_url: image,
+          }))
         : undefined,
     }),
   );
@@ -210,7 +240,11 @@ if (flagged.length > 0) {
   lines.push("| ID | Platform | Who | Kind | Conf | Provider | Link |");
   lines.push("|---|---|---|---|---|---|---|");
   for (const f of flagged) {
-    const id8 = observationId({ source_ref: f.source_ref, observed_at: f.observed_at, domain: f.domain });
+    const id8 = observationId({
+      source_ref: f.source_ref,
+      observed_at: f.observed_at,
+      domain: f.domain,
+    });
     const link = f.url ? `[view](${f.url})` : "—";
     lines.push(
       `| ${id8} | ${f.platform ?? "?"} | @${f.author ?? "?"} | ${KIND_EMOJI[f.signal_kind] ?? ""}${f.signal_kind} | ${pct(f.confidence)} | ${f.provider} | ${link} |`,
@@ -234,7 +268,9 @@ if (flagged.length > 0) {
 }
 
 const sample = obs.find((o) => o.relevant && o.description?.caption);
-const sampleCaption = sample?.description?.caption || obs.find((o) => o.description?.caption)?.description?.caption;
+const sampleCaption =
+  sample?.description?.caption ||
+  obs.find((o) => o.description?.caption)?.description?.caption;
 if (sampleCaption) {
   lines.push("");
   lines.push("### Sample caption (from the description sets)");

@@ -77,7 +77,12 @@ export interface Observation {
   observed_at: string;
   posted_at?: string;
   /** Filled by downstream location matching (retrieve-then-match) */
-  location?: { raw?: string; state?: string; county?: string; precinct?: string };
+  location?: {
+    raw?: string;
+    state?: string;
+    county?: string;
+    precinct?: string;
+  };
   /** Jev category, e.g. "poll_line_report" */
   signal_kind: string;
   /** Filled by a Phase-3-style extractor; empty from the social leg today */

@@ -15,7 +15,13 @@
  * 👍 confirms the reading (confidence boost note), 👎 flags the source for
  * vetting review (note with source URL).
  */
-import { readFileSync, existsSync, writeFileSync, appendFileSync, mkdirSync } from "node:fs";
+import {
+  readFileSync,
+  existsSync,
+  writeFileSync,
+  appendFileSync,
+  mkdirSync,
+} from "node:fs";
 import { join, resolve } from "node:path";
 
 const TOKEN = process.env.SLACK_BOT_TOKEN ?? "";
@@ -32,10 +38,15 @@ interface Label {
   via: "slack-reaction";
 }
 
-async function api<T>(method: string, params: Record<string, string | number | undefined>): Promise<T | null> {
+async function api<T>(
+  method: string,
+  params: Record<string, string | number | undefined>,
+): Promise<T | null> {
   if (!TOKEN) return null;
   const qs = new URLSearchParams(
-    Object.entries(params).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)]),
+    Object.entries(params)
+      .filter(([, v]) => v != null)
+      .map(([k, v]) => [k, String(v)]),
   );
   try {
     const res = await fetch(`https://slack.com/api/${method}?${qs}`, {
@@ -58,7 +69,9 @@ function loadLabels(): Set<string> {
     if (!l.trim()) continue;
     try {
       out.add((JSON.parse(l) as { id: string }).id);
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
   }
   return out;
 }
@@ -72,14 +85,22 @@ function appendLabel(l: Label): void {
 const loadCursor = (): string => {
   const p = join(DATA_DIR, "reactions-sync.json");
   if (!existsSync(p)) return "";
-  try { return (JSON.parse(readFileSync(p, "utf8")) as { cursor?: string }).cursor ?? ""; }
-  catch { return ""; }
+  try {
+    return (
+      (JSON.parse(readFileSync(p, "utf8")) as { cursor?: string }).cursor ?? ""
+    );
+  } catch {
+    return "";
+  }
 };
 
 const saveCursor = (c: string): void => {
   if (DRY) return;
   mkdirSync(DATA_DIR, { recursive: true });
-  writeFileSync(join(DATA_DIR, "reactions-sync.json"), JSON.stringify({ cursor: c }, null, 2));
+  writeFileSync(
+    join(DATA_DIR, "reactions-sync.json"),
+    JSON.stringify({ cursor: c }, null, 2),
+  );
 };
 
 const main = async () => {
@@ -100,12 +121,20 @@ const main = async () => {
     .map((id) => ({ id, name: id }));
   const members = configured.length
     ? configured
-    : ((await api<{ channels: { id: string; name: string; is_member?: boolean }[] }>(
-        "users.conversations",
-        { types: "public_channel,private_channel", limit: 100 },
-      ))?.channels ?? []).filter((c) => c.is_member);
+    : (
+        (
+          await api<{
+            channels: { id: string; name: string; is_member?: boolean }[];
+          }>("users.conversations", {
+            types: "public_channel,private_channel",
+            limit: 100,
+          })
+        )?.channels ?? []
+      ).filter((c) => c.is_member);
   if (!members.length) {
-    console.log("[reactions] no channels configured and bot is in none — set SLACK_FLAG_CHANNELS or invite feedflag");
+    console.log(
+      "[reactions] no channels configured and bot is in none — set SLACK_FLAG_CHANNELS or invite feedflag",
+    );
     return;
   }
 
@@ -114,10 +143,20 @@ const main = async () => {
     let latest = newCursor;
     let newest = newCursor;
     while (hasMore) {
-      const hist = await api<{ messages: { ts: string; text: string; username?: string; bot_id?: string }[]; has_more: boolean }>(
-        "conversations.history",
-        { channel: ch.id, limit: 100, oldest: latest || undefined, latest: undefined },
-      );
+      const hist = await api<{
+        messages: {
+          ts: string;
+          text: string;
+          username?: string;
+          bot_id?: string;
+        }[];
+        has_more: boolean;
+      }>("conversations.history", {
+        channel: ch.id,
+        limit: 100,
+        oldest: latest || undefined,
+        latest: undefined,
+      });
       if (!hist) break;
       for (const m of hist.messages ?? []) {
         const mine = m.username === "feedflag" || !!m.bot_id;
@@ -125,29 +164,47 @@ const main = async () => {
         // short IDs in flag text: [cbe91f81]; govt posts: '[SITE] 45 min' via key#
         const idMatch = m.text.match(/\[([0-9a-f]{8})\]/);
         const sourceMatch = m.text.match(/Source: (\S+)/);
-        const recs = await api<{ message: { reactions: { name: string; users: string[] }[] } }>(
-          "reactions.get",
-          { channel: ch.id, timestamp: m.ts, full: true },
-        );
+        const recs = await api<{
+          message: { reactions: { name: string; users: string[] }[] };
+        }>("reactions.get", { channel: ch.id, timestamp: m.ts, full: true });
         const reactions = recs?.message?.reactions ?? [];
         for (const rx of reactions) {
-          if (rx.name !== "thumbsup" && rx.name !== "+1" && rx.name !== "thumbsdown" && rx.name !== "-1") continue;
-          const verdict = rx.name === "thumbsup" || rx.name === "+1" ? "right" : "wrong";
+          if (
+            rx.name !== "thumbsup" &&
+            rx.name !== "+1" &&
+            rx.name !== "thumbsdown" &&
+            rx.name !== "-1"
+          )
+            continue;
+          const verdict =
+            rx.name === "thumbsup" || rx.name === "+1" ? "right" : "wrong";
           if (idMatch) {
             const id = idMatch[1]!;
             // a fresh reaction is newer human truth than a stale label — allow
             // override (the loadLabels skip only guards batch double-processing)
             void labeled;
-            appendLabel({ id, verdict, note: `slack :${rx.name}: in #${ch.name}`, labeled_at: new Date().toISOString(), via: "slack-reaction" });
-            labeled.add(id); newLabels++;
+            appendLabel({
+              id,
+              verdict,
+              note: `slack :${rx.name}: in #${ch.name}`,
+              labeled_at: new Date().toISOString(),
+              via: "slack-reaction",
+            });
+            labeled.add(id);
+            newLabels++;
           } else if (sourceMatch && verdict === "wrong") {
             // govt source flag — note it for vetting review (no id to label)
-            console.log(`[reactions] 👎 on govt source (vetting review): ${sourceMatch[1]}`);
+            console.log(
+              `[reactions] 👎 on govt source (vetting review): ${sourceMatch[1]}`,
+            );
           }
         }
       }
       const newestTs = hist.messages?.[0]?.ts;
-      if (newestTs && (!newest || Number.parseFloat(newestTs) > Number.parseFloat(newest))) {
+      if (
+        newestTs &&
+        (!newest || Number.parseFloat(newestTs) > Number.parseFloat(newest))
+      ) {
         newest = newestTs;
       }
       hasMore = hist.has_more && (hist.messages?.length ?? 0) >= 100;
@@ -155,13 +212,20 @@ const main = async () => {
         latest = String(Number.parseFloat(newestTs ?? "0"));
       }
     }
-    if (newest && (!newCursor || Number.parseFloat(newest) > Number.parseFloat(newCursor))) {
+    if (
+      newest &&
+      (!newCursor || Number.parseFloat(newest) > Number.parseFloat(newCursor))
+    ) {
       newCursor = newest;
     }
-    console.log(`[reactions] #${ch.name}: scanned (labels now: ${newLabels} new)`);
+    console.log(
+      `[reactions] #${ch.name}: scanned (labels now: ${newLabels} new)`,
+    );
   }
   saveCursor(newCursor);
-  console.log(`[reactions] done: ${newLabels} new label(s)${DRY ? " (dry)" : ""}`);
+  console.log(
+    `[reactions] done: ${newLabels} new label(s)${DRY ? " (dry)" : ""}`,
+  );
 };
 
 main().catch((err) => {

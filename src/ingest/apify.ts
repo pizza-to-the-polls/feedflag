@@ -23,7 +23,9 @@ export async function runApifyActor(
     body: JSON.stringify(input),
   });
   if (!res.ok) {
-    throw new Error(`Apify ${actorId} failed: ${res.status} ${(await res.text()).slice(0, 300)}`);
+    throw new Error(
+      `Apify ${actorId} failed: ${res.status} ${(await res.text()).slice(0, 300)}`,
+    );
   }
   return (await res.json()) as any[];
 }
@@ -39,12 +41,21 @@ function arr(x: any): any[] {
 function mediaUrls(r: any, platform: Platform): string[] {
   switch (platform) {
     case "instagram": {
-      const images = arr(pick(r.images, r.displayUrl ? [r.displayUrl] : undefined));
+      const images = arr(
+        pick(r.images, r.displayUrl ? [r.displayUrl] : undefined),
+      );
       return images.filter((u) => typeof u === "string");
     }
     case "x": {
       const media = [
-        ...arr(pick(r.extended_entities?.media, r.extendedEntities?.media, r.entities?.media, r.media)),
+        ...arr(
+          pick(
+            r.extended_entities?.media,
+            r.extendedEntities?.media,
+            r.entities?.media,
+            r.media,
+          ),
+        ),
       ];
       return media
         .map((m: any) => pick(m?.media_url_https, m?.media_url))
@@ -69,7 +80,9 @@ function videoUrl(r: any, platform: Platform): string | undefined {
     .filter((v: any) => v?.content_type === "video/mp4")
     .map((v: any) => v?.url)[0];
   return pick(
-    platform === "tiktok" ? r?.video?.playAddr ?? r?.video?.downloadAddr : undefined,
+    platform === "tiktok"
+      ? (r?.video?.playAddr ?? r?.video?.downloadAddr)
+      : undefined,
     r?.videoUrl,
     r?.video?.playUrl,
     xVariant,
@@ -114,27 +127,52 @@ export function normalizeApifyRecord(
       r.author?.uniqueId,
       r.author?.name,
       "unknown",
-  ),
+    ),
   );
-  const id = pick(r.id, r.id_str, r.pk, r.postId, r.shortcode, r.webUrl, r.url, r.shareUrl);
+  const id = pick(
+    r.id,
+    r.id_str,
+    r.pk,
+    r.postId,
+    r.shortcode,
+    r.webUrl,
+    r.url,
+    r.shareUrl,
+  );
   if (!id) return null;
   // NB: pick() rejects "" (its own fallback) — coalesce to keep String() from
   // producing the literal "undefined" for video-only / caption-less posts.
-  const caption = String(pick(r.caption, r.full_text, r.fullText, r.text, r.title, r.desc) ?? "");
-  const url = pick(r.url, r.webVideoUrl, r.webUrl, r.shareUrl, r.externalUrl, r.link);
+  const caption = String(
+    pick(r.caption, r.full_text, r.fullText, r.text, r.title, r.desc) ?? "",
+  );
+  const url = pick(
+    r.url,
+    r.webVideoUrl,
+    r.webUrl,
+    r.shareUrl,
+    r.externalUrl,
+    r.link,
+  );
   return {
     id: String(id),
     platform,
     authorHandle: handle,
     postedAt: postedAt(r),
     caption,
-    hashtags: [...`${caption} ${caption}`.matchAll(/#[\p{L}\p{N}_]+/gu)].map((m) => m[0]),
+    hashtags: [...`${caption} ${caption}`.matchAll(/#[\p{L}\p{N}_]+/gu)].map(
+      (m) => m[0],
+    ),
     url: typeof url === "string" ? url : undefined,
     // Actor-provided AI video description (when the actor supports it):
     // text evidence without vision captioning.
     aiSummary:
-      typeof pick(r.videoMeta?.aiVideoDescription, r.videoMeta?.aiVideoSummary) === "string"
-        ? String(pick(r.videoMeta?.aiVideoDescription, r.videoMeta?.aiVideoSummary))
+      typeof pick(
+        r.videoMeta?.aiVideoDescription,
+        r.videoMeta?.aiVideoSummary,
+      ) === "string"
+        ? String(
+            pick(r.videoMeta?.aiVideoDescription, r.videoMeta?.aiVideoSummary),
+          )
         : undefined,
     mediaUrls: mediaUrls(r, platform),
     videoUrl: videoUrl(r, platform),

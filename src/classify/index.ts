@@ -10,7 +10,10 @@ import { llmFallbackProvider } from "./llm-fallback.js";
  * flash-lite classifier so the pipeline keeps flowing. The provider name
  * records which leg produced each classification.
  */
-function composite(jev: DecisionProvider, fallback: DecisionProvider): DecisionProvider {
+function composite(
+  jev: DecisionProvider,
+  fallback: DecisionProvider,
+): DecisionProvider {
   return {
     name: "jev+llm-fallback",
     async classify(d, categories) {
@@ -32,8 +35,12 @@ export function resolveClassifier(): DecisionProvider {
     return composite(jevProvider, llmFallbackProvider);
   }
   if (settings.openrouterKey) {
-    console.warn("[feedflag] JEV_MODEL empty — using LLM fallback (uncalibrated confidence)");
+    console.warn(
+      "[feedflag] JEV_MODEL empty — using LLM fallback (uncalibrated confidence)",
+    );
     return llmFallbackProvider;
   }
-  throw new Error("No classifier configured: set OPENROUTER_API_KEY (and optionally JEV_MODEL)");
+  throw new Error(
+    "No classifier configured: set OPENROUTER_API_KEY (and optionally JEV_MODEL)",
+  );
 }
