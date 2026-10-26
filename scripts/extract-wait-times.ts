@@ -17,7 +17,13 @@
  * - change detection vs data/govt-readings.json (per source+precinct):
  *   only CHANGED/NEW readings post to Slack; JS-walled pages report as
  *   confidence 0 (plan §5: "Map-only: cannot extract")
+ * - freshness + hours gates (issue #12): a wait value frozen across N
+ *   consecutive runs, or a reading observed outside the site's hours of
+ *   operation, is recorded (state + observation bus) but never posted to
+ *   the volunteer feed — the county's own app renders N/A for the same
+ *   data (see src/govt/gates.ts)
  * - every reading appends to data/observations.jsonl as domain "govt"
+ *   with the raw REST attributes as evidence
  */
 import {
   readFileSync,
@@ -29,6 +35,16 @@ import {
 import { join, resolve } from "node:path";
 import { openrouterChat } from "../src/describe/openrouter.js";
 import { settings } from "../src/config.js";
+import {
+  FRESHNESS_FROZEN_RUNS,
+  OUTSIDE_HOURS_CONFIDENCE,
+  freshnessConfidence,
+  isWithinHours,
+  markVanishedSites,
+  nextFreshness,
+  type ReadingState,
+} from "../src/govt/gates.js";
+import type { DescriptionSet } from "../src/types.js";
 
 const UA = "PizzaToThePolls/1.0 (civic-data wait-times; +https://polls.pizza)";
 /** Lines under this many minutes don't post to Slack (churn noise).
@@ -100,6 +116,14 @@ interface Source {
     lineCountField?: string;
     peopleField?: string;
     updatedField?: string;
+    /** Field whose value flags a site closed (e.g. "Closed") — such readings
+     *  are recorded but never posted (hours gate, issue #12). */
+    isOpenField?: string;
+    /** Uniform hours of operation "HH:MM-HH:MM" local — readings observed
+     *  outside them are recorded but never posted (issue #12 hours gate). */
+    defaultHours?: string;
+    /** IANA timezone used to evaluate defaultHours (e.g. America/Los_Angeles). */
+    timezone?: string;
   };
 }
 
@@ -113,15 +137,19 @@ interface Reading {
   wait_category: string | null;
   last_updated: string | null;
   confidence: number;
-}
-
-interface ReadingState {
-  minutes: number | null;
-  category: string | null;
-  updated: string | null;
-  confidence: number;
-  at: string;
-  address?: string | null;
+  // ── gate metadata + raw REST evidence (issue #12) ──
+  /** Raw REST wait field value (unparsed) — evidence trail / freshness input */
+  raw_wait_time?: number | string | null;
+  /** Raw REST last-refresh field value (unparsed) — evidence trail */
+  last_refresh?: string | null;
+  /** Consecutive runs the wait value has been unchanged (freshness gate) */
+  frozen_count?: number;
+  /** Wait field frozen across FRESHNESS_FROZEN_RUNS runs — never vol-posted */
+  stale?: boolean;
+  /** Observed outside the site's hours of operation — recorded, never posted */
+  outside_hours?: boolean;
+  /** Why the hours gate tripped (reason string for vetting/console) */
+  hours_reason?: string;
 }
 
 const pct = (n: number) => `${Math.round(n * 100)}%`;
@@ -433,17 +461,31 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
         const people = r.peopleField != null ? rec[r.peopleField] : undefined;
         const extra =
           people != null && Number(people) > 0 ? ` (${people} in line)` : "";
+        const lastRefreshRaw =
+          r.updatedField != null ? rec[r.updatedField] : undefined;
+        const statusText =
+          r.isOpenField != null ? String(rec[r.isOpenField] ?? "") : "";
         return {
           precinct_name: (name || "(unnamed)") + extra,
           site_key: siteKey,
           address,
           wait_minutes: minutes ?? minutes2,
           wait_category: cat,
-          last_updated:
-            r.updatedField != null && rec[r.updatedField] != null
-              ? String(rec[r.updatedField])
-              : null,
+          last_updated: lastRefreshRaw != null ? String(lastRefreshRaw) : null,
           confidence: 0.95, // structured API — near-certain
+          // Raw REST attributes ride on the reading (issue #12): evidence for
+          // audits, freshness-gate input, and status-field hours gating.
+          raw_wait_time:
+            typeof rawMin === "number" || typeof rawMin === "string"
+              ? rawMin
+              : null,
+          last_refresh: lastRefreshRaw != null ? String(lastRefreshRaw) : null,
+          ...(r.isOpenField != null && /closed/i.test(statusText)
+            ? {
+                outside_hours: true,
+                hours_reason: `status field reports "${statusText}"`,
+              }
+            : {}),
         } satisfies Reading;
       })
       .filter((x) => x.wait_minutes != null || x.wait_category != null);
@@ -517,10 +559,11 @@ function loadState(): Record<string, ReadingState> {
  * Criteria (human-vetted design, 2026-10-21):
  *  1. ACTABILITY — volunteer can act: site name (not "(unnamed)"), physical
  *     address, working verify link (verify_url renders).
- *  2. AGREEMENT — the posted number agrees with the county's public page:
- *     REST readings come from the same service the public app reads (by
- *     construction — Clark taught us to verify this); reading is fresh
- *     (observed this run); confidence sane.
+ *  2. AGREEMENT — the posted number agrees with what a human sees on the
+ *     county's public page. Raw REST fields are NOT enough by construction
+ *     (issue #12: the public app applies staleness/hours display logic on
+ *     top of the raw field — we posted "65 min" while the county card
+ *     showed N/A); freshness-gate and hours-gate verdicts must be clean.
  *  3. DISPATCH GATE — could we send pizzas here: everything above + >= 60 min
  *     (or 'long') + source graduated (human decision in config).
  */
@@ -559,11 +602,12 @@ async function evaluateReading(s: Source, r: Reading): Promise<Evaluation> {
   } else if (!(await verifyLinkOk(vurl))) {
     reasons.push("verify link dead");
   }
-  // 2. Agreement
-  if (!s.rest && methodOf(s) !== "rest") {
-    // vision/text readings: the screenshot/text IS the public page, so
-    // agreement holds by construction; freshness is the reading timestamp.
-  }
+  // 2. Agreement — the freshness + hours gates run upstream; their verdicts
+  // ride on the reading and block dispatch here too (defense in depth).
+  if (r.stale)
+    reasons.push(`stale: wait field frozen ${r.frozen_count ?? "?"} run(s)`);
+  if (r.outside_hours)
+    reasons.push(r.hours_reason ?? "outside hours of operation");
   if (r.confidence < 0.6) reasons.push(`low confidence ${pct(r.confidence)}`);
   // 3. Dispatch gate
   const dispatchable =
@@ -571,10 +615,6 @@ async function evaluateReading(s: Source, r: Reading): Promise<Evaluation> {
     s.graduated === true &&
     ((r.wait_minutes ?? -1) >= MIN_POST_MINUTES || r.wait_category === "long");
   return { reasons, dispatchable };
-}
-
-function methodOf(s: Source): string {
-  return s.rest ? "rest" : s.source_type;
 }
 
 const REPORT = process.argv.includes("--report");
@@ -673,33 +713,107 @@ const main = async () => {
         console.log(
           `  0 readings (JS-walled even via screenshot, or no data published)`,
         );
+        // carry forward prior state — a transient empty response must not
+        // wipe per-site history (frozenCount, addresses) or the change-
+        // detection base (issue #12: tolerate county row churn)
+        for (const [k, v] of Object.entries(state)) {
+          if (k.startsWith(s.url)) next[k] = v;
+        }
       } else {
         console.log(`  ${readings.length} reading(s) via ${method}`);
       }
       const volChanges: string[] = [];
       const vetChanges: string[] = [];
+      const seenKeys = new Set<string>();
+      const gatedReadings: Reading[] = [];
       for (const r of readings) {
         const key = `${s.url}#${r.site_key ?? r.precinct_name}`;
+        seenKeys.add(key);
         const prev = state[key];
         const changed =
           !prev ||
           prev.minutes !== r.wait_minutes ||
           prev.category !== r.wait_category;
-        // record EVERYTHING in state (change detection needs the full picture)
+
+        // ── Gates (issue #12) — applied before any posting decision ──
+        let gated: Reading = { ...r };
+        if (method === "rest") {
+          // FRESHNESS GATE: a WAIT_TIME identical across consecutive runs is a
+          // frozen field, not a live queue (Clark: 60/61 sites frozen for days
+          // while the county card showed N/A). Stale readings keep recording
+          // but never reach the vol feed.
+          const fv = nextFreshness(gated.wait_minutes, prev);
+          gated = {
+            ...gated,
+            frozen_count: fv.frozenCount,
+            stale: fv.stale,
+            confidence: freshnessConfidence(gated.confidence, fv),
+          };
+        }
+        if (s.rest?.defaultHours && s.rest?.timezone) {
+          // HOURS GATE: readings observed outside the site's hours of
+          // operation are recorded but never posted (pre-open churn is noise —
+          // the 08:13 PT "65 min" post fired 47 min before opening).
+          const hv = isWithinHours(s.rest.defaultHours, s.rest.timezone);
+          if (!hv.open) {
+            gated = {
+              ...gated,
+              outside_hours: true,
+              hours_reason: hv.reason,
+              confidence: Math.min(gated.confidence, OUTSIDE_HOURS_CONFIDENCE),
+            };
+          } else if (hv.reason) {
+            console.log(`  [hours] gate failed open: ${hv.reason}`);
+          }
+        }
+
+        // record EVERYTHING in state (change detection needs the full picture;
+        // gate metadata rides along so the next run can chain frozenCount)
+        gatedReadings.push(gated);
         next[key] = {
-          minutes: r.wait_minutes,
-          category: r.wait_category,
-          updated: r.last_updated,
-          confidence: r.confidence,
+          minutes: gated.wait_minutes,
+          category: gated.wait_category,
+          updated: gated.last_updated,
+          confidence: gated.confidence,
           at: new Date().toISOString(),
-          address: r.address ?? prev?.address ?? null,
+          address: gated.address ?? prev?.address ?? null,
+          rawWaitTime: gated.raw_wait_time ?? null,
+          lastRefresh: gated.last_refresh ?? null,
+          frozenCount: gated.frozen_count ?? 0,
+          active: true,
         };
+
+        // HOURS-GATED: state + observation bus only — no Slack, either channel
+        if (gated.outside_hours) {
+          if (changed)
+            console.log(
+              `  [hours] ${gated.precinct_name.slice(0, 40)}: recorded only — ${gated.hours_reason ?? "outside hours"}`,
+            );
+          continue;
+        }
+
+        // FRESHNESS-GATED: never vol-posted. One-time vetting flag on the run
+        // staleness trips; silent state updates after (no per-run spam).
+        if (gated.stale) {
+          const prevStale = (prev?.frozenCount ?? 0) >= FRESHNESS_FROZEN_RUNS;
+          if (!prevStale) {
+            vetChanges.push(
+              `⏸️ ${volChannelLine(gated, prev)} — WAIT_TIME frozen ${gated.frozen_count} run(s)` +
+                ` (raw=${JSON.stringify(gated.raw_wait_time ?? null)}, Last_Refresh=${gated.last_refresh ?? "?"}) — withheld from vol feed`,
+            );
+            console.log(
+              `  [stale] ${gated.precinct_name.slice(0, 40)}: frozen ${gated.frozen_count} run(s) — vol post withheld`,
+            );
+          }
+          continue;
+        }
+
         if (!changed) continue;
-        const line = volChannelLine(r, prev);
-        const mins = r.wait_minutes ?? -1;
+        const line = volChannelLine(gated, prev);
+        const mins = gated.wait_minutes ?? -1;
         const volEligible =
-          mins >= MIN_POST_MINUTES || r.wait_category === "long";
-        const evaluation = await evaluateReading(s, r);
+          mins >= MIN_POST_MINUTES || gated.wait_category === "long";
+        const evaluation = await evaluateReading(s, gated);
         // VOL FEED (graduated sources only): dispatch signal = lines >= 1 hour
         // AND eval-clean (name + address + live verify link + fresh).
         // Single-channel mode (no vols webhook): the one channel is VOL-GRADE —
@@ -724,6 +838,15 @@ const main = async () => {
           // two-channel mode: vetting tier sees churn for source smell-tests
           vetChanges.push(line);
         }
+      }
+      // Site-removal tolerance (issue #12): the county adds/removes rows
+      // between runs (Clark shrank 61 → 36 mid-window) — vanished sites are
+      // marked inactive in state, not silently deleted. Only on a real REST
+      // result set: a failed/empty fetch must never mark sites inactive.
+      if (method === "rest" && readings.length > 0) {
+        const vanished = markVanishedSites(s.url, state, next, seenKeys);
+        if (vanished.length)
+          console.log(`  marked ${vanished.length} vanished site(s) inactive`);
       }
       // Single-channel mode (no vols webhook): the vol post below is the
       // ONLY delivery (webhook fallback), so a vetting post here would
@@ -753,16 +876,50 @@ const main = async () => {
       // observations for the bus (domain govt)
       if (!DRY) {
         mkdirSync(DATA_DIR, { recursive: true });
-        const lines = readings
-          .map((r) =>
-            JSON.stringify({
+        const observedAt = new Date().toISOString();
+        // gated readings, not raw: the observation must reflect the gate
+        // verdicts (confidence, staleness) a downstream consumer would act on
+        const lines = gatedReadings
+          .map((r) => {
+            const sourceRef = `${s.url}#${r.site_key ?? r.precinct_name}`;
+            // Raw-field evidence (issue #12): audits must not need to re-query
+            // the API to reconstruct why a reading was posted or withheld.
+            const evidence: Record<string, unknown> = {
+              method: method ?? "unknown",
+              rawWaitTime: r.raw_wait_time ?? null,
+              lastRefresh: r.last_refresh ?? null,
+              frozenCount: r.frozen_count ?? 0,
+              stale: r.stale ?? false,
+              outsideHours: r.outside_hours ?? false,
+              hoursReason: r.hours_reason ?? null,
+              sourceUrl: s.rest?.url ?? s.url,
+            };
+            const description: DescriptionSet = {
+              item: {
+                id: sourceRef,
+                platform: "site",
+                authorHandle: s.display_label.slice(0, 40),
+                postedAt: r.last_updated ?? observedAt,
+                caption: `Govt wait-time reading — ${s.state} ${s.county ?? ""}`,
+                hashtags: [],
+                mediaUrls: [],
+                source: `govt-extraction:${method ?? "unknown"}`,
+              },
+              caption:
+                `REST field evidence: wait=${JSON.stringify(r.raw_wait_time ?? null)}, ` +
+                `last_refresh=${r.last_refresh ?? "n/a"}, frozen_run(s)=${r.frozen_count ?? 0}, ` +
+                `stale=${r.stale ?? false}, outside_hours=${r.outside_hours ?? false}`,
+              imageDescriptions: [],
+              evidence,
+            };
+            return JSON.stringify({
               schema: "feedflag/observation@1",
               domain: "govt",
-              source_ref: `${s.url}#${r.site_key ?? r.precinct_name}`,
+              source_ref: sourceRef,
               url: s.url,
               author: s.display_label,
               platform: "govt",
-              observed_at: new Date().toISOString(),
+              observed_at: observedAt,
               posted_at: r.last_updated ?? undefined,
               location: {
                 raw: r.precinct_name,
@@ -775,8 +932,9 @@ const main = async () => {
               confidence: r.confidence,
               provider: settings.textModel,
               relevant: true,
-            }),
-          )
+              description,
+            });
+          })
           .join("\n");
         if (lines)
           appendFileSync(join(DATA_DIR, "observations.jsonl"), lines + "\n");
