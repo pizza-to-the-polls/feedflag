@@ -725,7 +725,10 @@ const main = async () => {
           vetChanges.push(line);
         }
       }
-      if (!DRY && vetChanges.length > 0) {
+      // Single-channel mode (no vols webhook): the vol post below is the
+      // ONLY delivery (webhook fallback), so a vetting post here would
+      // duplicate it in the same channel (dupes seen 2026-10-26 El Paso).
+      if (!DRY && vetChanges.length > 0 && settings.volsWebhookUrl) {
         const msg =
           `:stopwatch: *Wait-time update* — ${s.state} ${s.county ?? ""}` +
           `${s.graduated ? " ✅" : " 🧪"}\n` +
