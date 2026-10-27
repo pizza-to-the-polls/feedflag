@@ -4,6 +4,7 @@ import { normalizeApifyRecord, runApifyActor } from "./ingest/apify.js";
 import { describeItem } from "./describe/openrouter.js";
 import { resolveClassifier } from "./classify/index.js";
 import { resolveNotifier } from "./notify/index.js";
+import { isDispatchRelevantWait, waitReportText } from "./notify/format.js";
 import {
   appendFlagged,
   appendObservations,
@@ -157,9 +158,24 @@ export async function runPipeline(opts: RunOptions = {}) {
         reports,
         settings.describeConcurrency,
       );
-      console.log(
-        `[feedflag] crowd leg: ${reports.length} site reports -> observations`,
+      const postable = crowd.filter((o) =>
+        isDispatchRelevantWait(o.wait_minutes, o.wait_category),
       );
+      console.log(
+        `[feedflag] crowd leg: ${reports.length} site reports -> observations` +
+          (postable.length ? ` (${postable.length} dispatch-relevant)` : ""),
+      );
+      if (postable.length && notifier) {
+        for (const o of postable) {
+          await notifier
+            .postText(waitReportText(o))
+            .catch((err) =>
+              console.warn(
+                `[feedflag] crowd notify failed: ${String(err).slice(0, 150)}`,
+              ),
+            );
+        }
+      }
     }
   }
 

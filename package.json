@@ -13,7 +13,7 @@
     "digest": "tsx scripts/digest.ts",
     "label": "tsx scripts/label.ts",
     "check": "tsc --noEmit",
-    "test": "tsx scripts/test-workflow-crons.ts && tsx scripts/test-govwatch.ts",
+    "test": "tsx scripts/test-workflow-crons.ts && tsx scripts/test-govwatch.ts && tsx scripts/test-crowd-wait-posts.ts",
     "lint": "eslint src scripts"
   },
   "dependencies": {
