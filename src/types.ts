@@ -60,6 +60,7 @@ export interface DecisionProvider {
 export interface Notifier {
   name: string;
   notify(flag: FlaggedItem): Promise<void>;
+  postText(text: string): Promise<void>;
 }
 
 /** Source domain — the aggregator joins social signals, gov-page extractions, and site reports. */

@@ -44,13 +44,10 @@ import {
   nextFreshness,
   type ReadingState,
 } from "../src/govt/gates.js";
+import { MIN_POST_MINUTES } from "../src/notify/format.js";
 import type { DescriptionSet } from "../src/types.js";
 
 const UA = "PizzaToThePolls/1.0 (civic-data wait-times; +https://polls.pizza)";
-/** Lines under this many minutes don't post to Slack (churn noise).
- *  >= 1h is the dispatch-relevant signal. Everything still records to state
- *  + the observation bus. */
-const MIN_POST_MINUTES = 60;
 const DRY = process.argv.includes("--dry");
 const DATA_DIR = resolve(process.env.DATA_DIR ?? "./data");
 const SOURCES_PATH = resolve(
