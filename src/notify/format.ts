@@ -40,7 +40,7 @@ export function waitReportText(
   const place = loc.raw ?? city;
   const val =
     wait_minutes != null ? `${wait_minutes} min` : (wait_category ?? "?");
-  const header = [city, state].filter(Boolean).join(", ");
+  const header = [city, state].filter(Boolean).join(", ") || "unknown";
   const source = url;
 
   return [
