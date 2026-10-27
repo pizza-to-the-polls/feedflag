@@ -1,54 +1,11 @@
-import type { FlaggedItem, Observation } from "../types.js";
+import type { FlaggedItem } from "../types.js";
 import { excerpt } from "../util.js";
 import { flagMediaUrl } from "./slack.js";
 
 /** Lines >= this many minutes are the dispatch-relevant signal (1h).
- *  Shared by the crowd leg (pipeline) and the govt leg (extract-wait-times). */
+ *  Shared by the govt leg (extract-wait-times). Crowd reports never post to
+ *  Slack — they already surface via the pizzabase Zapier report hooks. */
 export const MIN_POST_MINUTES = 60;
-
-/** Ground-truth reports are vol-grade by definition (no graduated gating).
- *  Numeric value wins when present: "Less than one hour" normalizes to
- *  {0, "long"} — that is NOT dispatch-relevant. Category-only "long"
- *  (free text the LLM can't turn into minutes, e.g. "super long line")
- *  still qualifies. */
-export function isDispatchRelevantWait(
-  minutes: number | null | undefined,
-  category: string | null | undefined,
-): boolean {
-  return (
-    (minutes ?? -1) >= MIN_POST_MINUTES ||
-    (minutes == null && category === "long")
-  );
-}
-
-/**
- * Formats an Observation into a text suitable for Slack post when it's a dispatch-relevant wait time report.
- * Format:
- * :stopwatch: *Wait-time report* — <city>, <state>
- * • <location.raw or city>: <N min | long> (user-submitted report)
- * Source: <url>
- */
-export function waitReportText(
-  o: Partial<Observation> & { url?: string },
-): string {
-  const wait_minutes = o.wait_minutes ?? null;
-  const wait_category = o.wait_category ?? null;
-  const url = o.url ?? "";
-  const loc = o.location ?? {};
-  const city = loc.county;
-  const state = loc.state;
-  const place = loc.raw ?? city;
-  const val =
-    wait_minutes != null ? `${wait_minutes} min` : (wait_category ?? "?");
-  const header = [city, state].filter(Boolean).join(", ") || "unknown";
-  const source = url;
-
-  return [
-    `:stopwatch: *Wait-time report* — ${header}`,
-    `• ${place}: ${val} (user-submitted report)`,
-    `Source: ${source}`,
-  ].join("\n");
-}
 
 /** Human-facing message text. JEV can't write strings, so this stays here. */
 export function flagText(f: FlaggedItem): string {

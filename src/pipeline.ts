@@ -4,7 +4,6 @@ import { normalizeApifyRecord, runApifyActor } from "./ingest/apify.js";
 import { describeItem } from "./describe/openrouter.js";
 import { resolveClassifier } from "./classify/index.js";
 import { resolveNotifier } from "./notify/index.js";
-import { isDispatchRelevantWait, waitReportText } from "./notify/format.js";
 import {
   appendFlagged,
   appendObservations,
@@ -158,24 +157,12 @@ export async function runPipeline(opts: RunOptions = {}) {
         reports,
         settings.describeConcurrency,
       );
-      const postable = crowd.filter((o) =>
-        isDispatchRelevantWait(o.wait_minutes, o.wait_category),
-      );
+      // No Slack posting for crowd reports: they already surface via the
+      // pizzabase Zapier report hooks (#feed-reports). feedflag archives them
+      // to the bus + DB only (corroboration ground truth).
       console.log(
-        `[feedflag] crowd leg: ${reports.length} site reports -> observations` +
-          (postable.length ? ` (${postable.length} dispatch-relevant)` : ""),
+        `[feedflag] crowd leg: ${reports.length} site reports -> observations (archived; no Slack — reports already surface via #feed-reports)`,
       );
-      if (postable.length && notifier) {
-        for (const o of postable) {
-          await notifier
-            .postText(waitReportText(o))
-            .catch((err) =>
-              console.warn(
-                `[feedflag] crowd notify failed: ${String(err).slice(0, 150)}`,
-              ),
-            );
-        }
-      }
     }
   }
 
