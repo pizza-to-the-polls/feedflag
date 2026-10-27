@@ -1,0 +1,9 @@
+[Unit]
+Description=feedflag peak govwatch run (15-min during voting hours)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/feedflag
+ExecStart=/opt/feedflag/run-timer.sh peak
+User=root
