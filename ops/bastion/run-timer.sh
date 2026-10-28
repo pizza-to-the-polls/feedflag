@@ -51,7 +51,18 @@ heal_deploy() {  # SAFE reset --hard origin/main: back up data/, reset, restore
   mkdir -p data && cp -a "$bk"/. data/ 2>/dev/null || true
   rm -rf "$bk"
 }
-git fetch -q origin main || maybe_alert "feedflag $(hostname): CANNOT FETCH origin/main ($MODE) — git remote or network down. Remediation on bastion: git fetch origin main && git reset --hard origin/main"
+# Concurrent-tick tolerance: all four feedflag-* units fire at the same
+# second and race on the shared .git — a fetch that loses the lock fails
+# with a lock error even though the remote is fine (observed 2026-10-28
+# 21:30: two units alerted CANNOT FETCH while a sibling's fetch updated the
+# ref and both runs still ended at the fresh SHA). Retry with backoff
+# before believing the network is down.
+fetch_ok=0
+for i in 1 2 3; do
+  if git fetch -q origin main 2>/dev/null; then fetch_ok=1; break; fi
+  sleep $((i * 3))
+done
+[ "$fetch_ok" = 1 ] || maybe_alert "feedflag $(hostname): CANNOT FETCH origin/main after 3 tries ($MODE) — git remote or network down. Remediation on bastion: git fetch origin main && git reset --hard origin/main"
 if ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
   echo "[timer] WARN: local main diverged from origin/main — safe-resetting to origin/main (data/ backed up + restored)"
   maybe_alert "feedflag $(hostname): local main diverged from origin/main ($MODE) — SAFE HEAL applied (reset --hard origin/main, state backed up + restored). If this repeats, run: git fetch origin main && git reset --hard origin/main on the bastion."
