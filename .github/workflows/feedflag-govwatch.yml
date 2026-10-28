@@ -71,3 +71,15 @@ jobs:
             git rebase -q FETCH_HEAD || true
             git push -q origin HEAD:refs/heads/data || true
           fi
+  alert:
+    needs: extract
+    if: always() && needs.extract.result == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Slack alert on failure
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          PAYLOAD="{\"text\":\":rotating_light: feedflag workflow '${GITHUB_WORKFLOW}' FAILED (scheduled run) — <${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}|Actions log>. Watchdog re-checks DB freshness on its next run.\"}"
+          curl -s -X POST -H 'content-type: application/json' -d "$PAYLOAD" "$SLACK_WEBHOOK_URL" || true

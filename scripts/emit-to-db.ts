@@ -171,6 +171,15 @@ const main = async () => {
   console.log(
     `[emit] ${sent}/${batch.length} sent → inserted ${inserted}, skipped ${skipped}`,
   );
+  // TOTAL FAILURE = everything sent, nothing landed (API errors, not idempotent
+  // skips). Hard-fail so callers alert — the 4-day-silent-DB postmortem rule:
+  // never fail quiet. (skipped>0 with inserted 0 is the normal re-run case.)
+  if (sent > 0 && inserted === 0 && !DRY) {
+    console.error(
+      `[emit] TOTAL FAILURE — ${sent} sent, 0 inserted. Observations are NOT reaching feed_observations.`,
+    );
+    process.exit(1);
+  }
 };
 
 main().catch((err) => {
