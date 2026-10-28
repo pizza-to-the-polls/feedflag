@@ -403,4 +403,58 @@ console.log("data-branch separation regression tests (issue #20)\n");
   console.log("  ✓ no tracked file references the untracked root runner path");
 }
 
+// ---------------------------------------------------------------------------
+// Runner self-integrity: every function the dispatch + pipeline calls is
+// defined in run-timer.sh (PR #29 regression)
+// ---------------------------------------------------------------------------
+// PR #29 used the `IN_WINDOW() { … }` definition as an edit anchor and its
+// replacement DELETED the definition — bash -n passes a missing function
+// (it is not a syntax error) and the legs silently take their else-branches:
+// the pipeline ran dark 23:30–23:59 UTC on 2026-10-28 with "outside voting
+// hours" at 23 UTC (an in-window hour). bash -n cannot catch this; this can.
+// Keep REQUIRED_FNS current with the runner's function vocabulary.
+{
+  const runner = readFileSync(
+    join(ROOT, "ops", "bastion", "run-timer.sh"),
+    "utf8",
+  );
+  const defined = new Set(
+    [...runner.matchAll(/^[A-Za-z_][A-Za-z0-9_]*\(\)\s*\{/gm)].map((m) =>
+      m[0].replace(/\(\)\s*\{$/, ""),
+    ),
+  );
+  const REQUIRED_FNS = [
+    "maybe_alert",
+    "heal_deploy",
+    "heartbeat",
+    "IN_WINDOW",
+    "restore_state",
+    "push_state",
+  ];
+  for (const fn of REQUIRED_FNS) {
+    assert.ok(
+      defined.has(fn),
+      `run-timer.sh must define ${fn}() — bash -n cannot catch a deleted function (PR #29 deleted IN_WINDOW and the legs ran dark)`,
+    );
+  }
+  // The dispatch case must still call every gated leg's helpers: the case
+  // block is where a bad edit silently rewires the whole pipeline.
+  const caseStart = runner.indexOf("case $MODE in");
+  const caseEnd = runner.indexOf("esac", caseStart);
+  assert.ok(
+    caseStart > -1 && caseEnd > caseStart,
+    "run-timer.sh: no dispatch case block found",
+  );
+  const dispatch = runner.slice(caseStart, caseEnd);
+  for (const fn of ["restore_state", "IN_WINDOW"]) {
+    assert.ok(
+      dispatch.includes(fn),
+      `run-timer.sh dispatch must invoke ${fn} (it is load-bearing for the legs)`,
+    );
+  }
+  console.log(
+    "  ✓ run-timer.sh defines + dispatches every load-bearing function (IN_WINDOW regression)",
+  );
+}
+
 console.log("\nAll data-branch regression tests passed.");
