@@ -63,6 +63,21 @@ the box is running stale code — fix it immediately. The unit files in this
 directory are the sources of truth for `/etc/systemd/system/`; redeploy via
 `aws ssm send-command` (quoting-safe base64'd script) + `systemctl daemon-reload`.
 
+**Shared state vs the GH Actions backup (2026-10-28, the duplicate-flag fix):** the GH
+Actions `feedflag` workflow runs the SAME social pipeline as a 30-min backup and
+restores state from `refs/heads/data` at ITS start (issue #20). The bastion now does
+the mirror-image `restore_state` before every pipeline leg: fetch the data branch,
+per-file checkout + unstage (same as the workflow's restore step), retrying through
+index-lock races with sibling units. Without it the two schedulers keep divergent
+seen-stores and re-flag each other's posts — observed 2026-10-28 22:51 UTC:
+@GretchenInOK flagged by the bastion at 21:30, re-flagged by the GH Actions backup
+at 22:51 (duplicate post in #feed-lines) because the data branch's `seen.json`
+lacked the id (the bastion state push was broken until PRs #26–#28 that same day).
+Known trade-off: state pushes are whole-file overlays, so entries the OTHER writer
+adds while both legs are in flight can be clobbered — the window is one run
+(~1–4 min), `feed_observations` rows are the durable record (emit-to-DB), and a
+rare lost `seen` entry only risks a rare duplicate, never data loss.
+
 **One-run deploy lag:** a PR pushed to `origin/main` is deployed on the next timer fire
 (at most 15 minutes later). The currently-running fire executes whatever was deployed
 at fetch time — that's intentional and has no adverse effect because state is pushed
