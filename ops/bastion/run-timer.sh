@@ -9,6 +9,9 @@
 #     authed by FEEDFLAG_STATE_PUSH_TOKEN (scoped PAT, Secrets Manager;
 #     issue #22) with gh-token.mjs as fallback; LOUD (maybe_alert) when it
 #     can't fire
+#   * restore shared state from refs/heads/data before every pipeline leg —
+#     convergence with the GH Actions backup (one seen-store, no duplicate
+#     flags in #feed-lines)
 set -uo pipefail
 MODE=$1
 cd /opt/feedflag
@@ -91,7 +94,35 @@ heartbeat() {
     --value 1 --unit Count --region us-west-2 >/dev/null 2>&1 || true
 }
 
-IN_WINDOW() { H=$(date -u +%H); [ "$H" -ge 12 ] || [ "$H" -lt 4 ]; }
+restore_state() {
+  # Shared-state convergence — the duplicate-flag fix. The GH Actions backup
+  # runs the SAME social pipeline every 30 min and restores state from the
+  # data branch at ITS start (feedflag.yml, issue #20). The bastion never
+  # did the mirror-image step: its local state diverged from the data branch
+  # after every GH Actions state push, and (until the push itself was fixed,
+  # PRs #26–#28) the bastion's seen-ids never reached the data branch at all
+  # → the backup re-flagged posts the bastion had already flagged
+  # (2026-10-28 22:51: @GretchenInOK flagged 21:30 by the bastion, re-flagged
+  # 22:51 by GH Actions — duplicate post in #feed-lines). Restore the shared
+  # state files before the run so both schedulers start from one seen-store.
+  # Same per-file checkout + unstage as the GH Actions restore step (code
+  # parity). Retry: concurrent feedflag-* units race on the index lock.
+  # Non-fatal on total failure (warn): a stale shared state still beats a
+  # divergent one — the run proceeds with local state.
+  for i in 1 2 3; do
+    if git fetch -q origin refs/heads/data 2>/dev/null; then
+      local f
+      for f in data/seen.json data/flagged.jsonl data/observations.jsonl data/reports-sync.json data/labels.jsonl data/govt-readings.json; do
+        git checkout -q FETCH_HEAD -- "$f" 2>/dev/null || true
+      done
+      git reset -q -- data 2>/dev/null || true
+      echo "[timer] shared state restored from refs/heads/data"
+      return 0
+    fi
+    sleep $((i * 2))
+  done
+  echo "[timer] WARN: state restore from refs/heads/data failed — running with local state (possible duplicates vs the GH Actions backup)" >&2
+}
 
 push_state() {
   # Issue #20: STATE-ONLY push. The data branch is a state store, not a deploy
@@ -152,10 +183,10 @@ fi
 # ---- the work --------------------------------------------------------------
 case $MODE in
   heartbeat) echo "[timer] heartbeat only"; exit 0 ;;
-  govwatch) node --import tsx scripts/extract-wait-times.ts ;;
-  peak)     if IN_WINDOW; then node --import tsx scripts/extract-wait-times.ts; else echo "peak: outside voting hours ($(date -u +%H) UTC)"; exit 0; fi ;;
-  social)   if IN_WINDOW; then node --import tsx src/index.ts; else echo "social: outside voting hours ($(date -u +%H) UTC)"; exit 0; fi ;;
-  hot)      if date -u +%Y-%m-%d | grep -qE '2026-11-0[234]'; then node --import tsx scripts/extract-wait-times.ts; else echo "hot: not in election window"; exit 0; fi ;;
+  govwatch) restore_state; node --import tsx scripts/extract-wait-times.ts ;;
+  peak)     if IN_WINDOW; then restore_state; node --import tsx scripts/extract-wait-times.ts; else echo "peak: outside voting hours ($(date -u +%H) UTC)"; exit 0; fi ;;
+  social)   if IN_WINDOW; then restore_state; node --import tsx src/index.ts; else echo "social: outside voting hours ($(date -u +%H) UTC)"; exit 0; fi ;;
+  hot)      if date -u +%Y-%m-%d | grep -qE '2026-11-0[234]'; then restore_state; node --import tsx scripts/extract-wait-times.ts; else echo "hot: not in election window"; exit 0; fi ;;
   *) echo "unknown mode: $MODE" >&2; exit 1 ;;
 esac
 RUN_RC=$?
