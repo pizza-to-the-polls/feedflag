@@ -5,12 +5,12 @@
 #   * emit-to-DB after every run — box runs now reach feed_observations (they
 #     never did before; DB freshness = whole-chain health signal)
 #   * throttled Slack alerts on leg failures (1h marker, not per-run spam)
-#   * best-effort state push to refs/heads/data via pizza-eagle agent token
+#   * best-effort state push to refs/heads/data via state-only plumbing —
+#     LOUD (maybe_alert) when it can't fire: the box token path was silently
+#     dead its whole life (issue #22), gh-token.mjs can't mint from here
 set -uo pipefail
 MODE=$1
 cd /opt/feedflag
-git pull --ff-only -q origin main || echo "[timer] pull skipped — running current checkout"
-set -a; source .env; set +a
 
 ALERT_MARKER=/opt/feedflag/data/.alert-throttle
 maybe_alert() {
@@ -25,6 +25,54 @@ maybe_alert() {
     touch "$ALERT_MARKER"
   fi
 }
+
+# ── deploy pull: self-healing (issue #22) ────────────────────────────────
+# The old `git pull --ff-only` silently wedged when the local `main` branch
+# had a commit that origin/main lacked (pre-#21 state commits): every ff
+# pull failed non-fast-forward and the `|| echo` swallowed it, leaving the
+# box running stale code forever. Now we fetch, check ancestry, and if the
+# local branch diverged or the ff-merge fails we run the SAFE self-heal:
+#   git reset --hard origin/main — wrapped in a state BACKUP by heal_deploy.
+# Why the backup is load-bearing (2026-10-28 finding, issue #22 comment):
+# main still TRACKED the six data/* state files (force-added before the
+# data branch existed) — a bare `reset --hard` would have reverted the
+# box's live state to main's stale blobs. This PR untracks them on main
+# (git rm --cached — state lives ONLY on refs/heads/data), but the
+# transition tick (this checkout still has them tracked) needs the
+# backup/restore wrap, which also protects against any future regression.
+# .env is gitignored and never touched by reset. See ops/bastion/README.md
+# §deploy-model.
+heal_deploy() {  # SAFE reset --hard origin/main: back up data/, reset, restore
+  local bk
+  bk=$(mktemp -d)
+  [ -d data ] && cp -a data/. "$bk"/
+  git reset --hard origin/main
+  mkdir -p data && cp -a "$bk"/. data/ 2>/dev/null || true
+  rm -rf "$bk"
+}
+git fetch -q origin main || maybe_alert "feedflag $(hostname): CANNOT FETCH origin/main ($MODE) — git remote or network down. Remediation on bastion: git fetch origin main && git reset --hard origin/main"
+if ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
+  echo "[timer] WARN: local main diverged from origin/main — safe-resetting to origin/main (data/ backed up + restored)"
+  maybe_alert "feedflag $(hostname): local main diverged from origin/main ($MODE) — SAFE HEAL applied (reset --hard origin/main, state backed up + restored). If this repeats, run: git fetch origin main && git reset --hard origin/main on the bastion."
+  heal_deploy
+elif ! git merge --ff-only -q origin/main 2>/dev/null; then
+  echo "[timer] WARN: ff-merge failed — safe-resetting to origin/main (data/ backed up + restored)"
+  maybe_alert "feedflag $(hostname): git merge --ff-only failed ($MODE) — SAFE HEAL applied (reset --hard origin/main, state backed up + restored). Manual if repeats: git fetch origin main && git reset --hard origin/main on the bastion."
+  heal_deploy
+fi
+# GUARD RAIL: nothing in this script ever commits to the local main branch.
+# State (data/) goes out via ops/state-push.sh which builds plumbing commits
+# directly on the remote data-branch tip — no local branch is involved. If
+# you see `git commit` or `git add -f data` anywhere in this file, that's
+# the pre-#21 wedge — remove it.
+
+DEPLOY_SHA=$(git rev-parse --short HEAD)
+ORIGIN_SHA=$(git rev-parse --short origin/main)
+if [ "$DEPLOY_SHA" != "$ORIGIN_SHA" ]; then
+  maybe_alert "feedflag $(hostname): HEAD ($DEPLOY_SHA) != origin/main ($ORIGIN_SHA) after deploy ($MODE) — may be running stale code. Remediation: git fetch origin main && git reset --hard origin/main on the bastion."
+fi
+
+set -a; source .env; set +a
 
 heartbeat() {
   aws cloudwatch put-metric-data --namespace Feedflag --metric-name Heartbeat \
@@ -52,10 +100,15 @@ push_state() {
     GIT_CONFIG_COUNT=1 \
     GIT_CONFIG_KEY_0=http.extraheader \
     GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$tok" | base64)" \
-      bash ops/state-push.sh -m "chore(data): timer state ($MODE) [skip ci]" $files \
-      || echo "[timer] data push failed (token read-only?) — CW + DB observability unaffected"
+      bash ops/state-push.sh -m "chore(data): timer state ($MODE) head=$DEPLOY_SHA [skip ci]" $files \
+      || maybe_alert "feedflag $(hostname): timer state push to refs/heads/data FAILED ($MODE) — box state is NOT backed up to git. Check ops/state-push.sh + the token on the bastion."
   else
-    echo "[timer] data push skipped — no token"
+    # 2026-10-28 finding: this was a bare `echo` for the box's whole life —
+    # gh-token.mjs can NEVER mint from the timer context (the pizza-eagle
+    # listener must inject GH_APP_ID + write a request-auth.json gate), so
+    # the box state push has never fired. Loud until a scoped credential
+    # exists (see issue #22).
+    maybe_alert "feedflag $(hostname): timer state push SKIPPED — no token ($MODE). pizza-eagle gh-token.mjs cannot mint from the timer context (listener write-gate) — box state is NOT backed up to git. Needs a scoped feedflag credential (issue #22)."
   fi
 }
 
@@ -91,5 +144,5 @@ else
 fi
 push_state
 heartbeat
-echo "[timer] $MODE done rc=$RUN_RC"
+echo "[timer] $MODE done rc=$RUN_RC head=$DEPLOY_SHA"
 exit $RUN_RC

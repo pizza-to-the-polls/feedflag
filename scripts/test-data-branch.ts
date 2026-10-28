@@ -47,14 +47,22 @@ console.log("data-branch separation regression tests (issue #20)\n");
   );
   assert.equal(hasGovtEvidence(undefined), false, "missing description fails");
   assert.equal(hasGovtEvidence(null), false, "null description fails");
-  assert.equal(hasGovtEvidence("caption"), false, "non-object description fails");
+  assert.equal(
+    hasGovtEvidence("caption"),
+    false,
+    "non-object description fails",
+  );
   assert.equal(
     hasGovtEvidence({ evidence: {} }),
     false,
     "empty evidence object fails",
   );
   assert.equal(hasGovtEvidence({ evidence: null }), false);
-  assert.equal(hasGovtEvidence({ evidence: [] }), false, "array evidence fails");
+  assert.equal(
+    hasGovtEvidence({ evidence: [] }),
+    false,
+    "array evidence fails",
+  );
   assert.equal(
     hasGovtEvidence({ evidence: "REST field evidence: wait=65" }),
     false,
@@ -167,9 +175,13 @@ console.log("data-branch separation regression tests (issue #20)\n");
 
   for (const { file, state } of workflows) {
     const text = read(`.github/workflows/${file}`);
-    // 1. Code NEVER comes from the data branch.
+    // 1. Code NEVER comes from the data branch. Prose comments (e.g. the
+    //    issue-#20 history note) may legitimately mention `ref: data` —
+    //    the assertion is about the YAML checkout step, so strip
+    //    full-line comments before pattern-matching.
+    const yaml = text.replace(/^[ \t]*#.*$/gm, "");
     assert.doesNotMatch(
-      text,
+      yaml,
       /ref:\s*data\b/,
       `${file}: must not check out the data branch for code (issue #20)`,
     );
@@ -225,17 +237,17 @@ console.log("data-branch separation regression tests (issue #20)\n");
 {
   const text = read("ops/state-push.sh");
   assert.match(text, /git read-tree/, "builds the tree from the data tip");
-  assert.match(text, /GIT_INDEX_FILE/, "uses a temp index (no HEAD/index churn)");
+  assert.match(
+    text,
+    /GIT_INDEX_FILE/,
+    "uses a temp index (no HEAD/index churn)",
+  );
   assert.match(
     text,
     /git commit-tree/,
     "commits via plumbing (no working-tree commit)",
   );
-  assert.match(
-    text,
-    /refs\/heads\/data/,
-    "targets the data branch",
-  );
+  assert.match(text, /refs\/heads\/data/, "targets the data branch");
   assert.match(text, /for attempt in/, "retries concurrent-writer races");
   // Operative (non-comment) lines must be plumbing-only: no checkout, no
   // rebase, no branch switch — the helper can never execute or carry code.
@@ -253,7 +265,9 @@ console.log("data-branch separation regression tests (issue #20)\n");
     /git add\b(?!.*-f)/,
     "state files are gitignored — every add must be forced",
   );
-  console.log("  ✓ state-push.sh: temp-index + commit-tree plumbing, race-retried");
+  console.log(
+    "  ✓ state-push.sh: temp-index + commit-tree plumbing, race-retried",
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -266,7 +280,11 @@ console.log("data-branch separation regression tests (issue #20)\n");
     /--force-with-lease/,
     "reconcile must push with --force-with-lease (no clobbering a concurrent push)",
   );
-  assert.match(text, /git commit-tree/, "plumbing commit, no working-tree churn");
+  assert.match(
+    text,
+    /git commit-tree/,
+    "plumbing commit, no working-tree churn",
+  );
   assert.match(text, /refs\/heads\/data/, "targets the data branch");
   assert.match(
     text,
@@ -288,7 +306,9 @@ console.log("data-branch separation regression tests (issue #20)\n");
     /git (checkout|rebase|switch)\b/,
     "reconcile must be plumbing-only (never touches the working tree)",
   );
-  console.log("  ✓ reconcile script: force-with-lease rebuild of data onto main");
+  console.log(
+    "  ✓ reconcile script: force-with-lease rebuild of data onto main",
+  );
 }
 
 console.log("\nAll data-branch regression tests passed.");
