@@ -175,9 +175,13 @@ console.log("data-branch separation regression tests (issue #20)\n");
 
   for (const { file, state } of workflows) {
     const text = read(`.github/workflows/${file}`);
-    // 1. Code NEVER comes from the data branch.
+    // 1. Code NEVER comes from the data branch. Prose comments (e.g. the
+    //    issue-#20 history note) may legitimately mention `ref: data` —
+    //    the assertion is about the YAML checkout step, so strip
+    //    full-line comments before pattern-matching.
+    const yaml = text.replace(/^[ \t]*#.*$/gm, "");
     assert.doesNotMatch(
-      text,
+      yaml,
       /ref:\s*data\b/,
       `${file}: must not check out the data branch for code (issue #20)`,
     );
