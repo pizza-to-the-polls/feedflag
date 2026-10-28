@@ -117,9 +117,15 @@ push_state() {
     tok=$(node /opt/pizza-eagle/scripts/gh-token.mjs --repo pizza-to-the-polls/feedflag 2>/dev/null || true)
   fi
   if [ -n "$tok" ]; then
+    # NOTE: `base64 | tr -d '\n'` — GNU coreutils base64 wraps at 76 cols
+    # (AL2023), which puts a newline INSIDE the http.extraheader value and
+    # libcurl rejects the whole request ("A libcurl function was given a bad
+    # argument") — observed 2026-10-28 22:30: every state push silently
+    # took the fetch-skip path. tr -d is a no-op on BSD/macOS base64.
+    hdr=$(printf 'x-access-token:%s' "$tok" | base64 | tr -d '\n')
     GIT_CONFIG_COUNT=1 \
     GIT_CONFIG_KEY_0=http.extraheader \
-    GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$tok" | base64)" \
+    GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $hdr" \
       bash ops/state-push.sh -m "chore(data): timer state ($MODE) head=$DEPLOY_SHA [skip ci]" $files \
       || maybe_alert "feedflag $(hostname): timer state push to refs/heads/data FAILED ($MODE) — box state is NOT backed up to git. Check ops/state-push.sh + the token on the bastion."
   else
