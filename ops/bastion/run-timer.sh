@@ -94,6 +94,14 @@ heartbeat() {
     --value 1 --unit Count --region us-west-2 >/dev/null 2>&1 || true
 }
 
+# Voting-hours gate for the peak/social legs (7am–11pm ET = 12:00–03:59 UTC,
+# bumped 2026-11-01 post-DST). NOTE: PR #29 accidentally deleted this
+# definition (used as an edit anchor) — bash -n can't catch a missing
+# function, so both legs silently took the outside-hours branch and the
+# pipeline went dark 23:30–23:59 UTC on election-eve eve. Restored + a
+# test now asserts every function the case block calls is defined.
+IN_WINDOW() { H=$(date -u +%H); [ "$H" -ge 12 ] || [ "$H" -lt 4 ]; }
+
 restore_state() {
   # Shared-state convergence — the duplicate-flag fix. The GH Actions backup
   # runs the SAME social pipeline every 30 min and restores state from the
