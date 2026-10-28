@@ -10,10 +10,38 @@ Primary scheduler (GitHub Actions is the 30-min backup). systemd timers on
 | `feedflag-govwatch.timer` | `*:0/30` | none (24/7) → ungated govwatch extraction |
 | `feedflag-social.timer` | `*:0/15` | same hour gate → social pipeline |
 | `feedflag-hot.timer` | `*:0/15` | date 2026-11-02..04 → govwatch extraction (hot mode) |
+| `feedflag-digest.timer` | `*-*-* 02:00:00` | none (daily) → findings digest comment on issue #5 + Slack mirror (issue #31; the ONLY writer of issue #5) |
+| `feedflag-reactions.timer` | `*:20` | hour in 12:00–03:59 UTC (same IN_WINDOW gate as social/peak) → collect Slack 👍/👎 labels into `data/labels.jsonl` (issue #31) |
 
 Net cadence: **govwatch + social both 15-min during voting hours only;
 overnight both dark** (2026-10-27 user call — no polling when polls are
 closed). Nov 2–4 hot mode: 15-min 24/7, date-guarded.
+
+**Issue #31 legs (bastion ports of the feedflag.yml steps that had no timer
+equivalent — both went dark when the Actions schedule was disabled):**
+
+- `feedflag-digest` — daily 02:00 UTC, `scripts/digest.ts --hours 26` +
+  `extract-wait-times.ts --report-only` appended, posted as a comment on
+  findings issue #5, mirrored to Slack with the comment URL. **Read-only**
+  leg: consumes the state files the 15-min legs keep current, writes only
+  to the issue + Slack — no `restore_state` / `push_state` / emit-to-DB.
+- `feedflag-reactions` — hourly at :20 during voting hours, runs
+  `scripts/collect-reactions.ts` unchanged. Appends to the box's live
+  `data/labels.jsonl` (and its `data/reactions-sync.json` cursor), so it
+  DOES `restore_state` + `push_state` + emit — same state contract as the
+  pipeline legs. The digest excludes wrong-verdict flags via that corpus,
+  so this leg is what keeps the human feedback loop alive.
+
+Deploy both (after the templates land in `/etc/systemd/system/` and
+`FEEDFLAG_DIGEST_TOKEN` is in `.env`):
+```
+systemctl daemon-reload
+systemctl enable --now feedflag-digest.timer feedflag-reactions.timer
+systemctl list-timers 'feedflag-*'   # both new units listed
+# Manual digest fire (dry check before 02:00 UTC):
+systemd-run --unit=feedflag-digest-test /opt/feedflag/ops/bastion/run-timer.sh digest
+journalctl -u feedflag-digest-test   # expect "[timer] digest comment posted: <url>"
+```
 
 ## Deploy model (issue #22)
 
@@ -50,6 +78,20 @@ keeps `gh-token.mjs` as a fallback; a missing token still `maybe_alert`s loudly
 (throttled 1h). Rotation: mint a new PAT, merge it into the secret, re-sync
 `/opt/feedflag/.env` on the bastion (`jq -r 'to_entries[] | "\(.key)=\(.value)"'`
 of the secret JSON into the dotenv file), revoke the old PAT.
+
+**Digest credential (issue #31, `FEEDFLAG_DIGEST_TOKEN`):** the digest
+leg's `gh issue comment` on findings issue #5 needs its own scoped
+fine-grained PAT — **issues:write** on `pizza-to-the-polls/feedflag`
+ONLY. Neither existing token covers it: `gh-token.mjs` cannot mint from
+the timer context (listener write-gate, issue #22 notes) and
+`FEEDFLAG_STATE_PUSH_TOKEN` is contents:write (git operations only).
+Same lifecycle as the state-push token: store in Secrets Manager
+`ptp/prod/feedflag/env`, land in `/opt/feedflag/.env`, rotate by minting
+→ merging into the secret → re-syncing the dotenv → revoking the old
+PAT. A missing token is caught by the runner's LOUD boot validation
+(exit 1 + throttled Slack alert), never a silent dark digest. The
+`reactions` leg needs no new credential (`SLACK_BOT_TOKEN` +
+`SLACK_FLAG_CHANNELS` are already in the v5 REQUIRED list).
 
 **ExecStart path: the TRACKED script only (issue #24).** Every `feedflag-*.service`
 unit here must ExecStart the tracked runner at `ops/bastion/run-timer.sh`
@@ -103,7 +145,8 @@ commits). Any `git add -f data` or `git commit` in the runner is a regression.
 - Setup: `aws ssm send-command` with base64'd script (quoting-safe); unit
   files in `/etc/systemd/system/` are deployed from the templates in this
   directory (source of truth — see "ExecStart path" above), then
-  `systemctl daemon-reload`.
+  `systemctl daemon-reload` + `systemctl enable --now` each new timer
+  (feedflag-digest + feedflag-reactions, issue #31).
 - Dedupe (seen.json + ON CONFLICT + change-detection) makes overlapping
   runs with GH Actions harmless.
 

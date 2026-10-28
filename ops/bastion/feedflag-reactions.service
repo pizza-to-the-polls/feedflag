@@ -1,0 +1,9 @@
+[Unit]
+Description=feedflag Slack reaction collector (👍/👎 → data/labels.jsonl)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/feedflag
+ExecStart=/opt/feedflag/ops/bastion/run-timer.sh reactions
+User=root

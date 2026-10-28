@@ -36,6 +36,10 @@ if ! flock -w 600 9; then
   exit 0
 fi
 
+# Digest targets (issue #31) — overridable from .env; never REQUIRED.
+FINDINGS_ISSUE="${FINDINGS_ISSUE:-5}"
+FEEDFLAG_REPO_SLUG="${FEEDFLAG_REPO_SLUG:-pizza-to-the-polls/feedflag}"
+
 ALERT_MARKER=/opt/feedflag/data/.alert-throttle
 maybe_alert() {
   echo "[timer] ALERT: $1" >&2
@@ -267,9 +271,28 @@ push_state() {
   fi
 }
 
+# Voting-hours gate (2026-10-27 postmortem: overnight runs are dark — no
+# polling when polls are closed). True when the current UTC hour is inside
+# the 12:00–03:59 UTC window (7am–11pm ET). Used by the peak, social, and
+# reactions legs (issue #31); an undefined gate here would throw "command
+# not found" (exit 127 → falsy) and silently skip every gated leg.
+IN_WINDOW() {
+  local h
+  h=$(date -u +%H)
+  [ "$h" -ge 12 ] || [ "$h" -le 3 ]
+}
+
 # ---- boot: heartbeat + LOUD env validation -------------------------------
 heartbeat
-REQUIRED="OPENROUTER_API_KEY APIFY_API_TOKEN PIZZABASE_API_URL PIZZABASE_API_KEY SLACK_WEBHOOK_URL SLACK_BOT_TOKEN SLACK_FLAG_CHANNELS"
+# FEEDFLAG_DIGEST_TOKEN: scoped fine-grained PAT (issues:write, this repo
+# only) — the digest timer posts the daily findings comment on issue #5.
+# gh-token.mjs cannot mint from the timer context (listener write-gate,
+# issue #22 notes) and FEEDFLAG_STATE_PUSH_TOKEN is contents:write only —
+# issue comments need their own credential. Secrets Manager
+# ptp/prod/feedflag/env → /opt/feedflag/.env (same pattern as the state-push
+# token). Validated for every mode: presence is cheap, absence is loud
+# (the v5 boot gate), and per-mode REQUIRED subsets are a later refactor.
+REQUIRED="OPENROUTER_API_KEY APIFY_API_TOKEN PIZZABASE_API_URL PIZZABASE_API_KEY SLACK_WEBHOOK_URL SLACK_BOT_TOKEN SLACK_FLAG_CHANNELS FEEDFLAG_DIGEST_TOKEN"
 MISSING=""
 for v in $REQUIRED; do
   [ -z "${!v:-}" ] && MISSING="$MISSING $v"
@@ -286,6 +309,76 @@ case $MODE in
   peak)     if IN_WINDOW; then restore_state; node --import tsx scripts/extract-wait-times.ts; else echo "peak: outside voting hours ($(date -u +%H) UTC)"; exit 0; fi ;;
   social)   if IN_WINDOW; then restore_state; node --import tsx src/index.ts; else echo "social: outside voting hours ($(date -u +%H) UTC)"; exit 0; fi ;;
   hot)      if date -u +%Y-%m-%d | grep -qE '2026-11-0[234]'; then restore_state; node --import tsx scripts/extract-wait-times.ts; else echo "hot: not in election window"; exit 0; fi ;;
+  digest)
+    # Issue #31: daily at 02:00 UTC — bastion port of the feedflag.yml
+    # "Post findings digest" step (the ONLY writer of findings issue #5).
+    # Read-only leg: it consumes data/observations.jsonl + data/labels.jsonl
+    # (kept current by the 15-min legs' restore/push cycle) and writes to
+    # git issue #5 + Slack — never to state — so it skips restore_state /
+    # push_state / emit-to-DB entirely and exits before the shared post-run
+    # block. 26h window (02:00 fire covers the full US day + margin),
+    # matching the workflow's --hours 26.
+    echo "[timer] digest: building 26h findings digest"
+    # Hard-fail on generation errors: a partial/empty /tmp/digest.md must
+    # NEVER be posted as an issue #5 comment (that's worse than a stale
+    # digest — the issue is the durable daily surface).
+    if ! node --import tsx scripts/digest.ts --hours 26 > /tmp/digest.md; then
+      maybe_alert "feedflag $(hostname): digest generation FAILED ($MODE) — issue #5 will go stale. journalctl -u feedflag-digest.service"
+      exit 1
+    fi
+    # Addendum: live govwait board from committed state (no keys needed).
+    node --import tsx scripts/extract-wait-times.ts --report-only >> /tmp/digest.md 2>/dev/null || true
+    COMMENT_URL=""
+    if command -v gh &>/dev/null; then
+      COMMENT_URL=$(GH_TOKEN="$FEEDFLAG_DIGEST_TOKEN" gh issue comment "$FINDINGS_ISSUE" --body-file /tmp/digest.md 2>/dev/null) || true
+    fi
+    if [ -z "$COMMENT_URL" ]; then
+      # Fallback: raw GitHub API (AL2023 may not ship the gh CLI).
+      COMMENT_URL=$(curl -s -m 15 -X POST \
+        -H "authorization: Bearer $FEEDFLAG_DIGEST_TOKEN" \
+        -H "content-type: application/json" \
+        -d "$(jq -n --arg body "$(cat /tmp/digest.md)" '{body: $body}')" \
+        "https://api.github.com/repos/${FEEDFLAG_REPO_SLUG}/issues/${FINDINGS_ISSUE}/comments" 2>/dev/null \
+        | jq -r '.html_url // empty') || true
+    fi
+    if [ -z "$COMMENT_URL" ]; then
+      maybe_alert "feedflag $(hostname): digest comment post FAILED ($MODE) — digest built but issue #5 + Slack mirror skipped. Check FEEDFLAG_DIGEST_TOKEN (issues:write PAT) + gh/curl on the bastion."
+      exit 1
+    fi
+    echo "[timer] digest comment posted: $COMMENT_URL"
+    if [ -n "$SLACK_WEBHOOK_URL" ]; then
+      # Slack mirror with the comment link (same shape as the workflow step:
+      # JSON payload so flagged thumbnails ride via attachments.image_url).
+      if node --import tsx scripts/digest.ts --hours 26 --slack > /tmp/slack-digest.json 2>/dev/null \
+         && jq -e '.text' /tmp/slack-digest.json >/dev/null 2>&1; then
+        jq --arg u "$COMMENT_URL" '.text += "\nDetails: " + $u | .icon_emoji = ":feedflag:"' /tmp/slack-digest.json > /tmp/slack-payload.json 2>/dev/null \
+          && curl -s -m 10 -o /dev/null -X POST -H 'content-type: application/json' \
+               --data-binary @/tmp/slack-payload.json "$SLACK_WEBHOOK_URL" \
+          || maybe_alert "feedflag $(hostname): digest Slack mirror FAILED ($MODE) (non-fatal — issue #5 comment posted: $COMMENT_URL)"
+      else
+        maybe_alert "feedflag $(hostname): digest Slack payload build FAILED ($MODE) (non-fatal — issue #5 comment posted: $COMMENT_URL)"
+      fi
+    fi
+    echo "[timer] digest done head=$DEPLOY_SHA"
+    exit 0
+    ;;
+  reactions)
+    # Issue #31: hourly at :20 — bastion port of the feedflag.yml "Collect
+    # Slack reactions" step (unchanged scripts/collect-reactions.ts). 👍/👎
+    # in the flag channels append to data/labels.jsonl — the corpus the
+    # digest uses to exclude wrong-verdict flags, so without this leg the
+    # human feedback loop dies. Voting-hours gate (same IN_WINDOW as
+    # peak/social — reactions only accrue while flags are posting) at the
+    # :20 offset so it never lands on the busy :0/:15/:30 marks.
+    if IN_WINDOW; then
+      restore_state
+      echo "[timer] reactions: collecting Slack 👍/👎 labels"
+      node --import tsx scripts/collect-reactions.ts
+    else
+      echo "reactions: outside voting hours ($(date -u +%H) UTC)"
+      exit 0
+    fi
+    ;;
   *) echo "unknown mode: $MODE" >&2; exit 1 ;;
 esac
 RUN_RC=$?
