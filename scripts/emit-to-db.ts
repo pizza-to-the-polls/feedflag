@@ -164,7 +164,9 @@ const main = async () => {
   if (!batch.length) {
     console.log(
       `[emit] 0 observations in the last ${HOURS}h` +
-        (evidenceBlocked > 0 ? ` (${evidenceBlocked} evidence-blocked, issue #20)` : ""),
+        (evidenceBlocked > 0
+          ? ` (${evidenceBlocked} evidence-blocked, issue #20)`
+          : ""),
     );
     return;
   }
@@ -186,7 +188,9 @@ const main = async () => {
   }
   console.log(
     `[emit] ${sent}/${batch.length} sent → inserted ${inserted}, skipped ${skipped}` +
-      (evidenceBlocked > 0 ? `, evidence-blocked ${evidenceBlocked} (issue #20)` : ""),
+      (evidenceBlocked > 0
+        ? `, evidence-blocked ${evidenceBlocked} (issue #20)`
+        : ""),
   );
   // TOTAL FAILURE = everything sent, nothing landed (API errors, not idempotent
   // skips). Hard-fail so callers alert — the 4-day-silent-DB postmortem rule:
