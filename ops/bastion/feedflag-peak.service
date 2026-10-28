@@ -5,5 +5,5 @@ After=network-online.target
 [Service]
 Type=oneshot
 WorkingDirectory=/opt/feedflag
-ExecStart=/opt/feedflag/run-timer.sh peak
+ExecStart=/opt/feedflag/ops/bastion/run-timer.sh peak
 User=root

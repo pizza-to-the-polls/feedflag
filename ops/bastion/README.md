@@ -5,7 +5,9 @@ Primary scheduler (GitHub Actions is the 30-min backup). systemd timers on
 
 | timer | cadence | gate |
 |---|---|---|
+| `feedflag-heartbeat.timer` | `*:0/15` | none (24/7) → CW heartbeat metric only |
 | `feedflag-peak.timer` | `*:0/15` | hour in 12:00–03:59 UTC (7am–11pm ET, voting hours) → govwatch extraction — **the only govwatch path** (2026-10-27: overnight baseline disabled; polls closed = dead time) |
+| `feedflag-govwatch.timer` | `*:0/30` | none (24/7) → ungated govwatch extraction |
 | `feedflag-social.timer` | `*:0/15` | same hour gate → social pipeline |
 | `feedflag-hot.timer` | `*:0/15` | date 2026-11-02..04 → govwatch extraction (hot mode) |
 
@@ -43,6 +45,18 @@ GH Actions run. `push_state` now `maybe_alert`s loudly (throttled 1h) instead of
 `echo`ing. Closing the gap needs a scoped feedflag credential (e.g. fine-grained
 PAT, contents:write, this repo only) in Secrets Manager — tracked in issue #22.
 
+**ExecStart path: the TRACKED script only (issue #24).** Every `feedflag-*.service`
+unit here must ExecStart the tracked runner at `ops/bastion/run-timer.sh`
+(deployed on the box as `/opt/feedflag/ops/bastion/run-timer.sh`) — never an
+untracked copy of the runner at the repo root on the box. An untracked root
+copy is a silent-stale-code vector: `git pull` can never update it, so the box
+keeps executing old runner code no matter what lands on `origin/main` (the
+2026-10-28 re-wedge: a stale v5 root copy kept committing state onto local
+`main` within 4 ticks of the manual unstick). If a unit points anywhere else,
+the box is running stale code — fix it immediately. The unit files in this
+directory are the sources of truth for `/etc/systemd/system/`; redeploy via
+`aws ssm send-command` (quoting-safe base64'd script) + `systemctl daemon-reload`.
+
 **One-run deploy lag:** a PR pushed to `origin/main` is deployed on the next timer fire
 (at most 15 minutes later). The currently-running fire executes whatever was deployed
 at fetch time — that's intentional and has no adverse effect because state is pushed
@@ -66,7 +80,9 @@ commits). Any `git add -f data` or `git commit` in the runner is a regression.
 `.env` from Secrets Manager `ptp/prod/feedflag/env` (BotRole `triage-readonly` grants
 `ptp/prod/feedflag/*`).
 - Setup: `aws ssm send-command` with base64'd script (quoting-safe); unit
-  files in `/etc/systemd/system/`; see git history of this dir for sources.
+  files in `/etc/systemd/system/` are deployed from the templates in this
+  directory (source of truth — see "ExecStart path" above), then
+  `systemctl daemon-reload`.
 - Dedupe (seen.json + ON CONFLICT + change-detection) makes overlapping
   runs with GH Actions harmless.
 

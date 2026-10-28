@@ -1,0 +1,9 @@
+[Unit]
+Description=feedflag govwatch every 30 minutes (24/7)
+
+[Timer]
+OnCalendar=*:0/30
+Persistent=true
+
+[Install]
+WantedBy=timers.target

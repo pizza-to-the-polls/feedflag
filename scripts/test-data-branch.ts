@@ -24,7 +24,7 @@
  * Run: npm test (chained after the cron + gate tests)
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { hasGovtEvidence } from "../src/govt/evidence.js";
 
@@ -309,6 +309,98 @@ console.log("data-branch separation regression tests (issue #20)\n");
   console.log(
     "  ✓ reconcile script: force-with-lease rebuild of data onto main",
   );
+}
+
+// ---------------------------------------------------------------------------
+// Systemd units ExecStart the TRACKED runner (issue #24)
+// ---------------------------------------------------------------------------
+// Incident: 2026-10-28 — every deployed feedflag-*.service ExecStarted an
+// UNTRACKED copy of the runner at the repo root on the box, which `git pull`
+// can never update. The stale v5 copy kept committing state onto local main
+// and re-wedged the box within 4 ticks of the manual unstick. The unit
+// templates in ops/bastion/ are the source of truth and must ExecStart the
+// tracked script so the self-healing pull (issue #22) actually deploys it.
+{
+  const bastionDir = join(ROOT, "ops", "bastion");
+  const entries = readdirSync(bastionDir).sort();
+  const serviceFiles = entries.filter((e) => e.endsWith(".service"));
+  const timerFiles = entries.filter((e) => e.endsWith(".timer"));
+  const MODES = ["heartbeat", "govwatch", "peak", "social", "hot"];
+
+  assert.ok(
+    serviceFiles.length >= 5,
+    `expected the 5 timer service templates in ops/bastion/, found ${serviceFiles.length}: ${serviceFiles.join(", ")}`,
+  );
+
+  for (const file of serviceFiles) {
+    const text = readFileSync(join(bastionDir, file), "utf8");
+    const match = text.match(/ExecStart=(\S+)\s+(\w+)\s*$/m);
+    assert.ok(
+      match,
+      `${file}: must have an ExecStart line ending in a runner mode`,
+    );
+    assert.equal(
+      match[1],
+      "/opt/feedflag/ops/bastion/run-timer.sh",
+      `${file}: ExecStart must be the TRACKED runner /opt/feedflag/ops/bastion/run-timer.sh (an untracked root copy is the silent-stale-code vector from issue #24)`,
+    );
+    assert.ok(
+      MODES.includes(match[2]),
+      `${file}: ExecStart mode "${match[2]}" must be one the runner implements (${MODES.join("|")})`,
+    );
+    // Every service has a matching timer template — the repo stays the
+    // complete source of truth for /etc/systemd/system/.
+    const timer = file.replace(/\.service$/, ".timer");
+    assert.ok(
+      timerFiles.includes(timer),
+      `${file}: matching ${timer} template must exist in ops/bastion/`,
+    );
+    const timerText = readFileSync(join(bastionDir, timer), "utf8");
+    assert.match(
+      timerText,
+      /OnCalendar=\*:0\/(15|30)/,
+      `${timer}: must carry the expected OnCalendar cadence`,
+    );
+    assert.match(
+      timerText,
+      /Persistent=true/,
+      `${timer}: must be Persistent=true`,
+    );
+  }
+
+  console.log(
+    `  ✓ all ${serviceFiles.length} service templates ExecStart the tracked runner (issue #24)`,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// No tracked file references the UNTRACKED root-runner path (issue #24)
+// ---------------------------------------------------------------------------
+// The bad literal is the deployed ExecStart path of the stale root copy. It
+// must appear in NO tracked file: if a template, script, or doc ever carries
+// it again, a deploy resurrects the vector. The README documents the vector
+// without spelling the path so this sweep can be absolute — and this file
+// builds the needle by concatenation so even this test's own source stays
+// clean (the sweep reads every file in the repo, including itself).
+{
+  const BAD = ["/opt/feedflag", "run-timer.sh"].join("/");
+  const SKIP_DIRS = new Set(["node_modules", ".git", ".agent-inputs"]);
+  function* walk(dir: string): Generator<string> {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (SKIP_DIRS.has(e.name)) continue;
+      const p = join(dir, e.name);
+      if (e.isDirectory()) yield* walk(p);
+      else yield p;
+    }
+  }
+  for (const path of walk(ROOT)) {
+    const text = readFileSync(path, "utf8");
+    assert.ok(
+      !text.includes(BAD),
+      `${path}: must not reference the untracked root runner path ${BAD} (issue #24)`,
+    );
+  }
+  console.log("  ✓ no tracked file references the untracked root runner path");
 }
 
 console.log("\nAll data-branch regression tests passed.");

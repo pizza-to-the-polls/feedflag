@@ -1,0 +1,9 @@
+[Unit]
+Description=feedflag hot timer run
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/feedflag
+ExecStart=/opt/feedflag/ops/bastion/run-timer.sh hot
+User=root
