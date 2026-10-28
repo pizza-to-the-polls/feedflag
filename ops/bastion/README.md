@@ -36,14 +36,20 @@ state files were (force-)**tracked** on `main` until this PR untracked them
 through the untracked transition tick and against any future regression. Code
 files are deployed artifacts, not generated content.
 
-**State push credential gap (2026-10-28, found during the unstick):** the box's
-`push_state` mints a token via `/opt/pizza-eagle/scripts/gh-token.mjs`, which
-CANNOT mint from the timer context (the pizza-eagle listener must inject
-`GH_APP_ID` and write a `request-auth.json` write-gate) — so the box's state push
-silently never fired its whole life; every `refs/heads/data` commit was a
-GH Actions run. `push_state` now `maybe_alert`s loudly (throttled 1h) instead of
-`echo`ing. Closing the gap needs a scoped feedflag credential (e.g. fine-grained
-PAT, contents:write, this repo only) in Secrets Manager — tracked in issue #22.
+**State push credential (2026-10-28, found during the unstick; closed same day):**
+the box's `push_state` used to mint a token via
+`/opt/pizza-eagle/scripts/gh-token.mjs`, which CANNOT mint from the timer
+context (the pizza-eagle listener must inject `GH_APP_ID` and write a
+`request-auth.json` write-gate) — so the box's state push silently never fired
+its whole life; every `refs/heads/data` commit was a GH Actions run. The fix:
+`FEEDFLAG_STATE_PUSH_TOKEN` — a scoped fine-grained PAT (contents:write,
+`pizza-to-the-polls/feedflag` only) stored in Secrets Manager
+`ptp/prod/feedflag/env` and landed in `/opt/feedflag/.env`. `push_state` uses it
+first (basic `x-access-token` extraheader — same plumbing as App tokens) and
+keeps `gh-token.mjs` as a fallback; a missing token still `maybe_alert`s loudly
+(throttled 1h). Rotation: mint a new PAT, merge it into the secret, re-sync
+`/opt/feedflag/.env` on the bastion (`jq -r 'to_entries[] | "\(.key)=\(.value)"'`
+of the secret JSON into the dotenv file), revoke the old PAT.
 
 **ExecStart path: the TRACKED script only (issue #24).** Every `feedflag-*.service`
 unit here must ExecStart the tracked runner at `ops/bastion/run-timer.sh`

@@ -6,8 +6,9 @@
 #     never did before; DB freshness = whole-chain health signal)
 #   * throttled Slack alerts on leg failures (1h marker, not per-run spam)
 #   * best-effort state push to refs/heads/data via state-only plumbing —
-#     LOUD (maybe_alert) when it can't fire: the box token path was silently
-#     dead its whole life (issue #22), gh-token.mjs can't mint from here
+#     authed by FEEDFLAG_STATE_PUSH_TOKEN (scoped PAT, Secrets Manager;
+#     issue #22) with gh-token.mjs as fallback; LOUD (maybe_alert) when it
+#     can't fire
 set -uo pipefail
 MODE=$1
 cd /opt/feedflag
@@ -95,7 +96,15 @@ push_state() {
     [ -f "$f" ] && files="$files $f"
   done
   [ -z "$files" ] && return 0
-  tok=$(node /opt/pizza-eagle/scripts/gh-token.mjs --repo pizza-to-the-polls/feedflag 2>/dev/null || true)
+  # Credential (issue #22): FEEDFLAG_STATE_PUSH_TOKEN — scoped fine-grained
+  # PAT (contents:write, pizza-to-the-polls/feedflag ONLY) from Secrets
+  # Manager ptp/prod/feedflag/env, landed in /opt/feedflag/.env. gh-token.mjs
+  # stays as a fallback for contexts that CAN mint (a pizza-eagle listener
+  # case) — it never could from this timer context (listener write-gate).
+  tok="${FEEDFLAG_STATE_PUSH_TOKEN:-}"
+  if [ -z "$tok" ]; then
+    tok=$(node /opt/pizza-eagle/scripts/gh-token.mjs --repo pizza-to-the-polls/feedflag 2>/dev/null || true)
+  fi
   if [ -n "$tok" ]; then
     GIT_CONFIG_COUNT=1 \
     GIT_CONFIG_KEY_0=http.extraheader \
@@ -103,12 +112,11 @@ push_state() {
       bash ops/state-push.sh -m "chore(data): timer state ($MODE) head=$DEPLOY_SHA [skip ci]" $files \
       || maybe_alert "feedflag $(hostname): timer state push to refs/heads/data FAILED ($MODE) — box state is NOT backed up to git. Check ops/state-push.sh + the token on the bastion."
   else
-    # 2026-10-28 finding: this was a bare `echo` for the box's whole life —
-    # gh-token.mjs can NEVER mint from the timer context (the pizza-eagle
-    # listener must inject GH_APP_ID + write a request-auth.json gate), so
-    # the box state push has never fired. Loud until a scoped credential
-    # exists (see issue #22).
-    maybe_alert "feedflag $(hostname): timer state push SKIPPED — no token ($MODE). pizza-eagle gh-token.mjs cannot mint from the timer context (listener write-gate) — box state is NOT backed up to git. Needs a scoped feedflag credential (issue #22)."
+    # Loud until the scoped credential is in place: without it the box state
+    # push silently never fired its whole life (2026-10-28 finding). The
+    # remediation is the FEEDFLAG_STATE_PUSH_TOKEN key in Secrets Manager
+    # ptp/prod/feedflag/env + a .env re-sync on the bastion.
+    maybe_alert "feedflag $(hostname): timer state push SKIPPED — no FEEDFLAG_STATE_PUSH_TOKEN ($MODE). Add the scoped state-push PAT to Secrets Manager ptp/prod/feedflag/env and re-sync /opt/feedflag/.env on the bastion — box state is NOT backed up to git. (gh-token.mjs cannot mint from the timer context — listener write-gate.)"
   fi
 }
 
