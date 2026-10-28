@@ -8,6 +8,15 @@ name: feedflag-govwatch
 # Shares the concurrency group with the election-day hot workflow so the two
 # never race the data/govt-readings.json state commit (queue, not cancel).
 # On Nov 2-4 the hot workflow runs every 15 min anyway.
+#
+# ISSUE #20 (2026-10-28): this workflow runs CODE FROM MAIN. The `data`
+# branch is a state store, not a deploy channel — until 2026-10-28 it
+# checked out `ref: data` and executed scripts/ from it, but the branch's
+# code tree had lagged main since 2026-10-24 (pre-gate), so every backup run
+# bypassed the issue-#12 freshness/hours gates and re-posted frozen Clark NV
+# waits at 95% confidence. Now: code from main, state files overlaid from
+# refs/heads/data at boot, and state pushed back as state-only commits
+# (ops/state-push.sh) that can never carry code.
 
 on:
   schedule:
@@ -26,10 +35,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
+      # Code ALWAYS from main (issue #20) — see the header note.
       - uses: actions/checkout@v4
         with:
-          # data branch carries pipeline state (main is protected, code only)
-          ref: data
+          ref: main
+      - name: Restore state from the data branch (state files only)
+        run: |
+          git fetch -q origin refs/heads/data || { echo "no data branch yet — starting from empty state"; exit 0; }
+          for f in data/govt-readings.json data/observations.jsonl; do
+            git checkout -q FETCH_HEAD -- "$f" 2>/dev/null || echo "no $f on data branch yet — starting fresh"
+          done
+          # the per-file checkout staged the restored blobs; unstage them —
+          # the working-tree copies are what the extraction scripts read/update
+          git reset -q -- data 2>/dev/null || true
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -55,22 +73,21 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_FLAG_CHANNELS: ${{ secrets.SLACK_FLAG_CHANNELS }}
         run: npx tsx scripts/collect-reactions.ts || echo "reaction collection skipped"
-      - name: Persist extraction state
+      - name: Persist extraction state (state-only commit to refs/heads/data)
         run: |
           changed=""
           for f in data/govt-readings.json data/observations.jsonl; do
             [ -f "$f" ] && changed="$changed $f"
           done
-          if [ -n "$(git status --porcelain -- data 2>/dev/null)" ]; then
-            git config user.name "feedflag-bot"
-            git config user.email "feedflag-bot@users.noreply.github.com"
-            git add -f -- $changed
-            git commit -m "chore(data): govwatch extraction state [skip ci]" || true
-            # data/ state lives on the 'data' branch (main is protected)
-            git fetch -q origin refs/heads/data || true
-            git rebase -q FETCH_HEAD || true
-            git push -q origin HEAD:refs/heads/data || true
+          if [ -z "$changed" ]; then
+            echo "no state files — nothing to persist"
+            exit 0
           fi
+          # Issue #20: ops/state-push.sh builds a state-only commit with git
+          # plumbing (temp index + commit-tree) on top of the data-branch tip,
+          # so no code from this (main) checkout ever rides onto the data
+          # branch, and no working-tree rebase is needed. Race-safe via retry.
+          bash ops/state-push.sh -m "chore(data): govwatch extraction state [skip ci]" $changed
   alert:
     needs: extract
     if: always() && needs.extract.result == 'failure'

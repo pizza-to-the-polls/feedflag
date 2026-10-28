@@ -10,6 +10,12 @@ name: feedflag-electionday
 # NOTE (DST): after Nov 1 2026 the meal-time crons in feedflag.yml fire an
 # hour EARLY local — this workflow covers Nov 2-4 around the clock so poll
 # close (ET/CT/PT) is inside its window regardless.
+#
+# ISSUE #20 (2026-10-28): this workflow runs CODE FROM MAIN. The `data`
+# branch is a state store, not a deploy channel — executing scripts/ from it
+# ran pre-gate code (branch had lagged main since 2026-10-24) and re-posted
+# frozen Clark NV waits at 95% confidence. Code from main, state files
+# overlaid from refs/heads/data at boot, state-only pushes (ops/state-push.sh).
 
 on:
   schedule:
@@ -39,11 +45,21 @@ jobs:
             echo "hot=false" >> "$GITHUB_OUTPUT"
             echo "not in window — skipping (no steps run past guard)"
           fi
+      # Code ALWAYS from main (issue #20) — see the header note.
       - uses: actions/checkout@v4
         with:
-          # data branch carries pipeline state (main is protected, code only)
-          ref: data
+          ref: main
         if: steps.guard.outputs.hot == 'true'
+      - name: Restore state from the data branch (state files only)
+        if: steps.guard.outputs.hot == 'true'
+        run: |
+          git fetch -q origin refs/heads/data || { echo "no data branch yet — starting from empty state"; exit 0; }
+          for f in data/govt-readings.json data/observations.jsonl; do
+            git checkout -q FETCH_HEAD -- "$f" 2>/dev/null || echo "no $f on data branch yet — starting fresh"
+          done
+          # the per-file checkout staged the restored blobs; unstage them —
+          # the working-tree copies are what the extraction scripts read/update
+          git reset -q -- data 2>/dev/null || true
       - uses: actions/setup-node@v4
         if: steps.guard.outputs.hot == 'true'
         with:
@@ -65,17 +81,22 @@ jobs:
           PIZZABASE_API_URL: ${{ secrets.PIZZABASE_API_URL }}
           PIZZABASE_API_KEY: ${{ secrets.PIZZABASE_API_KEY }}
         run: npx tsx scripts/emit-to-db.ts --hours 26 || echo "emit skipped (non-fatal)"
-      - name: Persist extraction state
+      - name: Persist extraction state (state-only commit to refs/heads/data)
         if: steps.guard.outputs.hot == 'true'
         run: |
-          if [ -f data/govt-readings.json ]; then
-            git config user.name "feedflag-bot"
-            git config user.email "feedflag-bot@users.noreply.github.com"
-            git add -f data/govt-readings.json data/observations.jsonl
-            git commit -m "chore(data): election-day hot extraction [skip ci]" || true
-            # data/ state lives on the 'data' branch (main is protected)
-            git push -q origin HEAD:refs/heads/data || true
+          changed=""
+          for f in data/govt-readings.json data/observations.jsonl; do
+            [ -f "$f" ] && changed="$changed $f"
+          done
+          if [ -z "$changed" ]; then
+            echo "no state files — nothing to persist"
+            exit 0
           fi
+          # Issue #20: ops/state-push.sh builds a state-only commit with git
+          # plumbing (temp index + commit-tree) on top of the data-branch tip,
+          # so no code from this (main) checkout ever rides onto the data
+          # branch, and no working-tree rebase is needed. Race-safe via retry.
+          bash ops/state-push.sh -m "chore(data): election-day hot extraction [skip ci]" $changed
   alert:
     needs: hot
     if: always() && needs.hot.result == 'failure'

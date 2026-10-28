@@ -44,6 +44,7 @@ import {
   nextFreshness,
   type ReadingState,
 } from "../src/govt/gates.js";
+import { hasGovtEvidence } from "../src/govt/evidence.js";
 import { MIN_POST_MINUTES } from "../src/notify/format.js";
 import type { DescriptionSet } from "../src/types.js";
 
@@ -909,6 +910,17 @@ const main = async () => {
               imageDescriptions: [],
               evidence,
             };
+            // Belt-and-braces (issue #20): an EMPTY evidence block is the
+            // pre-gate-code signature (the 2026-10-28 backup wrote frozen
+            // Clark waits at 95% with description = {}). Refuse evidenceless
+            // govt rows at the writer too, so a stale-code path can never
+            // re-inflate confidence onto the bus.
+            if (!hasGovtEvidence(description)) {
+              console.warn(
+                `  [evidence] ${sourceRef}: empty evidence block — observation dropped (pre-gate code signature, issue #20)`,
+              );
+              return null;
+            }
             return JSON.stringify({
               schema: "feedflag/observation@1",
               domain: "govt",
@@ -932,6 +944,7 @@ const main = async () => {
               description,
             });
           })
+          .filter((l): l is string => l !== null)
           .join("\n");
         if (lines)
           appendFileSync(join(DATA_DIR, "observations.jsonl"), lines + "\n");
