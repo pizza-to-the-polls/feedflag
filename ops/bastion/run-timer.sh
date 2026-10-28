@@ -34,15 +34,25 @@ heartbeat() {
 IN_WINDOW() { H=$(date -u +%H); [ "$H" -ge 12 ] || [ "$H" -lt 4 ]; }
 
 push_state() {
-  git add -f data >/dev/null 2>&1 || true
-  git diff --cached --quiet >/dev/null 2>&1 && return 0
-  git -c user.name=feedflag-bot -c user.email=feedflag-bot@users.noreply.github.com \
-    commit -qm "chore(data): timer state ($MODE) [skip ci]" >/dev/null 2>&1 || true
-  local tok=""
+  # Issue #20: STATE-ONLY push. The data branch is a state store, not a deploy
+  # channel — the old `git push origin HEAD:refs/heads/data` sent this
+  # checkout's whole code tree to the branch, and the branch's code (Oct 24,
+  # pre-gate) is exactly what the 2026-10-28 backup executed to re-post frozen
+  # Clark NV waits at 95%. ops/state-push.sh builds a plumbing commit (temp
+  # index + commit-tree) on top of the data-branch tip with only the named
+  # state files — no code rides along. The token rides via GIT_CONFIG_* env so
+  # every git call inside the helper is authed.
+  local files="" tok=""
+  for f in data/govt-readings.json data/observations.jsonl data/seen.json data/flagged.jsonl data/labels.jsonl data/reports-sync.json; do
+    [ -f "$f" ] && files="$files $f"
+  done
+  [ -z "$files" ] && return 0
   tok=$(node /opt/pizza-eagle/scripts/gh-token.mjs --repo pizza-to-the-polls/feedflag 2>/dev/null || true)
   if [ -n "$tok" ]; then
-    git -c "http.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$tok" | base64)" \
-      push -q origin HEAD:refs/heads/data >/dev/null 2>&1 \
+    GIT_CONFIG_COUNT=1 \
+    GIT_CONFIG_KEY_0=http.extraheader \
+    GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$tok" | base64)" \
+      bash ops/state-push.sh -m "chore(data): timer state ($MODE) [skip ci]" $files \
       || echo "[timer] data push failed (token read-only?) — CW + DB observability unaffected"
   else
     echo "[timer] data push skipped — no token"
