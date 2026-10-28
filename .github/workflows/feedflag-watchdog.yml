@@ -1,0 +1,59 @@
+name: feedflag-watchdog
+
+# Dead-man's switch — INDEPENDENT of the bastion (GH's infra, not the box's).
+# The bastion runner now emits to feed_observations every fire (v5), so DB row
+# freshness == whole-chain health: timer -> extraction -> emit -> DB.
+# A stale DB during the watch window = something in the chain is stopped,
+# regardless of which leg. Alert Slack, no retries — next tick is the retry.
+#
+# Watch window: voting hours (12:00-03:59 UTC, post-DST = 7am-11pm ET) or the
+# Nov 2-4 hot window (24/7). Outside it the pipeline is intentionally dark.
+# Threshold 45 min < the 4-day silent-DB outage this catches by design.
+#
+# GH cron fires ~10-30% on private repos (measured); public repo less bad.
+# It's a checker, not a worker — a dropped watchdog run just means the NEXT
+# run checks. Two runs/hour, offset off the busy :00/:30 marks.
+
+on:
+  schedule:
+    - cron: "19-49/30 * * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Pipeline freshness (newest feed_observations row age)
+        env:
+          PIZZABASE_API_KEY: ${{ secrets.PIZZABASE_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          set -euo pipefail
+          H=$(date -u +%H); D=$(date -u +%Y-%m-%d)
+          WINDOW=0
+          if [ "$H" -ge 12 ] || [ "$H" -lt 4 ]; then WINDOW=1; fi   # voting hours (post-DST)
+          echo "$D" | grep -qE '2026-11-0[234]' && WINDOW=1           # hot window: 24/7
+          if [ "$WINDOW" = 0 ]; then
+            echo "outside watch window ($(date -u)) — pipeline intentionally dark; ok"
+            exit 0
+          fi
+          LATEST=$(curl -s -m 20 -H "Authorization: Basic $PIZZABASE_API_KEY" \
+            "https://base.polls.pizza/feed-observations?limit=5" | jq -r '.results[0].createdAt')
+          if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
+            echo "::error::no rows readable from feed-observations — API or auth down"
+            curl -s -X POST -H 'content-type: application/json' -d '{"text":":rotating_light: feedflag WATCHDOG: feed-observations API unreadable — check PIZZABASE_API_KEY + API health."}' "$SLACK_WEBHOOK_URL" || true
+            exit 1
+          fi
+          AGE=$(( $(date -u +%s) - $(date -u -d "$LATEST" +%s) ))
+          echo "newest DB row: $LATEST (${AGE}s old)"
+          if [ $AGE -gt 2700 ]; then
+            echo "::error::pipeline stale — newest feed_observations row is $(( AGE / 60 )) min old"
+            curl -s -X POST -H 'content-type: application/json' \
+              -d "{\"text\":\":rotating_light: feedflag PIPELINE STALE — newest feed_observations row is $(( AGE / 60 )) min old (expected <45). Something is STOPPED: bastion timers (systemctl list-timers 'feedflag-*' on pizza-eagle), runner env, extraction, or emit. DB says the chain is quiet.\"}" \
+              "$SLACK_WEBHOOK_URL" || true
+            exit 1
+          fi
+          echo "fresh — chain healthy"

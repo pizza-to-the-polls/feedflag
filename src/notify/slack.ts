@@ -74,4 +74,48 @@ export const slackNotifier: Notifier = {
       );
     }
   },
+  async postText(text: string): Promise<void> {
+    // Bot path: post as the app identity
+    if (settings.slackBotToken && settings.slackFlagChannels.length) {
+      for (const channel of settings.slackFlagChannels) {
+        const res = await fetch("https://slack.com/api/chat.postMessage", {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${settings.slackBotToken}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            channel,
+            text,
+            unfurl_links: false,
+          }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!res.ok) {
+          throw new Error(
+            `Slack chat.postMessage ${res.status} (ch ${channel})`,
+          );
+        }
+      }
+      return;
+    }
+    // Webhook path (fallback)
+    const url = settings.volsWebhookUrl || settings.slackWebhookUrl;
+    if (!url) throw new Error("No Slack delivery configured for postText");
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        text,
+        username: "feedflag",
+        icon_emoji: ":feedflag:",
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) {
+      throw new Error(
+        `Slack webhook ${res.status}: ${(await res.text()).slice(0, 200)}`,
+      );
+    }
+  },
 };

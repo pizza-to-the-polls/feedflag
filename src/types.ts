@@ -30,6 +30,11 @@ export interface DescriptionSet {
   caption: string;
   imageDescriptions: string[];
   videoSummary?: string;
+  /** Raw extraction evidence (govt leg, issue #12): raw REST field values
+   *  (WAIT_TIME, Last_Refresh) + freshness/hours gate verdicts, so post-
+   *  incident audits never need to re-query the source. Absent on social-leg
+   *  descriptions. */
+  evidence?: Record<string, unknown>;
 }
 
 export interface Classification {
@@ -55,6 +60,7 @@ export interface DecisionProvider {
 export interface Notifier {
   name: string;
   notify(flag: FlaggedItem): Promise<void>;
+  postText(text: string): Promise<void>;
 }
 
 /** Source domain — the aggregator joins social signals, gov-page extractions, and site reports. */

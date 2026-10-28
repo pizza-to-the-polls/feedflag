@@ -8,6 +8,13 @@ name: feedflag
 # `data/` is pipeline state; committed back at end of each run so the next
 # run doesn't re-pay for captioning. Whitelisted files ONLY — never
 # `git add -f data` (machine-token.sql lives in data/).
+#
+# ISSUE #20 (2026-10-28): this workflow runs CODE FROM MAIN. The `data`
+# branch is a state store, not a deploy channel — executing scripts/ from it
+# ran pre-gate code (branch had lagged main since 2026-10-24, and this leg
+# also runs extract-wait-times.ts) and re-posted frozen Clark NV waits at
+# 95% confidence. Code from main, state files overlaid from refs/heads/data
+# at boot, state-only pushes (ops/state-push.sh).
 
 on:
   schedule:
@@ -35,7 +42,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      # Code ALWAYS from main (issue #20) — see the header note.
       - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Restore state from the data branch (state files only)
+        run: |
+          git fetch -q origin refs/heads/data || { echo "no data branch yet — starting from empty state"; exit 0; }
+          for f in data/seen.json data/flagged.jsonl data/observations.jsonl data/reports-sync.json data/labels.jsonl data/govt-readings.json; do
+            git checkout -q FETCH_HEAD -- "$f" 2>/dev/null || echo "no $f on data branch yet — starting fresh"
+          done
+          # the per-file checkout staged the restored blobs; unstage them —
+          # the working-tree copies are what the pipeline reads/updates
+          git reset -q -- data 2>/dev/null || true
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -97,22 +116,30 @@ jobs:
               --data-binary @/tmp/slack-payload.json \
               "$SLACK_WEBHOOK_URL" || echo "slack post failed (non-fatal)"
           fi
-      - name: Persist pipeline state
+      - name: Persist pipeline state (state-only commit to refs/heads/data)
         run: |
           changed=""
           for f in data/seen.json data/flagged.jsonl data/observations.jsonl data/reports-sync.json data/labels.jsonl data/govt-readings.json; do
             [ -f "$f" ] && changed="$changed $f"
           done
-          if [ -n "$changed" ]; then
-            git config user.name "feedflag-bot"
-            git config user.email "feedflag-bot@users.noreply.github.com"
-            git add -f -- $changed
-            git commit -m "chore(data): feedflag run state [skip ci]"
-            # CI-vs-CI race: govwatch pushes data/ commits too — rebase+retry
-            # instead of failing the run (two failures overnight from this)
-            for i in 1 2 3; do
-              git pull --rebase -q origin main && git push -q origin main && break
-              echo "push attempt $i raced; retrying"
-              sleep 15
-            done
+          if [ -z "$changed" ]; then
+            echo "no state files — nothing to persist"
+            exit 0
           fi
+          # Issue #20: ops/state-push.sh builds a state-only commit with git
+          # plumbing (temp index + commit-tree) on top of the data-branch tip,
+          # so no code from this (main) checkout ever rides onto the data
+          # branch. Race-safe via retry (all three workflows share the branch).
+          bash ops/state-push.sh -m "chore(data): feedflag run state [skip ci]" $changed
+  alert:
+    needs: run
+    if: always() && needs.run.result == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Slack alert on failure
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          PAYLOAD="{\"text\":\":rotating_light: feedflag workflow '${GITHUB_WORKFLOW}' FAILED (scheduled run) — <${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}|Actions log>. Watchdog re-checks DB freshness on its next run.\"}"
+          curl -s -X POST -H 'content-type: application/json' -d "$PAYLOAD" "$SLACK_WEBHOOK_URL" || true

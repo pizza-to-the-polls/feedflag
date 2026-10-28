@@ -329,6 +329,39 @@ Low report volume means human vetting carries the calibration load. Two channels
 - Honest timeline: graduation decisions locked **before Nov 1** (DST bump day); the election-day
   hot mode sweeps both channels every 15 min.
 
+## Branch architecture: `main` = code, `data` = state (issue #20)
+
+The repo has two kinds of branches with strictly separated jobs:
+
+- **`main` is the only code authority.** Every scheduled workflow (govwatch
+  30-min backup, election-day hot mode, social) checks out `main` and runs
+  `scripts/` from it.
+- **`data` carries pipeline state only** (`govt-readings.json`,
+  `observations.jsonl`, `seen.json`, ...). At boot each workflow overlays just
+  its whitelisted state files from `refs/heads/data` onto the main checkout;
+  at the end it pushes them back via `ops/state-push.sh`, which builds a
+  **state-only commit with git plumbing** (temp index + `commit-tree`) on top
+  of the data-branch tip — no code from the checkout can ever ride onto the
+  data branch, and no working-tree rebase is needed.
+
+**Why this is load-bearing:** on 2026-10-28 the govwatch backup still checked
+out `ref: data` and *executed* the branch's code tree, which had lagged main
+since 2026-10-24 (pre-gate). Every backup run therefore bypassed the
+issue-#12 freshness/hours gates and re-posted the frozen Clark NV waits at
+95% confidence while the gated bastion runs were correctly withholding them.
+A state branch is not a deploy channel.
+
+- **Reconcile** (rebuild `data` onto current main, restoring state from the
+  old tip): `bash scripts/reconcile-data-branch.sh` — one-time, manual, safe
+  to re-run (no-ops when already reconciled), force-with-lease.
+- **Belt-and-braces:** govt observations without an evidence block (the
+  pre-gate-code signature `description: {}`) are refused at both ends of the
+  observation path — the writer (`scripts/extract-wait-times.ts`) and the DB
+  emitter (`scripts/emit-to-db.ts`) — see `src/govt/evidence.ts`.
+- Tests: `scripts/test-data-branch.ts` (runs as part of `npm test`) locks in
+  all three contracts: evidence guard, workflow separation, plumbing-only
+  state pushes.
+
 ## Caveats
 
 - Scraping IG/TikTok is against platform ToS; Apify/RSSHub routes degrade

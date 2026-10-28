@@ -1,0 +1,9 @@
+[Unit]
+Description=feedflag heartbeat (CW metric, box/timer-alive)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/feedflag
+ExecStart=/opt/feedflag/run-timer.sh heartbeat
+User=root

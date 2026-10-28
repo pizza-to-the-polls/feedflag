@@ -157,8 +157,11 @@ export async function runPipeline(opts: RunOptions = {}) {
         reports,
         settings.describeConcurrency,
       );
+      // No Slack posting for crowd reports: they already surface via the
+      // pizzabase Zapier report hooks (#feed-reports). feedflag archives them
+      // to the bus + DB only (corroboration ground truth).
       console.log(
-        `[feedflag] crowd leg: ${reports.length} site reports -> observations`,
+        `[feedflag] crowd leg: ${reports.length} site reports -> observations (archived; no Slack — reports already surface via #feed-reports)`,
       );
     }
   }

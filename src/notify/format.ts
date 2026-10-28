@@ -2,6 +2,11 @@ import type { FlaggedItem } from "../types.js";
 import { excerpt } from "../util.js";
 import { flagMediaUrl } from "./slack.js";
 
+/** Lines >= this many minutes are the dispatch-relevant signal (1h).
+ *  Shared by the govt leg (extract-wait-times). Crowd reports never post to
+ *  Slack — they already surface via the pizzabase Zapier report hooks. */
+export const MIN_POST_MINUTES = 60;
+
 /** Human-facing message text. JEV can't write strings, so this stays here. */
 export function flagText(f: FlaggedItem): string {
   const c = f.classification;

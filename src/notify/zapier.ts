@@ -24,4 +24,18 @@ export const zapierNotifier: Notifier = {
       );
     }
   },
+  async postText(text: string): Promise<void> {
+    if (!settings.zapierCatchUrl)
+      throw new Error("ZAPIER_CATCH_URL not configured for postText");
+    const res = await fetch(settings.zapierCatchUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) {
+      throw new Error(
+        `Zapier catch hook ${res.status}: ${(await res.text()).slice(0, 200)}`,
+      );
+    }
+  },
 };

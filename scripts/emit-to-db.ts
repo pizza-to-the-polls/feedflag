@@ -14,6 +14,7 @@
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { hasGovtEvidence } from "../src/govt/evidence.js";
 
 const DATA_DIR = resolve(process.env.DATA_DIR ?? "./data");
 const API = (process.env.PIZZABASE_API_URL ?? "").replace(/\/+$/, "");
@@ -135,6 +136,7 @@ const main = async () => {
   const since = Date.now() - HOURS * 3600 * 1000;
   const seen = new Set<string>();
   const batch: Record<string, unknown>[] = [];
+  let evidenceBlocked = 0;
   for (const line of readFileSync(path, "utf8").split("\n")) {
     if (!line.trim()) continue;
     try {
@@ -143,13 +145,27 @@ const main = async () => {
       const key = `${o.domain}:${o.source_ref}:${o.observed_at}`;
       if (seen.has(key)) continue;
       seen.add(key);
+      // Belt-and-braces (issue #20): govt observations must carry a raw-REST
+      // evidence block. Gated writers always attach one; `description: {}` is
+      // the pre-gate-code signature that re-posted frozen Clark NV waits at
+      // 95% confidence on 2026-10-28 — refuse it at the DB door too.
+      if (o.domain === "govt" && !hasGovtEvidence(o.description)) {
+        evidenceBlocked++;
+        console.warn(
+          `[emit] skipping govt observation ${o.source_ref ?? "(unknown)"}: no evidence block (pre-gate code signature, issue #20)`,
+        );
+        continue;
+      }
       batch.push(toApi(o));
     } catch {
       // skip malformed
     }
   }
   if (!batch.length) {
-    console.log(`[emit] 0 observations in the last ${HOURS}h`);
+    console.log(
+      `[emit] 0 observations in the last ${HOURS}h` +
+        (evidenceBlocked > 0 ? ` (${evidenceBlocked} evidence-blocked, issue #20)` : ""),
+    );
     return;
   }
   if (DRY) {
@@ -169,8 +185,18 @@ const main = async () => {
     }
   }
   console.log(
-    `[emit] ${sent}/${batch.length} sent → inserted ${inserted}, skipped ${skipped}`,
+    `[emit] ${sent}/${batch.length} sent → inserted ${inserted}, skipped ${skipped}` +
+      (evidenceBlocked > 0 ? `, evidence-blocked ${evidenceBlocked} (issue #20)` : ""),
   );
+  // TOTAL FAILURE = everything sent, nothing landed (API errors, not idempotent
+  // skips). Hard-fail so callers alert — the 4-day-silent-DB postmortem rule:
+  // never fail quiet. (skipped>0 with inserted 0 is the normal re-run case.)
+  if (sent > 0 && inserted === 0 && !DRY) {
+    console.error(
+      `[emit] TOTAL FAILURE — ${sent} sent, 0 inserted. Observations are NOT reaching feed_observations.`,
+    );
+    process.exit(1);
+  }
 };
 
 main().catch((err) => {
