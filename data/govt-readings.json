@@ -2950,5 +2950,53 @@
     "lastRefresh": null,
     "frozenCount": 76,
     "active": true
+  },
+  "https://mtvoter.org/waittimes/#Early Voting Center": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-28T16:48:32.713Z",
+    "address": "20699 Macomb St",
+    "rawWaitTime": null,
+    "lastRefresh": null,
+    "frozenCount": 0,
+    "active": true
+  },
+  "https://mtvoter.org/waittimes/#Precinct 1": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-28T16:48:32.713Z",
+    "address": "17500 Millstone",
+    "rawWaitTime": null,
+    "lastRefresh": null,
+    "frozenCount": 0,
+    "active": true
+  },
+  "https://mtvoter.org/waittimes/#Precinct 2": {
+    "minutes": null,
+    "category": "short",
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-28T16:48:32.713Z",
+    "address": "47200 Heydenreich Rd",
+    "rawWaitTime": null,
+    "lastRefresh": null,
+    "frozenCount": 0,
+    "active": true
+  },
+  "https://pascovotes.gov/elections/early_voting/early_voting_locations_and_wait_times.php#NEW PORT RICHEY RECREATION CENTER": {
+    "minutes": 15,
+    "category": null,
+    "updated": null,
+    "confidence": 0.75,
+    "at": "2026-10-28T20:34:59.878Z",
+    "address": "6630 Van Buren St\nNew Port Richey, FL 34653",
+    "rawWaitTime": null,
+    "lastRefresh": null,
+    "frozenCount": 0,
+    "active": true
   }
 }
