@@ -240,9 +240,7 @@ const intentCosts = new Map<string, number>();
 
 for (const file of intentFiles) {
   const name = file.replace(/\.yml$/, "");
-  const intent = parseIntentYaml(
-    readFileSync(join(INTENTS_DIR, file), "utf8"),
-  );
+  const intent = parseIntentYaml(readFileSync(join(INTENTS_DIR, file), "utf8"));
   intents.set(name, intent);
 
   // Rule 2 — schema: required keys, types, layer/status, id shape
@@ -395,8 +393,9 @@ const SCHEMA_FILES = [
   "scripts/extract-wait-times.ts",
 ];
 const SCHEMA_SOURCE = "feedflag/observation@(\\d+)";
-const schemaMatches = (text: string): RegExpMatchArray[] =>
-  [...text.matchAll(new RegExp(SCHEMA_SOURCE, "g"))];
+const schemaMatches = (text: string): RegExpMatchArray[] => [
+  ...text.matchAll(new RegExp(SCHEMA_SOURCE, "g")),
+];
 
 const versions = new Map<number, string[]>();
 for (const file of SCHEMA_FILES) {
