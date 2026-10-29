@@ -18,5 +18,5 @@ contract:
     freshness: "n/a — poll-based; seen.json dedupe stops reprocessing between runs"
     cost_per_week_usd_max: 20
   pii: "author handle + post url only (D6) — contactInfo never emitted from the reports leg"
-tests: scripts/test-analyze.ts
+tests: scripts/test-deliver.ts
 status: implemented

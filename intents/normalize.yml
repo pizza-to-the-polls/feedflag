@@ -16,5 +16,5 @@ contract:
     freshness: "n/a — per-report, stateless"
     cost_per_week_usd_max: 1
   pii: "none — the only payload is the free-text wait description; no personal data reaches the model"
-tests: scripts/test-analyze.ts
+tests: scripts/test-pipeline-pure.ts
 status: implemented

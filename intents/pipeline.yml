@@ -18,5 +18,5 @@ contract:
     freshness: "one run per 30-min cron slot (feedflag.yml) — a run must fit inside the window"
     cost_per_week_usd_max: 0
   pii: "author handles + urls flow through; contactInfo never enters the pipeline (D6)"
-tests: scripts/test-analyze.ts
+tests: scripts/test-deliver.ts
 status: implemented

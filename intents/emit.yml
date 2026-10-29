@@ -16,5 +16,5 @@ contract:
     freshness: "n/a — synchronous transform inside the run"
     cost_per_week_usd_max: 0
   pii: "author handle + url only (D6) — the description set carries no contactInfo"
-tests: scripts/test-analyze.ts
+tests: scripts/test-pipeline-pure.ts
 status: implemented
