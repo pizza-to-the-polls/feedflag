@@ -75,7 +75,14 @@ const STATES: [string, string][] = [
  *  "or", "ok", "hi", "me", "voter id") — these only count in their
  *  uppercase form. */
 const AMBIGUOUS_CODES = new Set([
-  "IN", "OK", "OR", "ME", "HI", "DE", "LA", "ID",
+  "IN",
+  "OK",
+  "OR",
+  "ME",
+  "HI",
+  "DE",
+  "LA",
+  "ID",
 ]);
 
 /** Title-case run followed by the literal word "County": "Fake County",
@@ -125,7 +132,10 @@ export function deriveScope(text: string): LocationScope {
  * candidate pool. Rows missing the field pass (endpoint tolerance); rows
  * carrying a conflicting value are dropped (the AC's cross-county trap).
  */
-export function scopeMatchesRow(row: LocationRow, scope: LocationScope): boolean {
+export function scopeMatchesRow(
+  row: LocationRow,
+  scope: LocationScope,
+): boolean {
   const state = scope.state?.trim().toUpperCase();
   if (state && row.state && row.state.trim().toUpperCase() !== state)
     return false;

@@ -50,10 +50,7 @@ export function parseRowJson(j: unknown): LocationRow | null {
 }
 
 export class PizzabaseApi implements RegistryProvider, LocationProvider {
-  private cache = new Map<
-    string,
-    { at: number; rows: LocationRow[] }
-  >();
+  private cache = new Map<string, { at: number; rows: LocationRow[] }>();
 
   constructor(
     private baseUrl: string,

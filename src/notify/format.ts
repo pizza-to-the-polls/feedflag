@@ -57,7 +57,7 @@ export function flagPayload(f: FlaggedItem): Record<string, unknown> {
     // Issue #35: the triangulated place (absent when nothing resolved)
     resolved_place:
       f.resolvedLocation && f.resolvedLocation.method !== "no-match"
-        ? (f.resolvedLocation.address || f.resolvedLocation.name || "")
+        ? f.resolvedLocation.address || f.resolvedLocation.name || ""
         : "",
     resolved_place_method: f.resolvedLocation?.method ?? "",
     resolved_place_confidence: f.resolvedLocation?.confidence ?? 0,

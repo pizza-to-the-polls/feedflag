@@ -18,8 +18,7 @@ const PLACE_WORD_RE =
   /\b(church|schools?|library|libraries|centers?|centres?|halls?|academ(y|ies)|gym(nasium)?s?|pavilions?|auditoriums?|armor(y|ies)|annex(es)?|campus|precincts?|parks?|branches?|stadiums?|arenas?|community|recreation|elementary|middle|high|polling|voting|vote)\b/i;
 
 /** Prepositions that introduce a place mention ("at Willow Creek"). */
-const TRIGGER_RE =
-  /^(at|near|from|outside|inside|around|by|off)$/i;
+const TRIGGER_RE = /^(at|near|from|outside|inside|around|by|off)$/i;
 
 /** Lowercase connectors allowed inside a capitalized run ("Church of the
  *  Brethren"). */
@@ -31,11 +30,61 @@ const STOP_CAPS = new Set(["i", "it", "it's", "a", "an"]);
 /** Two-letter state codes (and a few country/code-like tokens) that appear
  *  capitalized in captions but are not place names. */
 const STATE_CODES = new Set([
-  "al", "ak", "az", "ar", "ca", "co", "ct", "de", "fl", "ga", "hi", "id",
-  "il", "in", "ia", "ks", "ky", "la", "me", "md", "ma", "mi", "mn", "ms",
-  "mo", "mt", "ne", "nv", "nh", "nj", "nm", "ny", "nc", "nd", "oh", "ok",
-  "or", "pa", "ri", "sc", "sd", "tn", "tx", "ut", "vt", "va", "wa", "wv",
-  "wi", "wy", "dc", "us", "usa", "govt", "gov",
+  "al",
+  "ak",
+  "az",
+  "ar",
+  "ca",
+  "co",
+  "ct",
+  "de",
+  "fl",
+  "ga",
+  "hi",
+  "id",
+  "il",
+  "in",
+  "ia",
+  "ks",
+  "ky",
+  "la",
+  "me",
+  "md",
+  "ma",
+  "mi",
+  "mn",
+  "ms",
+  "mo",
+  "mt",
+  "ne",
+  "nv",
+  "nh",
+  "nj",
+  "nm",
+  "ny",
+  "nc",
+  "nd",
+  "oh",
+  "ok",
+  "or",
+  "pa",
+  "ri",
+  "sc",
+  "sd",
+  "tn",
+  "tx",
+  "ut",
+  "vt",
+  "va",
+  "wa",
+  "wv",
+  "wi",
+  "wy",
+  "dc",
+  "us",
+  "usa",
+  "govt",
+  "gov",
 ]);
 
 function stripToken(t: string): string {
@@ -98,8 +147,7 @@ export function extractPlaceNames(text: string): string[] {
     const prev = i > 0 ? tokens[i - 1]! : "";
     const after = j < tokens.length ? tokens[j]! : "";
     const triggered = TRIGGER_RE.test(prev);
-    const placey =
-      PLACE_WORD_RE.test(phrase) || PLACE_WORD_RE.test(after);
+    const placey = PLACE_WORD_RE.test(phrase) || PLACE_WORD_RE.test(after);
     if (phrase && (triggered || placey || run.length >= 2)) {
       out.push(phrase);
     }
@@ -133,12 +181,10 @@ export function nameFromRawLabel(raw: string): string {
  *  social passes the description set, govt passes the source's raw point
  *  label (and optional REST address). */
 export interface MentionInput {
-  description?:
-    | Pick<
-        DescriptionSet,
-        "caption" | "imageDescriptions" | "videoSummary" | "item"
-      >
-    | null;
+  description?: Pick<
+    DescriptionSet,
+    "caption" | "imageDescriptions" | "videoSummary" | "item"
+  > | null;
   rawLabel?: string | null;
   address?: string | null;
 }

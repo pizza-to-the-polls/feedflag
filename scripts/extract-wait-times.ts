@@ -46,10 +46,7 @@ import {
 } from "../src/govt/gates.js";
 import { hasGovtEvidence } from "../src/govt/evidence.js";
 import { MIN_POST_MINUTES } from "../src/notify/format.js";
-import {
-  createResolveDeps,
-  resolveLocation,
-} from "../src/locate/resolve.js";
+import { createResolveDeps, resolveLocation } from "../src/locate/resolve.js";
 import type { DescriptionSet, Observation } from "../src/types.js";
 
 const UA = "PizzaToThePolls/1.0 (civic-data wait-times; +https://polls.pizza)";

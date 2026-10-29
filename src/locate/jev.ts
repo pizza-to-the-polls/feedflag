@@ -18,10 +18,7 @@
  */
 import { settings } from "../config.js";
 import { openrouterChat } from "../describe/openrouter.js";
-import type {
-  CandidateLocation,
-  LocationDecisionProvider,
-} from "./types.js";
+import type { CandidateLocation, LocationDecisionProvider } from "./types.js";
 
 function clamp01(n: number): number {
   return Math.min(Math.max(n, 0), 1);
@@ -39,7 +36,9 @@ export function parseJevResolveResponse(
   const first = content.indexOf("{");
   const last = content.lastIndexOf("}");
   if (first === -1 || last <= first)
-    throw new Error(`unparseable jev-resolve response: ${content.slice(0, 120)}`);
+    throw new Error(
+      `unparseable jev-resolve response: ${content.slice(0, 120)}`,
+    );
   const j = JSON.parse(content.slice(first, last + 1)) as {
     location_id?: unknown;
     confidence?: unknown;

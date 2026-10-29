@@ -245,7 +245,8 @@ async function resolveInner(
         const hit = ranked.find(
           (e) => String(rowId(e.row)) === String(d.locationId),
         );
-        if (hit) return resolvedFromScore(hit, "jev", { confidence: d.confidence });
+        if (hit)
+          return resolvedFromScore(hit, "jev", { confidence: d.confidence });
       }
       // Jev examined the candidates and said none — a clean no-match.
       return NO_MATCH;

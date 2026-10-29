@@ -30,7 +30,9 @@ export function contextScope(recent: Observation[]): LocationScope {
 }
 
 /** The most recent real resolution in the author's history (skip no-match). */
-export function contextResolved(recent: Observation[]): ResolvedLocation | null {
+export function contextResolved(
+  recent: Observation[],
+): ResolvedLocation | null {
   for (const o of recent) {
     const r = o.location?.resolved;
     if (r && r.method !== "no-match") return r;
@@ -92,7 +94,10 @@ export class LocalBusContextProvider implements ContextProvider {
 
   constructor(private busPath?: string) {}
 
-  async recentObserved(author: string, limit = CONTEXT_LIMIT): Promise<Observation[]> {
+  async recentObserved(
+    author: string,
+    limit = CONTEXT_LIMIT,
+  ): Promise<Observation[]> {
     if (!author) return [];
     const now = Date.now();
     if (!this.cache || now - this.cache.at > this.ttlMs) {

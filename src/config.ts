@@ -104,7 +104,10 @@ export const settings = {
   resolveLocationsLimit: positiveInt(env.RESOLVE_LOCATIONS_LIMIT, 5000),
   // Issue #35: below this resolved-confidence the Slack flag omits the
   // `place:` line (low-confidence fuzzy picks stay off the volunteer feed).
-  resolveSlackMinConfidence: unitInterval(env.RESOLVE_SLACK_MIN_CONFIDENCE, 0.8),
+  resolveSlackMinConfidence: unitInterval(
+    env.RESOLVE_SLACK_MIN_CONFIDENCE,
+    0.8,
+  ),
   // Per-run cap on model-assisted (Jev) disambiguation calls in the location
   // resolver — registry joins + deterministic similarity picks cost nothing;
   // only ambiguous mentions (0.85 <= score, no clear winner) reach Jev.

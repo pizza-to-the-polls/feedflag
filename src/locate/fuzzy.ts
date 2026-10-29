@@ -80,9 +80,7 @@ export function rankCandidates(
     const cur = best.get(key);
     if (!cur || score > cur.score) best.set(key, { row, score });
   }
-  return [...best.values()]
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
+  return [...best.values()].sort((a, b) => b.score - a.score).slice(0, limit);
 }
 
 /** True when the top candidate is strong enough to accept without a
