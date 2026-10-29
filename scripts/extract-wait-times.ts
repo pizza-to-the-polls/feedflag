@@ -46,7 +46,11 @@ import {
 } from "../src/govt/gates.js";
 import { hasGovtEvidence } from "../src/govt/evidence.js";
 import { MIN_POST_MINUTES } from "../src/notify/format.js";
-import type { DescriptionSet } from "../src/types.js";
+import {
+  createResolveDeps,
+  resolveLocation,
+} from "../src/locate/resolve.js";
+import type { DescriptionSet, Observation } from "../src/types.js";
 
 const UA = "PizzaToThePolls/1.0 (civic-data wait-times; +https://polls.pizza)";
 const DRY = process.argv.includes("--dry");
@@ -93,6 +97,10 @@ interface Source {
   /** PASSED human verification (checked against the county's public page) —
    *  eligible for the volunteer-facing feed. Vetting channel gets everything. */
   graduated?: boolean;
+  /** Optional pizzabase `locations` id (issue #35): config-side mirror of
+   *  wait_time_sources.location_id for sources whose URL doesn't match the
+   *  DB row — wins over the URL registry join. Absent → fuzzy path. */
+  location_id?: number | string;
   /** Structured REST extraction (the map app's own backend API) — preferred
    *  path when found: no browser, no vision, exact fields. */
   rest?: {
@@ -669,6 +677,9 @@ const main = async () => {
     throw new Error("OPENROUTER_API_KEY not configured");
   const sources = loadSources();
   const state = loadState();
+  // Issue #35: one resolver for the whole run — the pizzabase registry /
+  // locations caches are shared across a source's readings (read-only).
+  const resolver = createResolveDeps();
   const next: Record<string, ReadingState> = {};
   let totalChanged = 0;
 
@@ -877,74 +888,103 @@ const main = async () => {
         const observedAt = new Date().toISOString();
         // gated readings, not raw: the observation must reflect the gate
         // verdicts (confidence, staleness) a downstream consumer would act on
-        const lines = gatedReadings
-          .map((r) => {
-            const sourceRef = `${s.url}#${r.site_key ?? r.precinct_name}`;
-            // Raw-field evidence (issue #12): audits must not need to re-query
-            // the API to reconstruct why a reading was posted or withheld.
-            const evidence: Record<string, unknown> = {
-              method: method ?? "unknown",
-              rawWaitTime: r.raw_wait_time ?? null,
-              lastRefresh: r.last_refresh ?? null,
-              frozenCount: r.frozen_count ?? 0,
-              stale: r.stale ?? false,
-              outsideHours: r.outside_hours ?? false,
-              hoursReason: r.hours_reason ?? null,
-              sourceUrl: s.rest?.url ?? s.url,
-            };
-            const description: DescriptionSet = {
-              item: {
-                id: sourceRef,
-                platform: "site",
-                authorHandle: s.display_label.slice(0, 40),
-                postedAt: r.last_updated ?? observedAt,
-                caption: `Govt wait-time reading — ${s.state} ${s.county ?? ""}`,
-                hashtags: [],
-                mediaUrls: [],
-                source: `govt-extraction:${method ?? "unknown"}`,
+        const rows = gatedReadings.flatMap((r) => {
+          const sourceRef = `${s.url}#${r.site_key ?? r.precinct_name}`;
+          // Raw-field evidence (issue #12): audits must not need to re-query
+          // the API to reconstruct why a reading was posted or withheld.
+          const evidence: Record<string, unknown> = {
+            method: method ?? "unknown",
+            rawWaitTime: r.raw_wait_time ?? null,
+            lastRefresh: r.last_refresh ?? null,
+            frozenCount: r.frozen_count ?? 0,
+            stale: r.stale ?? false,
+            outsideHours: r.outside_hours ?? false,
+            hoursReason: r.hours_reason ?? null,
+            sourceUrl: s.rest?.url ?? s.url,
+          };
+          const description: DescriptionSet = {
+            item: {
+              id: sourceRef,
+              platform: "site",
+              authorHandle: s.display_label.slice(0, 40),
+              postedAt: r.last_updated ?? observedAt,
+              caption: `Govt wait-time reading — ${s.state} ${s.county ?? ""}`,
+              hashtags: [],
+              mediaUrls: [],
+              source: `govt-extraction:${method ?? "unknown"}`,
+            },
+            caption:
+              `REST field evidence: wait=${JSON.stringify(r.raw_wait_time ?? null)}, ` +
+              `last_refresh=${r.last_refresh ?? "n/a"}, frozen_run(s)=${r.frozen_count ?? 0}, ` +
+              `stale=${r.stale ?? false}, outside_hours=${r.outside_hours ?? false}`,
+            imageDescriptions: [],
+            evidence,
+          };
+          // Belt-and-braces (issue #20): an EMPTY evidence block is the
+          // pre-gate-code signature (the 2026-10-28 backup wrote frozen
+          // Clark waits at 95% with description = {}). Refuse evidenceless
+          // govt rows at the writer too, so a stale-code path can never
+          // re-inflate confidence onto the bus.
+          if (!hasGovtEvidence(description)) {
+            console.warn(
+              `  [evidence] ${sourceRef}: empty evidence block — observation dropped (pre-gate code signature, issue #20)`,
+            );
+            return [];
+          }
+          return [
+            {
+              observation: {
+                schema: "feedflag/observation@1",
+                domain: "govt",
+                source_ref: sourceRef,
+                url: s.url,
+                author: s.display_label,
+                platform: "govt",
+                observed_at: observedAt,
+                posted_at: r.last_updated ?? undefined,
+                location: {
+                  raw: r.precinct_name,
+                  state: s.state,
+                  county: s.county ?? undefined,
+                },
+                signal_kind: "wait_time_reading",
+                wait_minutes: r.wait_minutes,
+                wait_category: r.wait_category,
+                confidence: r.confidence,
+                provider: settings.textModel,
+                relevant: true,
+                description,
+              } satisfies Observation,
+              reading: r,
+            },
+          ];
+        });
+        // Issue #35 location triangulation: resolve the actual place behind
+        // each raw point label (registry join → fuzzy `locations` match →
+        // Jev/context disambiguation) before the bus append. Additive
+        // `location.resolved`; read-only lookups; a resolution failure
+        // degrades to method "no-match" and never blocks the write
+        // (resolveLocation cannot throw — the loop always completes).
+        for (const { observation, reading } of rows) {
+          observation.location = {
+            ...observation.location,
+            resolved: await resolveLocation(
+              {
+                domain: "govt",
+                rawLabel: reading.precinct_name,
+                address: reading.address ?? null,
+                scopeHint: { state: s.state, county: s.county ?? undefined },
+                sourceUrl: s.url,
+                sourceRef: observation.source_ref,
+                author: observation.author,
+                registryLocationId: s.location_id ?? null,
               },
-              caption:
-                `REST field evidence: wait=${JSON.stringify(r.raw_wait_time ?? null)}, ` +
-                `last_refresh=${r.last_refresh ?? "n/a"}, frozen_run(s)=${r.frozen_count ?? 0}, ` +
-                `stale=${r.stale ?? false}, outside_hours=${r.outside_hours ?? false}`,
-              imageDescriptions: [],
-              evidence,
-            };
-            // Belt-and-braces (issue #20): an EMPTY evidence block is the
-            // pre-gate-code signature (the 2026-10-28 backup wrote frozen
-            // Clark waits at 95% with description = {}). Refuse evidenceless
-            // govt rows at the writer too, so a stale-code path can never
-            // re-inflate confidence onto the bus.
-            if (!hasGovtEvidence(description)) {
-              console.warn(
-                `  [evidence] ${sourceRef}: empty evidence block — observation dropped (pre-gate code signature, issue #20)`,
-              );
-              return null;
-            }
-            return JSON.stringify({
-              schema: "feedflag/observation@1",
-              domain: "govt",
-              source_ref: sourceRef,
-              url: s.url,
-              author: s.display_label,
-              platform: "govt",
-              observed_at: observedAt,
-              posted_at: r.last_updated ?? undefined,
-              location: {
-                raw: r.precinct_name,
-                state: s.state,
-                county: s.county ?? undefined,
-              },
-              signal_kind: "wait_time_reading",
-              wait_minutes: r.wait_minutes,
-              wait_category: r.wait_category,
-              confidence: r.confidence,
-              provider: settings.textModel,
-              relevant: true,
-              description,
-            });
-          })
-          .filter((l): l is string => l !== null)
+              resolver,
+            ),
+          };
+        }
+        const lines = rows
+          .map(({ observation }) => JSON.stringify(observation))
           .join("\n");
         if (lines)
           appendFileSync(join(DATA_DIR, "observations.jsonl"), lines + "\n");

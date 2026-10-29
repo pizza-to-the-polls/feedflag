@@ -27,6 +27,11 @@ export interface FeedsConfig {
 
 const env = process.env;
 
+// Jev model slug shared by classify + resolve (issue #35) so one env var
+// controls both; JEV_RESOLVE_MODEL overrides the resolve leg only.
+const jevModel =
+  env.JEV_MODEL === undefined ? "typesafe/jev-router" : env.JEV_MODEL;
+
 export function loadFeedsConfig(): FeedsConfig {
   const path = resolve(env.FEEDS_CONFIG ?? "./config/feeds.json");
   const cfg = JSON.parse(readFileSync(path, "utf8")) as FeedsConfig;
@@ -64,7 +69,12 @@ export const settings = {
   textModel: env.TEXT_MODEL || "google/gemini-2.5-flash-lite",
   // Jev via OpenRouter (typesafe/jev-router, $0.042/MTok in, output free).
   // Unset -> default to jev-router; set to "" -> pin to the LLM fallback.
-  jevModel: env.JEV_MODEL === undefined ? "typesafe/jev-router" : env.JEV_MODEL,
+  jevModel: jevModel,
+  // Issue #35 location-resolution Jev calls. Defaults to the classify model.
+  // Set JEV_RESOLVE_MODEL="" to disable model-assisted disambiguation (the
+  // deterministic similarity + recent-context chain still runs).
+  jevResolveModel:
+    env.JEV_RESOLVE_MODEL === undefined ? jevModel : env.JEV_RESOLVE_MODEL,
   rsshubUrl: (env.RSSHUB_URL || "").replace(/\/+$/, ""),
   apifyToken: env.APIFY_API_TOKEN || "",
   // Optional direct TypeSafe API (reserved; unused while Jev routes via OpenRouter)
@@ -85,4 +95,18 @@ export const settings = {
   flagConfidence: unitInterval(env.FLAG_CONFIDENCE, 0.7),
   maxPostsPerRun: positiveInt(env.MAX_POSTS_PER_RUN, 40),
   describeConcurrency: positiveInt(env.DESCRIBE_CONCURRENCY, 3),
+  // Issue #35 location triangulation: candidate prefilter cap (top-K rows
+  // handed to Jev) and per-observation resolve concurrency.
+  resolveConcurrency: positiveInt(env.RESOLVE_CONCURRENCY, 3),
+  resolveMaxCandidates: positiveInt(env.RESOLVE_MAX_CANDIDATES, 25),
+  // Cap on rows fetched from pizzabase /locations when no county/state scope
+  // is available (unscoped social mentions) — budget guard for the lookup.
+  resolveLocationsLimit: positiveInt(env.RESOLVE_LOCATIONS_LIMIT, 5000),
+  // Issue #35: below this resolved-confidence the Slack flag omits the
+  // `place:` line (low-confidence fuzzy picks stay off the volunteer feed).
+  resolveSlackMinConfidence: unitInterval(env.RESOLVE_SLACK_MIN_CONFIDENCE, 0.8),
+  // Per-run cap on model-assisted (Jev) disambiguation calls in the location
+  // resolver — registry joins + deterministic similarity picks cost nothing;
+  // only ambiguous mentions (0.85 <= score, no clear winner) reach Jev.
+  resolveJevMaxCalls: positiveInt(env.RESOLVE_JEV_MAX_CALLS, 200),
 };
