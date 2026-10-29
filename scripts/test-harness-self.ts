@@ -30,6 +30,10 @@ async function runHarnessChild(code: string): Promise<ChildRun> {
   try {
     const file = join(dir, "child-suite.ts");
     await writeFile(file, code);
+    // Temp dirs live outside the project, where the repo's "type": "module"
+    // doesn't apply — without this marker tsx parses the fixture as CommonJS
+    // and its top-level await / import statements fail to transform.
+    await writeFile(join(dir, "package.json"), '{"type":"module"}\n');
     return await new Promise((resolve, reject) => {
       const child = spawn(process.execPath, ["--import", "tsx", file], {
         cwd: join(import.meta.dirname, ".."),

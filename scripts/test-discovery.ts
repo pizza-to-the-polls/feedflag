@@ -29,6 +29,10 @@ async function withSandbox(
 ): Promise<void> {
   const dir = await mkdtemp(join(tmpdir(), "feedflag-test-infra-"));
   try {
+    // Temp dirs live outside the project, where the repo's "type": "module"
+    // doesn't apply — without this marker tsx parses the fixture as CommonJS
+    // and its top-level await / import statements fail to transform.
+    await writeFile(join(dir, "package.json"), '{"type":"module"}\n');
     for (const [name, content] of Object.entries(files)) {
       await writeFile(join(dir, name), content);
     }
@@ -77,16 +81,13 @@ test("discovery: empty directory yields no suites", async () => {
 // runSuite: child-process contract — exit code decides, crashes are failures
 // ---------------------------------------------------------------------------
 test("runSuite: passing fixture exits 0, reported passed", async () => {
-  await withSandbox(
-    { "test-ok.ts": 'console.log("ok");\n' },
-    async (dir) => {
-      const r = await runSuite(join(dir, "test-ok.ts"), "ignore");
-      assert.equal(r.name, "test-ok.ts");
-      assert.equal(r.passed, true);
-      assert.equal(r.exitCode, 0);
-      assert.ok(r.durationMs >= 0, "duration is recorded");
-    },
-  );
+  await withSandbox({ "test-ok.ts": 'console.log("ok");\n' }, async (dir) => {
+    const r = await runSuite(join(dir, "test-ok.ts"), "ignore");
+    assert.equal(r.name, "test-ok.ts");
+    assert.equal(r.passed, true);
+    assert.equal(r.exitCode, 0);
+    assert.ok(r.durationMs >= 0, "duration is recorded");
+  });
 });
 
 test("runSuite: failing fixture is reported as failed", async () => {
