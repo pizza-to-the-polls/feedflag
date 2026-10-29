@@ -118,8 +118,9 @@ try {
     );
 
     // > 255 categories: the Jev decision cardinality limit.
-    const tooMany = Array.from({ length: 256 }, (_, i) =>
-      `synthetic-cat-${String(i).padStart(3, "0")}`,
+    const tooMany = Array.from(
+      { length: 256 },
+      (_, i) => `synthetic-cat-${String(i).padStart(3, "0")}`,
     );
     assert.throws(
       () =>
@@ -132,8 +133,9 @@ try {
     );
 
     // Exactly 255 is accepted — the limit is exclusive.
-    const exactly255 = Array.from({ length: 255 }, (_, i) =>
-      `synthetic-cat-${String(i).padStart(3, "0")}`,
+    const exactly255 = Array.from(
+      { length: 255 },
+      (_, i) => `synthetic-cat-${String(i).padStart(3, "0")}`,
     );
     const boundary = loadFixture("exactly-255-categories.json", {
       sources: ONE_SOURCE,

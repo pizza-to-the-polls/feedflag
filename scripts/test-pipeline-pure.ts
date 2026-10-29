@@ -327,10 +327,7 @@ const FLAGGED: FlaggedItem = {
   // The social leg only classifies — extraction fields must be ABSENT (not
   // null/0), because downstream consumers branch on their presence. True
   // before and after PR #36.
-  assert.ok(
-    !("wait_minutes" in obs),
-    "social leg must not fill wait_minutes",
-  );
+  assert.ok(!("wait_minutes" in obs), "social leg must not fill wait_minutes");
   assert.ok(
     !("wait_category" in obs),
     "social leg must not fill wait_category",
@@ -592,8 +589,8 @@ const FLAGGED: FlaggedItem = {
     caption: "c",
     imageDescriptions: [],
   });
-  assert.equal(bare.video_summary, "", "video_summary defaults to \"\"");
-  assert.equal(bare.url, "", "url defaults to \"\" when the item has none");
+  assert.equal(bare.video_summary, "", 'video_summary defaults to ""');
+  assert.equal(bare.url, "", 'url defaults to "" when the item has none');
   assert.equal(bare.image_descriptions, "", "no images → empty string");
 
   // Boundary caps: caption is excerpt()ed at 4000; joined image descriptions
