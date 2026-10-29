@@ -1,0 +1,22 @@
+id: feedflag.intent/notify@1
+module: src/notify/
+layer: recommendation
+decision: "How does a flagged post reach a human, and in what shape?"
+consumer: "src/pipeline.ts (per-flag delivery) + scripts/extract-wait-times.ts (MIN_POST_MINUTES shared with the govt leg); downstream: Zapier catch hook -> Slack"
+contract:
+  input: "FlaggedItem (notify) or plain text (postText)"
+  output: "HTTP POST to the Zapier catch hook (flagPayload: text, platform, author, url, posted_at, category, confidence, provider, image_descriptions, media_urls, media_embed) or Slack chat.postMessage / webhook (flagText)"
+  invariants:
+    - "all human-facing text is written here, never by Jev ('Jev can't write strings')"
+    - "Zapier-first routing: resolveNotifier prefers ZAPIER_CATCH_URL, falls back to the direct Slack webhook, else null (delivery skipped)"
+    - "notify failures are swallowed by the pipeline (.catch -> console.warn) — one bad delivery never sinks the run"
+    - "MIN_POST_MINUTES = 60 is the shared dispatch threshold; crowd reports never post to Slack (they surface via pizzabase #feed-reports)"
+    - "Slack bot path (SLACK_BOT_TOKEN + flag channels) is preferred over the webhook; the webhook path uses the vols webhook when set"
+  fallback: "Zapier -> direct Slack webhook -> null notifier (no delivery); per-flag errors are logged and skipped"
+  sla:
+    latency_ms_p95: 15000
+    freshness: "n/a — delivery is immediate per flag"
+    cost_per_week_usd_max: 5
+  pii: "author handle + url + post caption only (D6) — never contactInfo"
+tests: scripts/test-deliver.ts
+status: implemented

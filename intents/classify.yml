@@ -1,0 +1,22 @@
+id: feedflag.intent/classify@1
+module: src/classify/
+layer: intelligence
+decision: "Which category is this post, and how confident are we?"
+consumer: "src/pipeline.ts (flag gate: relevant && confidence >= FLAG_CONFIDENCE && category in flagCategories) -> src/emit/records.ts (signal_kind) -> src/notify/format.ts (Slack flag)"
+contract:
+  input: "DescriptionSet — text only (Jev is text-only; media already reduced to captions)"
+  output: "Classification { relevant, confidence 0..1 (calibrated only from Jev), category in config/feeds.json categories, provider }"
+  invariants:
+    - "no string generation from Jev — typed values only (D5); human-facing text lives in src/notify/format.ts"
+    - "a decision-layer failure never drops a post — the composite provider falls back to the LLM classifier"
+    - "category cardinality <= 255 (Jev limit, enforced in loadFeedsConfig, src/config.ts)"
+    - "fallback confidence is NOT calibrated — FLAG_CONFIDENCE stays conservative while the fallback is live (README JEV notes)"
+    - "provider records the leg: jev:<model> or <text-model>; composite fallback results are suffixed '(jev-fallback)'"
+  fallback: "llm-fallback (flash-lite, json_object mode); unparseable responses classify as irrelevant at confidence 0 with provider '<model>:parse-fail'"
+  sla:
+    latency_ms_p95: 120000
+    freshness: "n/a — per-item, stateless"
+    cost_per_week_usd_max: 1
+  pii: "author handle + url only (D6) — renderInput sends platform/author/posted_at/caption/hashtags/url, never contactInfo"
+tests: scripts/test-analyze.ts
+status: implemented

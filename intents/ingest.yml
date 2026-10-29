@@ -1,0 +1,22 @@
+id: feedflag.intent/ingest@1
+module: src/ingest/
+layer: reliable-data
+decision: "Turn heterogeneous external sources (RSSHub feeds, Apify actor datasets, pizzabase site reports) into typed items the pipeline can process."
+consumer: "src/pipeline.ts (runPipeline step 1: rsshub + apify adapters; step 5: fetchSiteReportsSince crowd leg)"
+contract:
+  input: "config/feeds.json sources (adapter rsshub | apify) + the pizzabase /reports API for the crowd leg (machine-token Basic auth)"
+  output: "FeedItem[] from the social adapters (id, platform, authorHandle, postedAt, caption, hashtags, mediaUrls, videoUrl, aiSummary, source); Observation[] (feedflag/observation@1, domain crowd) from reports"
+  invariants:
+    - "one source's failure never sinks the run — the pipeline wraps every source in Promise.allSettled and logs failures per source"
+    - "reports are ground truth, not predictions: structured at capture, they skip vision + classify and emit at confidence 0.95 with provider user-report (D4)"
+    - "PII floor (D6): the reports leg emits reportURL + Location fields only — never contactInfo or contact names"
+    - "normalizeApifyRecord returns null (drops the record) when no id can be picked; field picks vary by actor and actor version"
+    - "crowd rows are excluded from flags/label queue/report — there is no classifier pick to correct"
+  fallback: "per-source: the failed source is logged ('[feedflag] <label> FAILED') and skipped; the run continues with the rest"
+  sla:
+    latency_ms_p95: 300000
+    freshness: "n/a — poll-based; seen.json dedupe stops reprocessing between runs"
+    cost_per_week_usd_max: 20
+  pii: "author handle + post url only (D6) — contactInfo never emitted from the reports leg"
+tests: scripts/test-deliver.ts
+status: implemented

@@ -1,0 +1,21 @@
+id: feedflag.intent/store@1
+module: src/store/
+layer: reliable-data
+decision: "What have we already processed, and where is the audit trail?"
+consumer: "src/pipeline.ts (dedupe before describe; appendFlagged / appendObservations / writeSyncStamp after) — every downstream consumer reads data/observations.jsonl"
+contract:
+  input: "post ids + postedAt (SeenStore), FlaggedItem (appendFlagged), Observation[] (appendObservations), crowd sync cursor"
+  output: "data/seen.json (id -> postedAt), data/flagged.jsonl (audit log), data/observations.jsonl (the bus), data/reports-sync.json"
+  invariants:
+    - "seen.json prevents re-paying for captioning — a post is never re-described or re-classified"
+    - "the bus is append-only JSONL — replayable and loader-ready for wait_time_readings (D3, no queue infra)"
+    - "a corrupt or unreadable seen.json / sync stamp resets to empty rather than failing the run"
+    - "appendObservations writes nothing for an empty batch"
+  fallback: "missing or corrupt state files fail open (empty store) — the run proceeds, possibly reprocessing"
+  sla:
+    latency_ms_p95: 1000
+    freshness: "n/a — durable files; the data branch carries them between runs"
+    cost_per_week_usd_max: 0
+  pii: "author handles + urls land in the audit files — contactInfo never reaches these records (D6 upstream)"
+tests: scripts/test-deliver.ts
+status: implemented

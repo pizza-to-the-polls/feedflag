@@ -1,0 +1,22 @@
+id: feedflag.intent/describe@1
+module: src/describe/
+layer: reliable-data
+decision: "What is visibly in this post's media, stated as text a text-only classifier can score?"
+consumer: "src/pipeline.ts (describeItem per post) + src/classify/jev.ts, src/classify/llm-fallback.ts, src/normalize/wait-time.ts, scripts/extract-wait-times.ts (openrouterChat transport)"
+contract:
+  input: "FeedItem — mediaUrls (first 4 images), videoUrl (ffmpeg first frame), caption, hashtags, aiSummary"
+  output: "DescriptionSet { item, caption, imageDescriptions[], videoSummary? } — factual strings only"
+  invariants:
+    - "system prompt is descriptive-only: no names, no face identification, no speculation, no opinions"
+    - "a failed image caption degrades to the placeholder '(image present, caption unavailable)' — the post is never dropped"
+    - "video frame extraction failure is warned and skipped; the post continues caption-only"
+    - "openrouterChat retries once on 429/error with a 25s backoff and a 120s hard timeout"
+    - "actor-provided aiSummary (e.g. clockworks videoMeta.aiVideoDescription) is appended as text evidence without vision calls"
+  fallback: "per-image: placeholder string '(image present, caption unavailable)'; missing media yields a caption-only DescriptionSet"
+  sla:
+    latency_ms_p95: 120000
+    freshness: "n/a — per-item, stateless; seen.json prevents re-captioning the same post"
+    cost_per_week_usd_max: 1
+  pii: "captions describe scenes only — no names or face identification; author handle + url ride on the FeedItem"
+tests: scripts/test-analyze.ts
+status: implemented
