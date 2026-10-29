@@ -1,0 +1,22 @@
+id: feedflag.intent/pipeline@1
+module: src/pipeline.ts
+layer: insight
+decision: "Orchestrate one run — ingest, dedupe, describe, classify, flag, deliver, emit — without a single source or item failure sinking the run."
+consumer: "src/index.ts (CLI entry: npm start) — everything downstream (Slack, the bus, pizzabase) is fed from here"
+contract:
+  input: "config/feeds.json (sources, categories, flagCategories) + RunOptions (dryRun, limit, skipNotify, sourceFilter)"
+  output: "{ processed, flagged } counts; side effects: data/flagged.jsonl, data/observations.jsonl (feedflag/observation@1), Slack/Zapier delivery"
+  invariants:
+    - "per-source ingest failures are isolated (Promise.allSettled) — a failed source logs and is skipped"
+    - "describe/classify/notify failures are swallowed per item (.catch -> console.warn -> item skipped), never crash the run"
+    - "a flag requires relevant && confidence >= FLAG_CONFIDENCE (default 0.7) && category in flagCategories — the L3 insight threshold"
+    - "crowd-leg failure degrades to zero reports — the run still completes and persists social observations"
+    - "dry-run writes no state and delivers nothing"
+  fallback: "swallow-and-continue: any leg's failure is logged and the run proceeds with what it has"
+  sla:
+    latency_ms_p95: 1800000
+    freshness: "one run per 30-min cron slot (feedflag.yml) — a run must fit inside the window"
+    cost_per_week_usd_max: 0
+  pii: "author handles + urls flow through; contactInfo never enters the pipeline (D6)"
+tests: scripts/test-analyze.ts
+status: implemented

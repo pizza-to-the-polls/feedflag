@@ -1,0 +1,20 @@
+id: feedflag.intent/emit@1
+module: src/emit/
+layer: insight
+decision: "What normalized record lands on the observation bus for this flagged post?"
+consumer: "src/pipeline.ts (appendObservations via src/store/jsonl.ts) -> data/observations.jsonl -> scripts/emit-to-db.ts -> pizzabase feed_observations + aggregator joins"
+contract:
+  input: "FlaggedItem { item, description, classification }"
+  output: "Observation, schema feedflag/observation@1 — domain social, signal_kind = Jev category, confidence, provider, description set kept as raw_json"
+  invariants:
+    - "one schema for every leg — social, crowd and govt all emit feedflag/observation@1 (gate-checked against the source literal by scripts/test-intents.ts)"
+    - "location/wait_minutes/wait_category are downstream fields — the social leg leaves them unset (Jev cannot generate strings)"
+    - "observed_at is stamped at emit time; posted_at preserves the original post timestamp"
+  fallback: "n/a — pure synchronous transform; cannot fail on valid input"
+  sla:
+    latency_ms_p95: 1000
+    freshness: "n/a — synchronous transform inside the run"
+    cost_per_week_usd_max: 0
+  pii: "author handle + url only (D6) — the description set carries no contactInfo"
+tests: scripts/test-analyze.ts
+status: implemented

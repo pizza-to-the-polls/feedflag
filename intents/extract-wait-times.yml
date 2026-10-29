@@ -1,0 +1,23 @@
+id: feedflag.intent/extract-wait-times@1
+module: scripts/extract-wait-times.ts
+layer: reliable-data
+decision: "What wait-time readings do official county sources publish right now, and which changes may reach volunteers?"
+consumer: "data/observations.jsonl (domain govt) -> scripts/emit-to-db.ts -> pizzabase feed_observations; Slack vetting/volunteer channels via webhooks"
+contract:
+  input: "config/govt-sources.jsonl (is_active sources with rest config, verify_url, graduated) + prior-run data/govt-readings.json state"
+  output: "Reading[] per source (precinct_name, address, wait_minutes, wait_category, confidence, gate metadata) -> observations (feedflag/observation@1, domain govt) + Slack posts"
+  invariants:
+    - "extraction ladder: structured REST first (confidence 0.95), then focused-text LLM, then screenshot + vision for JS-walled pages"
+    - "polite fetching: identified UA, robots.txt honored, per-source timeouts, one pass per source per run"
+    - "every govt observation carries a non-empty evidence block — evidenceless rows are dropped (pre-gate-code signature, issue #20)"
+    - "freshness + hours gates run before any posting decision; stale and outside-hours readings are recorded but never vol-posted"
+    - "one source's failure must not sink the run — its state is carried forward and the loop continues"
+    - "only CHANGED readings post; eval-blocked readings still appear in vetting annotated with their blockers"
+  fallback: "REST miss -> page text -> screenshot + vision -> carry forward prior state (a transient empty response never wipes per-site history)"
+  sla:
+    latency_ms_p95: 300000
+    freshness: "cron-spaced runs (30-min govwatch, 15-min election-day hot mode); the freshness gate needs consecutive-run comparison"
+    cost_per_week_usd_max: 13
+  pii: "none — county site names, street addresses and wait values only; no personal data"
+tests: scripts/test-govwatch.ts
+status: implemented

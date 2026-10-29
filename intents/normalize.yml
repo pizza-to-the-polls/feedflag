@@ -1,0 +1,20 @@
+id: feedflag.intent/normalize@1
+module: src/normalize/
+layer: reliable-data
+decision: "How long is the wait, in minutes or category, when the source wrote free text?"
+consumer: "src/ingest/reports.ts (crowd Report.waitTime) + the govt extraction leg (one shared normalizer, GOVT_WAIT_TIME_SOURCES_PLAN §5)"
+contract:
+  input: "free-text wait description, e.g. '20-30 min', 'SHORT', '15 people in line'"
+  output: "NormalizedWait { wait_minutes?: int, wait_category?: 'short' | 'medium' | 'long' } — both optional"
+  invariants:
+    - "string generation is LLM-side — Jev cannot generate strings (JEV_EXPLORATION §2); this is the one normalizer shared by both legs"
+    - "ground-truth reports must survive normalizer hiccups — any failure returns {} and the observation still emits"
+    - "a range maps to its midpoint ('20-30 min' -> 25); categorical words map to wait_category; unparseable input leaves both unset"
+  fallback: "swallow the error and return {} — wait_minutes/wait_category unset, the observation is never dropped"
+  sla:
+    latency_ms_p95: 120000
+    freshness: "n/a — per-report, stateless"
+    cost_per_week_usd_max: 1
+  pii: "none — the only payload is the free-text wait description; no personal data reaches the model"
+tests: scripts/test-analyze.ts
+status: implemented
