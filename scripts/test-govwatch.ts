@@ -549,10 +549,7 @@ const CLARK_HOURS = "09:00-18:00";
   // fine here — but 08:30 PT is inside real hours while the old default
   // gated it, and 17:30 PT is outside real hours while the old default
   // let it through (posting to a closed site).
-  const hendSpec = hoursSpecFromFields(
-    "08:00:00.0000000",
-    "17:00:00.0000000",
-  );
+  const hendSpec = hoursSpecFromFields("08:00:00.0000000", "17:00:00.0000000");
   assert.ok(hendSpec, "Henderson spec parses");
   assert.equal(
     isWithinHours(hendSpec!, CLARK_TZ, new Date("2026-10-29T22:45:00Z")).open,
@@ -560,8 +557,7 @@ const CLARK_HOURS = "09:00-18:00";
     "15:45 PT: inside 08:00-17:00 — the card's 60-min reading is postable",
   );
   assert.equal(
-    isWithinHours(CLARK_HOURS, CLARK_TZ, new Date("2026-10-29T15:30:00Z"))
-      .open,
+    isWithinHours(CLARK_HOURS, CLARK_TZ, new Date("2026-10-29T15:30:00Z")).open,
     false,
     "08:30 PT: old default gate would wrongly suppress a pre-9am line",
   );
@@ -571,8 +567,7 @@ const CLARK_HOURS = "09:00-18:00";
     "17:30 PT: outside real 08:00-17:00 hours — never post to a closed site",
   );
   assert.equal(
-    isWithinHours(CLARK_HOURS, CLARK_TZ, new Date("2026-10-30T00:30:00Z"))
-      .open,
+    isWithinHours(CLARK_HOURS, CLARK_TZ, new Date("2026-10-30T00:30:00Z")).open,
     true,
     "…while the old 09:00-18:00 default would have let it through",
   );

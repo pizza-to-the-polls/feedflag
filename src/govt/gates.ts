@@ -193,10 +193,7 @@ export function isWithinHours(
 export function waitMinutesFromSeconds(secs: unknown): number | null {
   // Number(null)/Number("") are 0 — a missing/blank field must read as
   // "not reporting" (null), not a zero-minute line.
-  if (
-    secs == null ||
-    (typeof secs === "string" && secs.trim() === "")
-  )
+  if (secs == null || (typeof secs === "string" && secs.trim() === ""))
     return null;
   const n = typeof secs === "number" ? secs : Number(secs);
   if (!Number.isFinite(n) || n < 0) return null;
