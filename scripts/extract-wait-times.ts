@@ -39,7 +39,9 @@ import {
   FRESHNESS_FROZEN_RUNS,
   OUTSIDE_HOURS_CONFIDENCE,
   freshnessConfidence,
+  hoursSpecFromFields,
   isWithinHours,
+  waitMinutesFromSeconds,
   markVanishedSites,
   nextFreshness,
   type ReadingState,
@@ -109,6 +111,11 @@ interface Source {
     keyField?: string;
     /** physical address fields (dispatch gate: volunteer needs an address to act) */
     addressFields?: string[];
+    /** Live wait field in SECONDS (Clark NV: WAIT_TIME_secs — the WAIT_TIME
+     *  minutes field died Oct 21 while secs keeps ticking; the county card
+     *  renders secs/60). AUTHORITATIVE and exclusive when set: no fallback
+     *  to waitMinutesField (null secs = not reporting = N/A, like the card). */
+    waitSecondsField?: string;
     waitMinutesField?: string;
     waitTextField?: string;
     lineCountField?: string;
@@ -120,6 +127,11 @@ interface Source {
     /** Uniform hours of operation "HH:MM-HH:MM" local — readings observed
      *  outside them are recorded but never posted (issue #12 hours gate). */
     defaultHours?: string;
+    /** Per-row open/close time fields (24-hour "HH:MM[:ss…]") — build a
+     *  per-site hours spec that takes precedence over defaultHours when
+     *  parseable (Clark sites vary: Hend City Hall 08:00-17:00). */
+    openTimeField?: string;
+    closeTimeField?: string;
     /** IANA timezone used to evaluate defaultHours (e.g. America/Los_Angeles). */
     timezone?: string;
   };
@@ -148,6 +160,9 @@ interface Reading {
   outside_hours?: boolean;
   /** Why the hours gate tripped (reason string for vetting/console) */
   hours_reason?: string;
+  /** Per-site hours spec "HH:MM-HH:MM" (from REST open/close fields) —
+   *  preferred over the source-wide defaultHours by the hours gate */
+  hours_spec?: string | null;
 }
 
 const pct = (n: number) => `${Math.round(n * 100)}%`;
@@ -432,15 +447,36 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
             .filter((v) => v != null && String(v).trim() !== "")
             .map((v) => String(v).trim())
             .join(", ") || null;
-        const rawMin =
-          r.waitMinutesField != null ? rec[r.waitMinutesField] : undefined;
-        let minutes: number | null =
-          typeof rawMin === "number"
-            ? rawMin
-            : rawMin != null
-              ? normalizeRange(String(rawMin))
-              : null;
-        if (minutes != null && (minutes < 0 || minutes > 600)) minutes = null;
+        // ── Wait value (issue #12 root cause, 2026-10-29) ──
+        // waitSecondsField, when configured, is AUTHORITATIVE and exclusive:
+        // Clark NV's live field is WAIT_TIME_secs while its WAIT_TIME minutes
+        // field has been dead since Oct 21 — falling back to the minutes
+        // field when secs is null would resurrect the #12 bug (the county
+        // card renders N/A for null secs; so do we).
+        let minutes: number | null = null;
+        if (r.waitSecondsField != null) {
+          minutes = waitMinutesFromSeconds(rec[r.waitSecondsField]);
+        } else {
+          const rawMin =
+            r.waitMinutesField != null ? rec[r.waitMinutesField] : undefined;
+          minutes =
+            typeof rawMin === "number"
+              ? rawMin
+              : rawMin != null
+                ? normalizeRange(String(rawMin))
+                : null;
+          if (minutes != null && (minutes < 0 || minutes > 600)) minutes = null;
+        }
+        const rawWaitVal =
+          r.waitSecondsField != null
+            ? rec[r.waitSecondsField]
+            : r.waitMinutesField != null
+              ? rec[r.waitMinutesField]
+              : undefined;
+        const hours_spec =
+          r.openTimeField != null && r.closeTimeField != null
+            ? hoursSpecFromFields(rec[r.openTimeField], rec[r.closeTimeField])
+            : null;
         const text =
           r.waitTextField != null ? String(rec[r.waitTextField] ?? "") : "";
         if (minutes == null && text) minutes = normalizeRange(text);
@@ -474,9 +510,10 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
           // Raw REST attributes ride on the reading (issue #12): evidence for
           // audits, freshness-gate input, and status-field hours gating.
           raw_wait_time:
-            typeof rawMin === "number" || typeof rawMin === "string"
-              ? rawMin
+            typeof rawWaitVal === "number" || typeof rawWaitVal === "string"
+              ? rawWaitVal
               : null,
+          hours_spec,
           last_refresh: lastRefreshRaw != null ? String(lastRefreshRaw) : null,
           ...(r.isOpenField != null && /closed/i.test(statusText)
             ? {
@@ -748,11 +785,15 @@ const main = async () => {
             confidence: freshnessConfidence(gated.confidence, fv),
           };
         }
-        if (s.rest?.defaultHours && s.rest?.timezone) {
+        const hoursSpec = gated.hours_spec ?? s.rest?.defaultHours;
+        if (hoursSpec && s.rest?.timezone) {
           // HOURS GATE: readings observed outside the site's hours of
           // operation are recorded but never posted (pre-open churn is noise —
           // the 08:13 PT "65 min" post fired 47 min before opening).
-          const hv = isWithinHours(s.rest.defaultHours, s.rest.timezone);
+          // Per-site hours (Clark rows carry START_TIME/END_TIME — Hend City
+          // Hall runs 08:00-17:00, not the 09:00-18:00 county default) take
+          // precedence; the source-wide defaultHours is the fallback.
+          const hv = isWithinHours(hoursSpec, s.rest.timezone);
           if (!hv.open) {
             gated = {
               ...gated,
