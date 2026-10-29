@@ -46,6 +46,7 @@ try {
     return loadFeedsConfig();
   }
 
+  /** One synthetic source — enough to satisfy the sources guard. */
   const ONE_SOURCE = [
     {
       platform: "instagram",
