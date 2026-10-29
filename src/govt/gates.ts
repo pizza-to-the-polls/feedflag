@@ -178,6 +178,54 @@ export function isWithinHours(
   };
 }
 
+// ── Per-field helpers (issue #12 root cause, 2026-10-29) ───────────────────
+
+/** Wait-minutes from a REST seconds field. Clark NV's live field is
+ *  WAIT_TIME_secs (ticks with Last_Refresh; the county card's
+ *  "Approximately N minutes" is secs/60) while its WAIT_TIME minutes field
+ *  has been dead since Oct 21 — the extractor read the dead one, so every
+ *  Clark reading was 0 or frozen-stale while the county card showed live
+ *  numbers (Hend City Hall: card 60 min, REST WAIT_TIME 0, secs 3600).
+ *  Rounds to whole minutes with the same 0..600 sanity bound as minutes
+ *  fields. Null on missing/negative/non-numeric — a null seconds field
+ *  means "not reporting right now" (the county card renders N/A) and must
+ *  never fall back to a dead minutes field. */
+export function waitMinutesFromSeconds(secs: unknown): number | null {
+  // Number(null)/Number("") are 0 — a missing/blank field must read as
+  // "not reporting" (null), not a zero-minute line.
+  if (
+    secs == null ||
+    (typeof secs === "string" && secs.trim() === "")
+  )
+    return null;
+  const n = typeof secs === "number" ? secs : Number(secs);
+  if (!Number.isFinite(n) || n < 0) return null;
+  const minutes = Math.round(n / 60);
+  return minutes > 600 ? null : minutes;
+}
+
+/** Per-site hours-of-operation fields → an "HH:MM-HH:MM" spec for the hours
+ *  gate. Clark rows carry START_TIME "08:00:00.0000000" / END_TIME
+ *  "17:00:00.0000000" (24-hour SQL time strings) — Hend City Hall runs
+ *  08:00-17:00, not the 09:00-18:00 county-wide default the gate used to
+ *  assume. Takes the leading HH:MM of each side. Returns null when either
+ *  side is missing, non-string, or carries an AM/PM marker (a "05:00 PM"
+ *  close would silently build a midnight-crossing window — fail to the
+ *  source default instead; callers fail open on null). */
+export function hoursSpecFromFields(
+  open: unknown,
+  close: unknown,
+): string | null {
+  const hhmm = (v: unknown): string | null => {
+    if (typeof v !== "string" || /am|pm/i.test(v)) return null;
+    const m = v.trim().match(/^(\d{1,2}):(\d{2})/);
+    return m ? `${m[1]!.padStart(2, "0")}:${m[2]}` : null;
+  };
+  const o = hhmm(open);
+  const c = hhmm(close);
+  return o && c ? `${o}-${c}` : null;
+}
+
 // ── Site-removal tolerance ─────────────────────────────────────────────────
 
 /** Sites a REST source no longer returns are marked inactive rather than
