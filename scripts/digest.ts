@@ -26,6 +26,27 @@ const HOURS = Number(
 );
 const SLACK = process.argv.includes("--slack");
 const DATA_DIR = process.env.DATA_DIR ?? "./data";
+// Where the digest reads from. "file" is the original local mode (the
+// operator CLI); "db" is what the bastion timer uses (issue #69): the
+// system of record via GET {PIZZABASE_API_URL}/feed-observations/summary.
+// data/observations.jsonl is NOT a 26h window any more — the runner gzips
+// it to /opt/feedflag-archive/ and empties it after every successful emit —
+// so a "last 26h" digest built from the file reports one leg's batch.
+const SOURCE = (() => {
+  const i = process.argv.indexOf("--source");
+  if (i !== -1) return process.argv[i + 1] === "db" ? "db" : "file";
+  // Unflagged: db when credentials are present (the timer always has them),
+  // file otherwise (the operator CLI on a laptop without keys).
+  return process.env.PIZZABASE_API_URL && process.env.PIZZABASE_API_KEY
+    ? "db"
+    : "file";
+})();
+// Issue #69's loud floor: below this the digest REFUSES to post (exit 1 →
+// the runner's maybe_alert) instead of publishing a plausible-looking digest
+// of a broken pipeline. Default 1: a window with ZERO observations is never
+// worth posting silently — that is the total-outage signature, so it must
+// alert, not print "No observations" and exit 0.
+const MIN_OBSERVATIONS = Number(process.env.DIGEST_MIN_OBSERVATIONS ?? 1);
 
 interface Obs {
   schema: string;
@@ -93,6 +114,181 @@ function loadLabels(): Set<string> {
     }
   }
   return out;
+}
+
+// ── db mode ────────────────────────────────────────────────────────────────────────
+// Everything the summary endpoint returns, per pizzabase PR #359. Counts are
+// DISTINCT (domain, source_ref) pairs — matching this script's file-mode
+// dedupe — and flagged_recent carries identity-free fields only (PII floor:
+// no caption, author, or description text), which is why db mode renders a
+// link-out table instead of media embeds and sample captions.
+interface SummaryResponse {
+  since: string;
+  total_observations: number;
+  govt_rows: number;
+  social_rows: number;
+  crowd_rows: number;
+  flagged_count: number;
+  hot_govt_count: number;
+  govt_source_count: number;
+  crowd_relevant_count: number;
+  by_signal_kind: { kind: string; count: number }[];
+  flagged_recent: {
+    source_ref: string;
+    signal_kind: string;
+    confidence: number;
+    url: string | null;
+    platform: string | null;
+    observed_at: string;
+  }[];
+}
+
+async function fetchSummary(): Promise<SummaryResponse> {
+  const API = (process.env.PIZZABASE_API_URL ?? "").replace(/\/+$/, "");
+  const TOKEN = process.env.PIZZABASE_API_KEY ?? "";
+  if (!API || !TOKEN) {
+    console.error(
+      "[digest] --source db requires PIZZABASE_API_URL + PIZZABASE_API_KEY",
+    );
+    process.exit(1);
+  }
+  const since = new Date(Date.now() - HOURS * 3600 * 1000).toISOString();
+  const q = new URLSearchParams({
+    since,
+    min_confidence: String(FLAG_CONFIDENCE),
+    // Absent flagCategories means every category is flag-worthy; the API's
+    // explicitly-empty string carries that same meaning.
+    flag_categories: FLAG_CATEGORIES ? FLAG_CATEGORIES.join(",") : "",
+  });
+  const res = await fetch(`${API}/feed-observations/summary?${q.toString()}`, {
+    headers: { authorization: `Basic ${TOKEN}` },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) {
+    console.error(
+      `[digest] summary endpoint ${res.status} — pizzabase unreachable or unauthorized`,
+    );
+    process.exit(1);
+  }
+  return (await res.json()) as SummaryResponse;
+}
+
+function renderDbDigest(
+  s: SummaryResponse,
+  flagged: SummaryResponse["flagged_recent"],
+): string {
+  const byDomain: [string, number][] = [
+    ["govt", s.govt_rows],
+    ["social", s.social_rows],
+    ["crowd", s.crowd_rows],
+  ].filter(([, n]) => n > 0) as [string, number][];
+  const kindList = [...s.by_signal_kind]
+    .sort((a, b) => b.count - a.count)
+    .map((k) => `${k.count} ${KIND_EMOJI[k.kind] ?? ""}${k.kind}`.trim())
+    .join(" · ");
+
+  if (SLACK) {
+    const parts: string[] = [];
+    parts.push(":pizza: *Feedflag digest — last " + HOURS + "h*");
+    parts.push(
+      `${s.total_observations} observations (${byDomain.map(([d, n]) => `${n} ${d}`).join(", ")})`,
+    );
+    if (kindList) parts.push(kindList);
+    parts.push(
+      `:stopwatch: ${s.govt_source_count} gov sources — ${s.hot_govt_count} ≥60min hot now`,
+    );
+    if (flagged.length) {
+      parts.push(
+        ":triangular_flag_on_post: " + flagged.length + " social flag(s):",
+      );
+      for (const f of flagged) {
+        parts.push(
+          "  • " +
+            pct(f.confidence) +
+            " " +
+            (KIND_EMOJI[f.signal_kind] ?? "") +
+            f.signal_kind +
+            (f.url ? " — " + f.url : ""),
+        );
+      }
+    }
+    return (
+      JSON.stringify({
+        text: parts.join("\n"),
+        username: "feedflag",
+        icon_emoji: ":feedflag:",
+      }) + "\n"
+    );
+  }
+
+  const lines: string[] = [];
+  lines.push(`## Feedflag digest — last ${HOURS}h`);
+  lines.push("");
+  lines.push(
+    `**${s.total_observations} observations** (${byDomain.map(([d, n]) => `${n} ${d}`).join(", ")}) · **${flagged.length} flagged** ≥${pct(FLAG_CONFIDENCE)} confidence`,
+  );
+  if (s.flagged_count > flagged.length) {
+    lines.push(
+      `*(+${s.flagged_count - flagged.length} older or wrong-verdict flags outside this table)*`,
+    );
+  }
+  lines.push("");
+  if (kindList) lines.push(`**By signal kind:** ${kindList}`);
+  lines.push("");
+  lines.push(
+    `:stopwatch: **${s.govt_source_count}** gov sources tracked — **${s.hot_govt_count} ≥60min hot now** · **${s.crowd_relevant_count}** crowd ground-truth reports`,
+  );
+  if (flagged.length > 0) {
+    lines.push("");
+    lines.push("### 🚩 Flagged");
+    lines.push("");
+    lines.push("| ID | Platform | Kind | Conf | Link |");
+    lines.push("|---|---|---|---|---|");
+    for (const f of flagged) {
+      const id8 = observationId({
+        source_ref: f.source_ref,
+        observed_at: f.observed_at,
+        domain: "social",
+      });
+      lines.push(
+        `| ${id8} | ${f.platform ?? "?"} | ${KIND_EMOJI[f.signal_kind] ?? ""}${f.signal_kind} | ${pct(f.confidence)} | ${f.url ? `[view](${f.url})` : "—"} |`,
+      );
+    }
+  }
+  lines.push("");
+  lines.push(
+    "*Media and captions are omitted in db mode: the summary endpoint is PII-free by design (no author, caption, or description text), so the flagged table links out instead.*",
+  );
+  lines.push("");
+  lines.push(
+    `*Window: ${HOURS}h · source: pizzabase feed_observations (system of record) · classifier: jev via OpenRouter*`,
+  );
+  return lines.join("\n");
+}
+
+if (SOURCE === "db") {
+  const s = await fetchSummary();
+  if (s.total_observations < MIN_OBSERVATIONS) {
+    console.error(
+      `[digest] ${s.total_observations} observations in the last ${HOURS}h is below the floor (${MIN_OBSERVATIONS}) — ` +
+        `the pipeline or emit-to-DB leg may be broken. REFUSING to post a digest that looks plausible over a dead pipeline. ` +
+        `Set DIGEST_MIN_OBSERVATIONS to adjust.`,
+    );
+    process.exit(1);
+  }
+  const wrongLabels = loadLabels();
+  const flagged = s.flagged_recent.filter(
+    (f) =>
+      !wrongLabels.has(
+        observationId({
+          source_ref: f.source_ref,
+          observed_at: f.observed_at,
+          domain: "social",
+        }),
+      ),
+  );
+  process.stdout.write(renderDbDigest(s, flagged));
+  process.exit(0);
 }
 
 const obs = load();
