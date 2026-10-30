@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { settings, type Settings } from "../config.js";
-import type { DescriptionSet, FeedItem } from "../types.js";
+import type { DescriptionSet, FeedItem, HttpTransport } from "../types.js";
 
 const run = promisify(execFile);
 
@@ -15,12 +15,16 @@ const SYSTEM_PROMPT = [
   "Answer in 2-3 short factual sentences.",
 ].join(" ");
 
-/** Injection seams for tests (issue #41): override the Settings (key/model)
- *  and/or the transport function itself. Production callers omit this and get
- *  the settings singleton + global fetch. NOT a full HTTP port — that is #56. */
+/** Injection seams for tests (issues #41 + #56): override the Settings
+ *  (key/model) and/or the transport function itself. Production callers omit
+ *  this and get the settings singleton + global fetch. The transport is the
+ *  repo-wide `HttpTransport` (string URL only) rather than
+ *  `typeof globalThis.fetch`: every call site here passes a string literal,
+ *  and a `string`-only parameter is not assignable to fetch's
+ *  `string | URL | Request` under parameter contravariance. */
 export interface OpenRouterChatOptions {
   settings?: Settings;
-  transport?: typeof globalThis.fetch;
+  transport?: HttpTransport;
 }
 
 export async function openrouterChat(
@@ -28,13 +32,13 @@ export async function openrouterChat(
   opts: OpenRouterChatOptions = {},
 ): Promise<string> {
   const s = opts.settings ?? settings;
-  const doFetch = opts.transport ?? globalThis.fetch;
+  const transport: HttpTransport = opts.transport ?? globalThis.fetch;
   if (!s.openrouterKey) throw new Error("OPENROUTER_API_KEY not configured");
   let lastErr: unknown;
   // 2 attempts with backoff — upstream providers rate-limit bursty small calls
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const res = await doFetch(
+      const res = await transport(
         "https://openrouter.ai/api/v1/chat/completions",
         {
           method: "POST",
@@ -68,8 +72,11 @@ export async function openrouterChat(
   throw lastErr ?? new Error("openrouterChat failed");
 }
 
-async function toDataUrl(url: string): Promise<string> {
-  const res = await fetch(url);
+async function toDataUrl(
+  url: string,
+  transport: HttpTransport = globalThis.fetch,
+): Promise<string> {
+  const res = await transport(url);
   if (!res.ok)
     throw new Error(`media fetch ${res.status} for ${url.slice(0, 120)}`);
   const ct = res.headers.get("content-type") ?? "image/jpeg";
@@ -79,12 +86,15 @@ async function toDataUrl(url: string): Promise<string> {
 }
 
 /** Pull one representative frame out of a video via ffmpeg (must be on PATH). */
-async function frameFromVideo(videoUrl: string): Promise<string> {
+async function frameFromVideo(
+  videoUrl: string,
+  transport: HttpTransport = globalThis.fetch,
+): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "feedflag-"));
   try {
     const input = join(dir, "in.video");
     const frame = join(dir, "frame.jpg");
-    const res = await fetch(videoUrl);
+    const res = await transport(videoUrl);
     if (!res.ok) throw new Error(`video fetch ${res.status}`);
     await writeFile(input, Buffer.from(await res.arrayBuffer()));
     await run("ffmpeg", [
@@ -107,6 +117,7 @@ async function frameFromVideo(videoUrl: string): Promise<string> {
 async function captionDataUrl(
   dataUrl: string,
   s: Settings = settings,
+  transport: HttpTransport = globalThis.fetch,
 ): Promise<string> {
   return openrouterChat(
     {
@@ -123,7 +134,7 @@ async function captionDataUrl(
         },
       ],
     },
-    { settings: s },
+    { settings: s, transport },
   );
 }
 
@@ -135,14 +146,15 @@ async function captionDataUrl(
 export async function describeItem(
   item: FeedItem,
   s: Settings = settings,
+  transport: HttpTransport = globalThis.fetch,
 ): Promise<DescriptionSet> {
   const sources: string[] = [];
   for (const u of item.mediaUrls.slice(0, 4)) {
-    sources.push(await toDataUrl(u));
+    sources.push(await toDataUrl(u, transport));
   }
   if (sources.length === 0 && item.videoUrl) {
     try {
-      sources.push(await frameFromVideo(item.videoUrl));
+      sources.push(await frameFromVideo(item.videoUrl, transport));
     } catch (err) {
       console.warn(
         `[feedflag] video frame failed ${item.id}: ${String(err).slice(0, 120)}`,
@@ -152,7 +164,7 @@ export async function describeItem(
   const imageDescriptions: string[] = [];
   for (const s2 of sources) {
     try {
-      imageDescriptions.push(await captionDataUrl(s2, s));
+      imageDescriptions.push(await captionDataUrl(s2, s, transport));
     } catch (err) {
       console.warn(
         `[feedflag] caption failed ${item.id}: ${String(err).slice(0, 120)}`,

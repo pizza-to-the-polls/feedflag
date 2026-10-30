@@ -130,3 +130,12 @@ export interface Observation {
   /** Full description set — the `raw_json` pattern, kept for downstream debugging */
   description: DescriptionSet;
 }
+
+/** Minimal HTTP transport seam (issue #56): modules that call fetch directly
+ *  accept one of these so tests can drive failure/shape without network.
+ *  Function type only — no client library, no retry framework. Defaults to
+ *  global fetch at each call site; tests inject a fake. */
+export type HttpTransport = (
+  url: string,
+  init?: RequestInit,
+) => Promise<Response>;

@@ -18,5 +18,5 @@ contract:
     freshness: "n/a — per-item, stateless; seen.json prevents re-captioning the same post"
     cost_per_week_usd_max: 1
   pii: "captions describe scenes only — no names or face identification; author handle + url ride on the FeedItem"
-tests: scripts/test-analyze.ts
+tests: scripts/test-describe.ts
 status: implemented

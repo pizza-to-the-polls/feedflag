@@ -6,11 +6,19 @@ import type { FlaggedItem, Observation } from "../types.js";
 
 /** Tiny JSON file set of processed post ids — keeps us from re-paying for captioning. */
 export class SeenStore {
-  private path = join(settings.dataDir, "seen.json");
+  private dataDir: string;
+  private path: string;
   private seen = new Map<string, string>();
 
+  /** `dataDir` is injectable so tests can run against a mkdtemp dir without
+   *  mutating `process.env` or touching the real `./data` (issue #56). */
+  constructor(dataDir: string = settings.dataDir) {
+    this.dataDir = dataDir;
+    this.path = join(dataDir, "seen.json");
+  }
+
   async load(): Promise<void> {
-    await mkdir(settings.dataDir, { recursive: true });
+    await mkdir(this.dataDir, { recursive: true });
     if (!existsSync(this.path)) return;
     try {
       const raw = JSON.parse(await readFile(this.path, "utf8")) as Record<
@@ -30,12 +38,15 @@ export class SeenStore {
   async addAll(entries: { id: string; postedAt: string }[]): Promise<void> {
     for (const e of entries) this.seen.set(e.id, e.postedAt);
     const obj: Record<string, string> = Object.fromEntries(this.seen);
-    await mkdir(settings.dataDir, { recursive: true });
+    await mkdir(this.dataDir, { recursive: true });
     await writeFile(this.path, JSON.stringify(obj, null, 2));
   }
 }
 
-export async function appendFlagged(flag: FlaggedItem): Promise<void> {
+export async function appendFlagged(
+  flag: FlaggedItem,
+  dataDir: string = settings.dataDir,
+): Promise<void> {
   const line = JSON.stringify({
     ts: new Date().toISOString(),
     id: flag.item.id,
@@ -46,23 +57,26 @@ export async function appendFlagged(flag: FlaggedItem): Promise<void> {
     confidence: flag.classification.confidence,
     provider: flag.classification.provider,
   });
-  await mkdir(settings.dataDir, { recursive: true });
-  await appendFile(join(settings.dataDir, "flagged.jsonl"), line + "\n");
+  await mkdir(dataDir, { recursive: true });
+  await appendFile(join(dataDir, "flagged.jsonl"), line + "\n");
 }
 
 /** Append normalized, aggregator-ready records (see docs in README "Future scope"). */
 export async function appendObservations(
   observations: Observation[],
+  dataDir: string = settings.dataDir,
 ): Promise<void> {
   if (observations.length === 0) return;
-  await mkdir(settings.dataDir, { recursive: true });
+  await mkdir(dataDir, { recursive: true });
   const lines = observations.map((o) => JSON.stringify(o)).join("\n") + "\n";
-  await appendFile(join(settings.dataDir, "observations.jsonl"), lines);
+  await appendFile(join(dataDir, "observations.jsonl"), lines);
 }
 
 /** Incremental crowd-leg cursor: last time we synced site reports. */
-export async function readSyncStamp(): Promise<string> {
-  const path = join(settings.dataDir, "reports-sync.json");
+export async function readSyncStamp(
+  dataDir: string = settings.dataDir,
+): Promise<string> {
+  const path = join(dataDir, "reports-sync.json");
   if (!existsSync(path)) return new Date(0).toISOString();
   try {
     return JSON.parse(await readFile(path, "utf8")).since as string;
@@ -71,9 +85,11 @@ export async function readSyncStamp(): Promise<string> {
   }
 }
 
-export async function writeSyncStamp(): Promise<void> {
-  await mkdir(settings.dataDir, { recursive: true });
-  const path = join(settings.dataDir, "reports-sync.json");
+export async function writeSyncStamp(
+  dataDir: string = settings.dataDir,
+): Promise<void> {
+  await mkdir(dataDir, { recursive: true });
+  const path = join(dataDir, "reports-sync.json");
   await writeFile(
     path,
     JSON.stringify({ since: new Date().toISOString() }, null, 2),

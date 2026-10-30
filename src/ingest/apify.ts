@@ -1,4 +1,4 @@
-import type { FeedItem, Platform } from "../types.js";
+import type { FeedItem, HttpTransport, Platform } from "../types.js";
 import { settings } from "../config.js";
 
 /**
@@ -11,13 +11,14 @@ import { settings } from "../config.js";
 export async function runApifyActor(
   actorId: string,
   input: Record<string, unknown>,
+  transport: HttpTransport = globalThis.fetch,
 ): Promise<any[]> {
   if (!settings.apifyToken) throw new Error("APIFY_API_TOKEN not configured");
   // API v2 URLs use `username~actor-name`; feeds.json uses the catalog's
   // `username/actor-name` form — translate, or the path 404s.
   const actorPath = actorId.replace("/", "~");
   const url = `https://api.apify.com/v2/acts/${actorPath}/run-sync-get-dataset-items?token=${encodeURIComponent(settings.apifyToken)}&timeout=300`;
-  const res = await fetch(url, {
+  const res = await transport(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input),
