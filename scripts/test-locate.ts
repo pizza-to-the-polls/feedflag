@@ -173,8 +173,7 @@ class FakeJev implements LocationDecisionProvider {
   lastCandidates: CandidateLocation[] | undefined;
   constructor(
     private result:
-      | { locationId: number | string | null; confidence: number }
-      | Error,
+      { locationId: number | string | null; confidence: number } | Error,
   ) {}
 
   async pick(
