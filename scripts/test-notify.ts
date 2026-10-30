@@ -95,7 +95,7 @@ function flagFixture(withMedia = true): FlaggedItem {
 // ---------------------------------------------------------------------------
 {
   const s: Settings = loadSettings({
-    SLACK_BOT_TOKEN: "xoxb-synthetic-token",
+    SLACK_BOT_TOKEN: "synthetic-bot-token",
     SLACK_FLAG_CHANNELS: " #synthetic-channel , #synthetic-digest ",
   });
   const calls: { url: string; init: RequestInit | undefined }[] = [];
@@ -113,7 +113,7 @@ function flagFixture(withMedia = true): FlaggedItem {
     const headers = c.init?.headers as Record<string, string>;
     assert.equal(
       headers.authorization,
-      "Bearer xoxb-synthetic-token",
+      "Bearer synthetic-bot-token",
       "the bot token rides in the auth header",
     );
     assert.equal(headers["content-type"], "application/json");
@@ -247,7 +247,7 @@ function flagFixture(withMedia = true): FlaggedItem {
 // ---------------------------------------------------------------------------
 {
   const s: Settings = loadSettings({
-    SLACK_BOT_TOKEN: "xoxb-synthetic-token",
+    SLACK_BOT_TOKEN: "synthetic-bot-token",
     SLACK_FLAG_CHANNELS: "#synthetic-channel",
   });
   const bodies: Record<string, unknown>[] = [];
