@@ -23,6 +23,10 @@ export interface FeedsConfig {
    *  Label feedback (2026-10-18): press/community/delivery categories are
    *  archive-only — the dispatch signal is LINES. */
   flagCategories?: string[];
+  /** Author handles to skip entirely (case-insensitive, no @) — our own
+   *  accounts' outreach replies are never signal (2026-10-30: PTP's own
+   *  "report it!" replies were being flagged as wait_time_page_mention). */
+  ignoredAuthors?: string[];
 }
 
 function positiveInt(raw: string | undefined, dflt: number): number {

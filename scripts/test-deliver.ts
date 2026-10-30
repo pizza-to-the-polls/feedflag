@@ -792,6 +792,24 @@ function flagDecision(
   );
   assert.deepEqual(qC, [], "no match → empty queue");
 
+  // ignoredAuthors: our own handles are skipped (case-insensitive, @ ok).
+  const ownPost = makeFeedItem({
+    id: "xs-own",
+    authorHandle: "@PizzaToThePolls",
+  });
+  const qIgnored = await buildQueue(
+    [ownPost, xHandle],
+    new RecordingSeen(),
+    {},
+    testSettings(),
+    ["pizzatothepolls"],
+  );
+  assert.deepEqual(
+    qIgnored.map((q) => q.id),
+    [xHandle.id],
+    "ignoredAuthors drops our own posts, keeps others",
+  );
+
   // Cap: settings.maxPostsPerRun by default, opts.limit wins when given.
   const many = [0, 1, 2, 3, 4].map((i) =>
     makeFeedItem({
