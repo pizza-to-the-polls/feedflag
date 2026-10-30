@@ -229,10 +229,14 @@ const main = async () => {
         ? `, evidence-blocked ${evidenceBlocked} (issue #20)`
         : ""),
   );
-  // TOTAL FAILURE = everything sent, nothing landed (API errors, not idempotent
-  // skips). Hard-fail so callers alert — the 4-day-silent-DB postmortem rule:
-  // never fail quiet. (skipped>0 with inserted 0 is the normal re-run case.)
-  if (sent > 0 && inserted === 0 && !DRY) {
+  // TOTAL FAILURE = everything POSTed, nothing landed, AND nothing reported
+  // as an existing duplicate (API errors, not idempotent skips). Hard-fail so
+  // callers alert — the 4-day-silent-DB postmortem rule: never fail quiet.
+  // inserted=0 + skipped>0 is the normal re-run case (every 15-min leg
+  // re-POSTs the same 4h window; the server dedupes) — it must NOT alert
+  // (observed 2026-10-30 03:15: social leg TOTAL-FAILURE false alarm while
+  // peak had inserted the same rows a minute earlier).
+  if (sent > 0 && inserted === 0 && skipped === 0 && !DRY) {
     console.error(
       `[emit] TOTAL FAILURE — ${sent} sent, 0 inserted. Observations are NOT reaching feed_observations.`,
     );

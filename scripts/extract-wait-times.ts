@@ -29,6 +29,7 @@ import {
   readFileSync,
   existsSync,
   writeFileSync,
+  renameSync,
   mkdirSync,
   appendFileSync,
 } from "node:fs";
@@ -997,13 +998,15 @@ const main = async () => {
         if (k.startsWith(s.url)) next[k] = v;
       }
     }
-    // persist state incrementally — a crash mid-run keeps completed sources
+    // persist state incrementally — a crash mid-run keeps completed sources.
+    // ATOMIC via tmp+rename: a plain mid-source writeFileSync can leave a
+    // torn file for the next run's loadState to swallow as {} (2026-10-30
+    // state-clobber incident) — rename is atomic, readers see old-or-new.
     if (!DRY) {
       mkdirSync(DATA_DIR, { recursive: true });
-      writeFileSync(
-        join(DATA_DIR, "govt-readings.json"),
-        JSON.stringify(next, null, 2),
-      );
+      const statePath = join(DATA_DIR, "govt-readings.json");
+      writeFileSync(`${statePath}.tmp`, JSON.stringify(next, null, 2));
+      renameSync(`${statePath}.tmp`, statePath);
     }
   }
 
