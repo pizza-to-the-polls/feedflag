@@ -104,6 +104,49 @@ if [ "$DEPLOY_SHA" != "$ORIGIN_SHA" ]; then
   maybe_alert "feedflag $(hostname): HEAD ($DEPLOY_SHA) != origin/main ($ORIGIN_SHA) after deploy ($MODE) — may be running stale code. Remediation: git fetch origin main && git reset --hard origin/main on the bastion."
 fi
 
+# ---- boot: env auto-sync — "save the token in Secrets Manager" must be enough ----
+# 2026-10-30: the APIFY_API_TOKEN had been saved to ptp/prod/feedflag/env many
+# times while the box kept running the stale /opt/feedflag/.env — the sync was
+# manual root work that silently never happened, the instance role couldn't
+# read the secret to heal itself, and nothing ever told the operator their
+# save didn't take. This timer runs as root and pulls the secret at boot:
+# save → next tick (≤15 min) → live. On any failure the current .env is kept.
+sync_env() {
+  local tmp tmpjson tok
+  tmp=$(mktemp) && tmpjson=$(mktemp) || return 0
+  if ! aws secretsmanager get-secret-value --secret-id ptp/prod/feedflag/env \
+      --query SecretString --output text --region us-west-2 > "$tmpjson" 2>/dev/null; then
+    if [ ! -f /opt/feedflag/.env-sync-failed ]; then
+      echo "[timer] WARN: cannot read ptp/prod/feedflag/env — .env NOT auto-synced (instance role missing secretsmanager:GetSecretValue on ptp/prod/feedflag/*?); using current file" >&2
+      touch /opt/feedflag/.env-sync-failed
+    fi
+    rm -f "$tmp" "$tmpjson"; return 0
+  fi
+  rm -f /opt/feedflag/.env-sync-failed
+  python3 - "$tmpjson" > "$tmp" <<'PY' || { rm -f "$tmp" "$tmpjson"; return 0; }
+import json, sys
+env = json.load(open(sys.argv[1]))
+def q(v):
+    return "'" + str(v).replace("'", "'\\''") + "'"
+for k in sorted(env):
+    print(f"{k}={q(env[k])}")
+PY
+  if ! cmp -s "$tmp" /opt/feedflag/.env 2>/dev/null; then
+    cp -a /opt/feedflag/.env /opt/feedflag/.env.bak 2>/dev/null || true
+    cat "$tmp" > /opt/feedflag/.env && chmod 600 /opt/feedflag/.env
+    echo "[timer] .env re-synced from Secrets Manager (previous copy: .env.bak)"
+    # A saved-but-BAD token must be VISIBLE — never let a save fail silently
+    # again. Validity only; the token value is never echoed.
+    tok=$(grep -m1 -oE '^APIFY_API_TOKEN=.+$' /opt/feedflag/.env | cut -d= -f2- | tr -d "'\"")
+    if [ -n "$tok" ] && ! curl -s -m 10 -H "Authorization: Bearer $tok" \
+        https://api.apify.com/v2/users/me 2>/dev/null | grep -q '"username"'; then
+      maybe_alert "feedflag .env synced from Secrets Manager but the APIFY_API_TOKEN was REJECTED by Apify — the saved token is expired/invalid. Update it in Secrets Manager ptp/prod/feedflag/env; nothing else needed (next tick auto-syncs)."
+    fi
+  fi
+  rm -f "$tmp" "$tmpjson"
+}
+sync_env
+
 set -a; source .env; set +a
 
 heartbeat() {
