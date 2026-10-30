@@ -15,11 +15,12 @@
  * so a refactor can never silently drop a post or launder an uncalibrated
  * LLM confidence behind an unsuffixed provider name.
  *
- * Out of scope (needs #56's filesystem/HTTP ports): `src/describe/`'s media
- * fetches (`toDataUrl`, `frameFromVideo`) and `resolveNotifier()`. The
- * `resolveClassifier()` branches and `llm-fallback`'s parse-fail path —
- * previously BLOCKED(#41) — are now tested below via the injectable-settings
- * seams that #41 landed.
+ * Out of scope here: `src/describe/`'s media fetches (`toDataUrl`,
+ * `frameFromVideo`) — now covered in scripts/test-describe.ts via the
+ * injectable HttpTransport that #56 landed — and the notifier bodies, covered
+ * in scripts/test-notify.ts. The `resolveClassifier()` branches and
+ * `llm-fallback`'s parse-fail path — previously BLOCKED(#41) — are tested
+ * below via the injectable-settings seams that #41 landed.
  *
  * Run: npm test (discovered via the scripts/test-*.ts glob, issue #38)
  */
@@ -586,12 +587,8 @@ function syntheticFallbackClassification(): Classification {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Still out of scope — needs #56's filesystem/HTTP ports (not #41's seams).
-// ---------------------------------------------------------------------------
-
-// BLOCKED(#56): src/describe/'s media fetches (toDataUrl, frameFromVideo) hit
-// the network directly; the openrouterChat settings/transport seam landed in
-// #41, but a full describeItem test needs the #56 I/O port for the media leg.
+// The describe media leg (toDataUrl/frameFromVideo against a fake transport)
+// is no longer BLOCKED: issue #56's HttpTransport seam landed, and its
+// coverage now lives in scripts/test-describe.ts.
 
 console.log("\nAll classify decision-layer regression tests passed.");

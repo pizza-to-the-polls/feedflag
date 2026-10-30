@@ -1,5 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
-import type { FeedItem, Platform } from "../types.js";
+import type { FeedItem, HttpTransport, Platform } from "../types.js";
 import { settings } from "../config.js";
 
 /**
@@ -113,10 +113,11 @@ export async function fetchViaRsshub(
   handle: string,
   source: string,
   limit = 20,
+  transport: HttpTransport = globalThis.fetch,
 ): Promise<FeedItem[]> {
   if (!settings.rsshubUrl) throw new Error("RSSHUB_URL not configured");
   const url = `${settings.rsshubUrl}${rsshubRoute(platform, handle)}?limit=${limit}`;
-  const res = await fetch(url, {
+  const res = await transport(url, {
     headers: {
       "user-agent": "feedflag/0.1 (+https://github.com/duncombe/feedflag)",
     },

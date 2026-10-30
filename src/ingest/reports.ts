@@ -1,7 +1,7 @@
 import { settings } from "../config.js";
 import { normalizeWaitText } from "../normalize/wait-time.js";
 import { mapLimit } from "../util.js";
-import type { Observation } from "../types.js";
+import type { HttpTransport, Observation } from "../types.js";
 
 /**
  * Crowd leg: consume site-submitted reports from the pizzabase API.
@@ -38,13 +38,14 @@ interface ReportJson {
 async function fetchReportsPage(
   page: number,
   limit: number,
+  transport: HttpTransport,
 ): Promise<ReportJson[]> {
   const url = `${settings.pizzabaseUrl}/reports?limit=${limit}&page=${page}`;
   const headers: Record<string, string> = { accept: "application/json" };
   // pizzabase checkAuthorization strips a "Basic " prefix (src/controller/helper.ts)
   if (settings.pizzabaseKey)
     headers.authorization = `Basic ${settings.pizzabaseKey}`;
-  const res = await fetch(url, { headers });
+  const res = await transport(url, { headers });
   if (!res.ok)
     throw new Error(
       `pizzabase /reports ${res.status} (wire a service token in pizzabase for machine auth)`,
@@ -64,12 +65,13 @@ async function fetchReportsPage(
 export async function fetchSiteReportsSince(
   sinceIso: string,
   max: number,
+  transport: HttpTransport = globalThis.fetch,
 ): Promise<ReportJson[]> {
   const since = new Date(sinceIso).getTime();
   const out: ReportJson[] = [];
   const pageSize = 100;
   for (let page = 0; page < 10; page++) {
-    const batch = await fetchReportsPage(page, pageSize);
+    const batch = await fetchReportsPage(page, pageSize, transport);
     if (batch.length === 0) break;
     const fresh = batch.filter(
       (r) => new Date(r.createdAt ?? 0).getTime() > since,

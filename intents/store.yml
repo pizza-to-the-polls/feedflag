@@ -17,5 +17,5 @@ contract:
     freshness: "n/a — durable files; the data branch carries them between runs"
     cost_per_week_usd_max: 0
   pii: "author handles + urls land in the audit files — contactInfo never reaches these records (D6 upstream)"
-tests: scripts/test-deliver.ts
+tests: scripts/test-store.ts
 status: implemented

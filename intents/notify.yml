@@ -18,5 +18,5 @@ contract:
     freshness: "n/a — delivery is immediate per flag"
     cost_per_week_usd_max: 5
   pii: "author handle + url + post caption only (D6) — never contactInfo"
-tests: scripts/test-deliver.ts
+tests: scripts/test-notify.ts
 status: implemented
