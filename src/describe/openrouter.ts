@@ -3,7 +3,7 @@ import { promisify } from "node:util";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { settings } from "../config.js";
+import { settings, type Settings } from "../config.js";
 import type { DescriptionSet, FeedItem } from "../types.js";
 
 const run = promisify(execFile);
@@ -15,26 +15,39 @@ const SYSTEM_PROMPT = [
   "Answer in 2-3 short factual sentences.",
 ].join(" ");
 
+/** Injection seams for tests (issue #41): override the Settings (key/model)
+ *  and/or the transport function itself. Production callers omit this and get
+ *  the settings singleton + global fetch. NOT a full HTTP port — that is #56. */
+export interface OpenRouterChatOptions {
+  settings?: Settings;
+  transport?: typeof globalThis.fetch;
+}
+
 export async function openrouterChat(
   body: Record<string, unknown>,
+  opts: OpenRouterChatOptions = {},
 ): Promise<string> {
-  if (!settings.openrouterKey)
-    throw new Error("OPENROUTER_API_KEY not configured");
+  const s = opts.settings ?? settings;
+  const doFetch = opts.transport ?? globalThis.fetch;
+  if (!s.openrouterKey) throw new Error("OPENROUTER_API_KEY not configured");
   let lastErr: unknown;
   // 2 attempts with backoff — upstream providers rate-limit bursty small calls
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${settings.openrouterKey}`,
-          "content-type": "application/json",
-          "HTTP-Referer": "https://github.com/pizza-to-the-polls/feedflag",
-          "X-Title": "feedflag",
+      const res = await doFetch(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${s.openrouterKey}`,
+            "content-type": "application/json",
+            "HTTP-Referer": "https://github.com/pizza-to-the-polls/feedflag",
+            "X-Title": "feedflag",
+          },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(120000),
         },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(120000),
-      });
+      );
       if (res.status === 429 && attempt === 0) {
         await new Promise((r) => setTimeout(r, 25000));
         continue;
@@ -91,21 +104,27 @@ async function frameFromVideo(videoUrl: string): Promise<string> {
   }
 }
 
-async function captionDataUrl(dataUrl: string): Promise<string> {
-  return openrouterChat({
-    model: settings.visionModel,
-    max_tokens: 220,
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: "Caption this image." },
-          { type: "image_url", image_url: { url: dataUrl } },
-        ],
-      },
-    ],
-  });
+async function captionDataUrl(
+  dataUrl: string,
+  s: Settings = settings,
+): Promise<string> {
+  return openrouterChat(
+    {
+      model: s.visionModel,
+      max_tokens: 220,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Caption this image." },
+            { type: "image_url", image_url: { url: dataUrl } },
+          ],
+        },
+      ],
+    },
+    { settings: s },
+  );
 }
 
 /**
@@ -113,7 +132,10 @@ async function captionDataUrl(dataUrl: string): Promise<string> {
  * caption per image (videos -> first frame). JEV is text-only, so this is the
  * media leg of the pipeline.
  */
-export async function describeItem(item: FeedItem): Promise<DescriptionSet> {
+export async function describeItem(
+  item: FeedItem,
+  s: Settings = settings,
+): Promise<DescriptionSet> {
   const sources: string[] = [];
   for (const u of item.mediaUrls.slice(0, 4)) {
     sources.push(await toDataUrl(u));
@@ -128,9 +150,9 @@ export async function describeItem(item: FeedItem): Promise<DescriptionSet> {
     }
   }
   const imageDescriptions: string[] = [];
-  for (const s of sources) {
+  for (const s2 of sources) {
     try {
-      imageDescriptions.push(await captionDataUrl(s));
+      imageDescriptions.push(await captionDataUrl(s2, s));
     } catch (err) {
       console.warn(
         `[feedflag] caption failed ${item.id}: ${String(err).slice(0, 120)}`,
