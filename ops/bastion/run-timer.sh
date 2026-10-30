@@ -128,6 +128,11 @@ IN_WINDOW() { H=$(date -u +%H); [ "$H" -ge 12 ] || [ "$H" -lt 4 ]; }
 # belt-and-braces copy. Rotation on emit success means un-POSTed rows are
 # never rotated away mid-flight (flock above guarantees no sibling writer).
 ARCHIVE_DIR=/opt/feedflag-archive
+# 2026-10-30: rotation must leave an EMPTY file in place (`: > "$f"` after the
+# mv — mv alone deletes it): the data-branch tip's tree still carried the big
+# blob, so the next leg's restore_state resurrected 70MB every tick and the
+# loop re-archived + re-pushed a fresh ~70MB blob per run (GitHub hard-blocks
+# blobs >100MB — this was hours from breaking state pushes).
 rotate_observations() {
   local f=data/observations.jsonl size cap=20971520  # 20MB
   [ -f "$f" ] || return 0
@@ -135,7 +140,7 @@ rotate_observations() {
   [ "$size" -lt "$cap" ] && return 0
   mkdir -p "$ARCHIVE_DIR"
   local dest="$ARCHIVE_DIR/observations-$(date -u +%Y%m%d-%H%M%S).jsonl"
-  if mv "$f" "$dest" && gzip -q "$dest"; then
+  if mv "$f" "$dest" && gzip -q "$dest" && : > "$f"; then
     echo "[timer] observations.jsonl rotated ($size bytes → $dest.gz)"
   else
     echo "[timer] WARN: observations rotation failed — file left as-is" >&2
