@@ -5,7 +5,7 @@
  * feedflag's decision layer: they decide whether a post is a poll-line
  * report and how confident we are — which is what determines whether a
  * volunteer sees a flag. Until #52 both were module-private and therefore
- * untested. `TECHNICAL_DESIGN.md` D5 and the module docblock both state a
+ * untested. TECHNICAL_DESIGN.md D5 and the module docblock both state a
  * failing decision layer must never drop a post: `parseJevResponse`'s
  * "unparseable Jev response" throw is not an error to be tolerated but the
  * *trigger* for `composite`'s degradation to the LLM fallback, and the
@@ -13,11 +13,11 @@
  * leg produced each classification. These tests pin all four parse paths,
  * the clamping contract, the throw, and the composite's three behaviours,
  * so a refactor can never silently drop a post or launder an uncalibrated
- * LLM confidence through an unsuffixed provider name.
+ * LLM confidence behind an unsuffixed provider name.
  *
- * Out of scope (needs #41's injectable settings — see BLOCKED comments at
- * the end of this file): `resolveClassifier()`, `llm-fallback.ts`,
- * `src/describe/`.
+ * Out of scope (needs #41's injectable settings / transport seams — see the
+ * BLOCKED comments at the end of this file): `resolveClassifier()`,
+ * `llm-fallback.ts`, `src/describe/`.
  *
  * Run: npm test (discovered via the scripts/test-*.ts glob, issue #38)
  */
@@ -34,6 +34,11 @@ console.log("classify decision-layer regression tests (issue #52)\n");
 
 /** Synthetic category enum — invented for these tests, no real config read. */
 const CATEGORIES = ["poll_line_report", "irrelevant", "early_voting_info"];
+
+/** Build the Jev strict-JSON shape: {"category": <c>, "confidence": <conf>}. */
+function jevJson(category: string, confidence: string): string {
+  return `{"category":"${category}","confidence":${confidence}}`;
+}
 
 /** A minimal synthetic description set — shape only, no real content. */
 function syntheticDescriptionSet(): DescriptionSet {
@@ -53,11 +58,20 @@ function syntheticDescriptionSet(): DescriptionSet {
   };
 }
 
+/** A fresh uncalibrated fallback classification (flash-lite shape). */
+function syntheticFallbackClassification(): Classification {
+  return {
+    relevant: false,
+    confidence: 0.2,
+    category: "irrelevant",
+    provider: "flash-lite",
+  };
+}
+
 // ---------------------------------------------------------------------------
 // parseJevResponse — path 1: strict-JSON extraction
 // ---------------------------------------------------------------------------
 {
-  // A clean JSON body with a valid category returns unchanged.
   const choice = parseJevResponse(
     '{"category":"poll_line_report","confidence":0.82}',
     CATEGORIES,
@@ -80,7 +94,9 @@ function syntheticDescriptionSet(): DescriptionSet {
     "JSON embedded in prose is still extracted via the {…} slice",
   );
 
-  console.log("  ✓ strict-JSON path: clean body and prose-embedded body both parsed");
+  console.log(
+    "  ✓ strict-JSON path: clean body and prose-embedded body both parsed",
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -105,60 +121,49 @@ function syntheticDescriptionSet(): DescriptionSet {
     "the hallucinated category must never be returned",
   );
 
-  console.log("  ✓ out-of-enum category rejected, falls through to the scan path");
+  console.log(
+    "  ✓ out-of-enum category is rejected and falls through to the scan path",
+  );
 }
 
 // ---------------------------------------------------------------------------
 // parseJevResponse — path 3: confidence clamping to the unit interval
 // ---------------------------------------------------------------------------
 {
-  // Clamp high: a model that says 150% is held to certainty, not above it.
-  assert.equal(
-    parseJevResponse(
-      '{"category":"poll_line_report","confidence":1.5}',
-      CATEGORIES,
-    ).confidence,
-    1,
-    "confidence > 1 clamps to 1",
-  );
-  assert.equal(
-    parseJevResponse(
-      '{"category":"poll_line_report","confidence":-0.5}',
-      CATEGORIES,
-    ).confidence,
-    0,
-    "confidence < 0 clamps to 0",
-  );
-  // Non-numeric / non-finite / missing confidence all become 0, never NaN —
-  // an NaN confidence would poison every downstream threshold comparison.
-  assert.equal(
-    parseJevResponse(
-      '{"category":"poll_line_report","confidence":"not-a-number"}',
-      CATEGORIES,
-    ).confidence,
-    0,
-    "non-numeric confidence becomes 0",
-  );
-  assert.equal(
-    parseJevResponse(
-      '{"category":"poll_line_report","confidence":"Infinity"}',
-      CATEGORIES,
-    ).confidence,
-    0,
-    "non-finite confidence becomes 0",
-  );
-  assert.equal(
-    parseJevResponse('{"category":"poll_line_report"}', CATEGORIES).confidence,
-    0,
-    "missing confidence becomes 0",
-  );
-  assert.equal(
-    Number.isFinite(
-      parseJevResponse('{"category":"irrelevant"}', CATEGORIES).confidence,
-    ),
-    true,
-    "confidence is always finite",
-  );
+  // A model that says 150% is held to certainty, not above it; below 0 is
+  // held to 0. Non-numeric / non-finite / missing confidence all become 0 —
+  // never NaN, which would poison every downstream threshold comparison.
+  const confidenceCases = [
+    {
+      body: jevJson("poll_line_report", "1.5"),
+      confidence: 1,
+      label: "confidence > 1 clamps to 1",
+    },
+    {
+      body: jevJson("poll_line_report", "-0.5"),
+      confidence: 0,
+      label: "confidence < 0 clamps to 0",
+    },
+    {
+      body: jevJson("poll_line_report", '"not-a-number"'),
+      confidence: 0,
+      label: "non-numeric confidence becomes 0",
+    },
+    {
+      body: jevJson("poll_line_report", '"Infinity"'),
+      confidence: 0,
+      label: "non-finite confidence becomes 0",
+    },
+    {
+      body: '{"category":"poll_line_report"}',
+      confidence: 0,
+      label: "missing confidence key becomes 0",
+    },
+  ];
+  for (const { body, confidence, label } of confidenceCases) {
+    const choice = parseJevResponse(body, CATEGORIES);
+    assert.equal(choice.confidence, confidence, label);
+  }
 
   console.log("  ✓ confidence clamped to [0,1]; non-finite/missing → 0");
 }
@@ -167,7 +172,6 @@ function syntheticDescriptionSet(): DescriptionSet {
 // parseJevResponse — path 4: last-resort scan (mention + float within 40 chars)
 // ---------------------------------------------------------------------------
 {
-  // A bare "category … float" line parses through the scan path.
   const scanned = parseJevResponse(
     "the category is poll_line_report with 0.65 confidence",
     CATEGORIES,
@@ -190,7 +194,7 @@ function syntheticDescriptionSet(): DescriptionSet {
     "category mention with no nearby float yields confidence 0",
   );
 
-  // The 40-character window, at its boundary. After "poll_line_report"
+  // The 40-character window, at its boundary: after "poll_line_report"
   // (16 chars) the scan looks at exactly the next 40 characters.
   const justInside = parseJevResponse(
     `poll_line_report${"x".repeat(36)} 0.5`,
@@ -208,10 +212,12 @@ function syntheticDescriptionSet(): DescriptionSet {
   assert.equal(
     justOutside.confidence,
     0,
-    "float starting beyond the 40-char window is ignored → confidence 0",
+    "float starting beyond the 40-char window is ignored → 0",
   );
 
-  console.log("  ✓ last-resort scan: mention + float, no-float → 0, 40-char boundary");
+  console.log(
+    "  ✓ last-resort scan: mention + float, no-float → 0, 40-char boundary",
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -223,7 +229,8 @@ function syntheticDescriptionSet(): DescriptionSet {
     /unparseable Jev response/,
     "no JSON, no category mention → throws with the contract message",
   );
-  // The message carries the (truncated) body for post-incident audits.
+  // The message carries the (truncated) offending body for post-incident
+  // audits.
   assert.throws(
     () => parseJevResponse("qwertyuiop", CATEGORIES),
     /qwertyuiop/,
@@ -258,12 +265,9 @@ function syntheticDescriptionSet(): DescriptionSet {
 
   const c = composite(jev, fallback);
   assert.equal(c.name, "jev+llm-fallback");
+
   const result = await c.classify(syntheticDescriptionSet(), CATEGORIES);
-  assert.deepEqual(
-    result,
-    jevResult,
-    "Jev's result is returned unchanged — no suffix, no rewriting",
-  );
+  assert.deepEqual(result, jevResult, "Jev result returned unchanged");
   assert.equal(
     result.provider,
     "fake-jev",
@@ -272,7 +276,7 @@ function syntheticDescriptionSet(): DescriptionSet {
   assert.equal(
     fallbackCalls,
     0,
-    "fallback records zero calls on the happy path",
+    "the fallback records zero calls on the happy path",
   );
 
   console.log("  ✓ passthrough: Jev result unchanged, fallback never called");
@@ -282,12 +286,6 @@ function syntheticDescriptionSet(): DescriptionSet {
 // composite — degrade: any Jev error falls back, with the audit suffix
 // ---------------------------------------------------------------------------
 {
-  const fallbackResult: Classification = {
-    relevant: false,
-    confidence: 0.2,
-    category: "irrelevant",
-    provider: "flash-lite",
-  };
   const jev: DecisionProvider = {
     name: "fake-jev",
     classify: async () => {
@@ -299,7 +297,7 @@ function syntheticDescriptionSet(): DescriptionSet {
     name: "fake-fallback",
     classify: async () => {
       fallbackCalls++;
-      return fallbackResult;
+      return syntheticFallbackClassification();
     },
   };
 
@@ -309,17 +307,22 @@ function syntheticDescriptionSet(): DescriptionSet {
   const result = await c.classify(syntheticDescriptionSet(), CATEGORIES);
   assert.deepEqual(
     result,
-    { ...fallbackResult, provider: "flash-lite (jev-fallback)" },
+    {
+      ...syntheticFallbackClassification(),
+      provider: "flash-lite (jev-fallback)",
+    },
     "fallback result is returned with the (jev-fallback) audit suffix",
   );
   assert.equal(fallbackCalls, 1, "the fallback was called exactly once");
   assert.match(
     result.provider,
     /\(jev-fallback\)$/,
-    "an uncalibrated LLM confidence is never laundered behind an unsuffixed name",
+    "uncalibrated LLM confidence never passes unsuffixed",
   );
 
-  console.log('  ✓ degrade: Jev throw → fallback result suffixed " (jev-fallback)"');
+  console.log(
+    "  ✓ degrade: any Jev throw → fallback result gets the (jev-fallback) audit suffix",
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -346,7 +349,9 @@ function syntheticDescriptionSet(): DescriptionSet {
     "when both legs fail the error propagates — composite must never return a fake classification",
   );
 
-  console.log("  ✓ propagate: fallback throwing surfaces the error (pipeline .catches upstream)");
+  console.log(
+    "  ✓ propagate: fallback throwing surfaces the error (pipeline .catches upstream)",
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -354,6 +359,10 @@ function syntheticDescriptionSet(): DescriptionSet {
 // trigger the degrade
 // ---------------------------------------------------------------------------
 {
+  const fallback: DecisionProvider = {
+    name: "fake-fallback",
+    classify: async () => syntheticFallbackClassification(),
+  };
   // A Jev-shaped provider that runs the REAL parseJevResponse over an
   // unparseable body. The parse throw is what composite catches in
   // production; this pins why that throw is load-bearing.
@@ -372,15 +381,6 @@ function syntheticDescriptionSet(): DescriptionSet {
       };
     },
   };
-  const fallback: DecisionProvider = {
-    name: "fake-fallback",
-    classify: async () => ({
-      relevant: false,
-      confidence: 0.2,
-      category: "irrelevant",
-      provider: "flash-lite",
-    }),
-  };
 
   const c = composite(parseShapedJev, fallback);
   const result = await c.classify(syntheticDescriptionSet(), CATEGORIES);
@@ -389,9 +389,15 @@ function syntheticDescriptionSet(): DescriptionSet {
     "flash-lite (jev-fallback)",
     "an unparseable Jev body degrades to the fallback, suffixed",
   );
-  assert.equal(result.category, "irrelevant");
+  assert.equal(
+    result.category,
+    "irrelevant",
+    "fallback picked its own category",
+  );
 
-  console.log("  ✓ integration: real parse throw inside a Jev-shaped provider → degrade");
+  console.log(
+    "  ✓ integration: real parse throw inside a Jev-shaped provider → degrade",
+  );
 }
 
 // ---------------------------------------------------------------------------
