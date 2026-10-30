@@ -45,10 +45,36 @@ export interface Classification {
   provider: string;
 }
 
+/**
+ * Resolved place for an observation (issue #35 — location triangulation).
+ * Persisted additively inside `location.resolved` (JSONB): today's
+ * `raw`/`county`/`state` fields stay exactly as they were. `method=no-match`
+ * with confidence 0 is the normal outcome when nothing resolves.
+ */
+export interface ResolvedLocation {
+  /** Physical address from the matched pizzabase `locations` row */
+  address?: string;
+  /** pizzabase `locations.id` */
+  location_id?: number | string;
+  /** pizzabase `locations.canonical_id` (dedupe grouping) */
+  canonical_id?: string;
+  /** Matched row's display name */
+  name?: string;
+  /** registry = exact wait_time_sources.location_id link; fuzzy = deterministic
+   *  similarity pick (incl. recent-context tiebreak); jev = Jev decision among
+   *  candidates; no-match = nothing resolved (raw label preserved). */
+  method: "registry" | "fuzzy" | "jev" | "no-match";
+  /** Calibrated 0..1 (0 for no-match) */
+  confidence: number;
+}
+
 export interface FlaggedItem {
   item: FeedItem;
   description: DescriptionSet;
   classification: Classification;
+  /** Set by the location-resolution step (issue #35) when the flagged post's
+   *  place was resolved — feeds the Slack `place:` line. */
+  resolvedLocation?: ResolvedLocation;
 }
 
 /** Swappable decision layer — JEV today, anything else later. */
@@ -82,18 +108,22 @@ export interface Observation {
   platform?: string;
   observed_at: string;
   posted_at?: string;
-  /** Filled by downstream location matching (retrieve-then-match) */
+  /** Govt leg: the source's own point label (e.g. "Some Church (P-2)").
+   *  Issue #35: the resolve step (src/locate/resolve.ts) adds `resolved` —
+   *  the actual place behind the raw label / caption mention — additively. */
   location?: {
     raw?: string;
     state?: string;
     county?: string;
     precinct?: string;
+    resolved?: ResolvedLocation;
   };
   /** Jev category, e.g. "poll_line_report" */
   signal_kind: string;
-  /** Filled by a Phase-3-style extractor; empty from the social leg today */
-  wait_minutes?: number;
-  wait_category?: string;
+  /** Filled by a Phase-3-style extractor; empty from the social leg today.
+   *  null = the govt leg observed "no wait data" (bus-record shape). */
+  wait_minutes?: number | null;
+  wait_category?: string | null;
   confidence: number;
   provider: string;
   relevant: boolean;
