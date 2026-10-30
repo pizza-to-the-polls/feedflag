@@ -28,6 +28,7 @@ import {
   markVanishedSites,
   nextFreshness,
   parseHoursWindow,
+  refreshAdvanced,
   waitMinutesFromSeconds,
   type ReadingState,
 } from "../src/govt/gates.js";
@@ -457,12 +458,14 @@ const CLARK_HOURS = "09:00-18:00";
     lastRefresh: "1793031300000",
     frozenCount: fv.frozenCount,
     active: true,
+    announced: true,
   };
   const read = JSON.parse(JSON.stringify(written)) as ReadingState;
   assert.equal(read.rawWaitTime, 65);
   assert.equal(read.lastRefresh, "1793031300000");
   assert.equal(read.frozenCount, 3);
   assert.equal(read.active, true);
+  assert.equal(read.announced, true);
   assert.equal(read.confidence, confidence);
 
   // Evidence block mirrors what the extractor attaches to observations.
@@ -574,6 +577,69 @@ const CLARK_HOURS = "09:00-18:00";
 
   console.log(
     "  ✓ seconds field + per-site hours: Henderson incident reads 60 min, open, dispatchable",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// (A)+(B): first-dispatch announcement support + timestamp-aware freshness
+// (2026-10-30 — the election-eve silence postmortem)
+// ---------------------------------------------------------------------------
+{
+  // (B) refreshAdvanced: the stamp is the liveness witness.
+  assert.equal(
+    refreshAdvanced("1793322055000", "1793317501000"),
+    true,
+    "an advancing refresh stamp = live queue, even with a steady value",
+  );
+  assert.equal(
+    refreshAdvanced("1793322055000", "1793322055000"),
+    false,
+    "identical stamp = no liveness witness (value gate applies)",
+  );
+  assert.equal(
+    refreshAdvanced(null, "1793322055000"),
+    false,
+    "missing current stamp → fail closed to the value gate",
+  );
+  assert.equal(
+    refreshAdvanced("1793322055000", null),
+    false,
+    "no previous stamp (first observation) → fail closed",
+  );
+  assert.equal(
+    refreshAdvanced(1793322055000, "1793322055000"),
+    false,
+    "numeric and string forms of the same stamp compare equal",
+  );
+  assert.equal(
+    refreshAdvanced(undefined, undefined),
+    false,
+    "both absent → fail closed",
+  );
+
+  // (B) composition with the frozen gate: a steady value + a MOVED stamp
+  // must NOT be stale — the Clay MO case (90 min held for an hour while the
+  // county re-stamped the row every batch).
+  const steadyFrozen = nextFreshness(90, { minutes: 90, frozenCount: 2 });
+  assert.equal(steadyFrozen.stale, true, "value gate alone trips at 3 runs");
+  const stampMoved = refreshAdvanced("1793322055000", "1793317501000");
+  assert.ok(stampMoved, "the stamp moved between runs");
+  const verdict = stampMoved
+    ? { frozenCount: 0, stale: false }
+    : { frozenCount: steadyFrozen.frozenCount, stale: steadyFrozen.stale };
+  assert.equal(
+    verdict.stale,
+    false,
+    "a moved stamp keeps a steady 90-min line fresh (extractor wires exactly this)",
+  );
+  assert.equal(
+    verdict.frozenCount,
+    0,
+    "the frozen counter resets on a live stamp",
+  );
+
+  console.log(
+    "  ✓ announce+freshness: refreshAdvanced gates liveness, state carries announced",
   );
 }
 

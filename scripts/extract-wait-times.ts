@@ -45,6 +45,7 @@ import {
   waitMinutesFromSeconds,
   markVanishedSites,
   nextFreshness,
+  refreshAdvanced,
   type ReadingState,
 } from "../src/govt/gates.js";
 import { hasGovtEvidence } from "../src/govt/evidence.js";
@@ -503,8 +504,16 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
           const people = r.peopleField != null ? rec[r.peopleField] : undefined;
           const extra =
             people != null && Number(people) > 0 ? ` (${people} in line)` : "";
+          // (B) Esri Election Management joins stamp the wait-tracking
+          // table's edit date with a per-deployment hash suffix
+          // (EditDate_1582734843112) — sniff it when no updatedField is
+          // configured so the freshness gate can distinguish live-but-steady
+          // values from dead fields.
+          const updatedField =
+            r.updatedField ??
+            Object.keys(rec).find((k) => /^EditDate_\d+$/.test(k));
           const lastRefreshRaw =
-            r.updatedField != null ? rec[r.updatedField] : undefined;
+            updatedField != null ? rec[updatedField] : undefined;
           const statusText =
             r.isOpenField != null ? String(rec[r.isOpenField] ?? "") : "";
           return {
@@ -807,7 +816,10 @@ const main = async () => {
       for (const r of readings) {
         const key = `${s.url}#${r.site_key ?? r.precinct_name}`;
         seenKeys.add(key);
-        const prev = state[key];
+        // a vanished-then-returned site is a new episode: no stale history,
+        // no consumed announcement (county row churn, issue #12)
+        let prev = state[key];
+        if (prev?.active === false) prev = undefined;
         const changed =
           !prev ||
           prev.minutes !== r.wait_minutes ||
@@ -821,11 +833,23 @@ const main = async () => {
           // while the county card showed N/A). Stale readings keep recording
           // but never reach the vol feed.
           const fv = nextFreshness(gated.wait_minutes, prev);
+          // (B) TIMESTAMP-AWARE: identical values only count as frozen when
+          // the county's refresh stamp is frozen too. A stamp that keeps
+          // advancing (Clark Last_Refresh, Washoe MWTupdate, Esri EditDate_*)
+          // proves the queue is live even when the number sits flat — a real
+          // 90-minute line held steady for an hour was suppressed as
+          // "frozen" before it could ever post (2026-10-30 Clay MO).
+          const stampMoved = refreshAdvanced(
+            gated.last_refresh,
+            prev?.lastRefresh,
+          );
           gated = {
             ...gated,
-            frozen_count: fv.frozenCount,
-            stale: fv.stale,
-            confidence: freshnessConfidence(gated.confidence, fv),
+            frozen_count: stampMoved ? 0 : fv.frozenCount,
+            stale: stampMoved ? false : fv.stale,
+            confidence: stampMoved
+              ? gated.confidence
+              : freshnessConfidence(gated.confidence, fv),
           };
         }
         const hoursSpec = gated.hours_spec ?? s.rest?.defaultHours;
@@ -863,6 +887,7 @@ const main = async () => {
           lastRefresh: gated.last_refresh ?? null,
           frozenCount: gated.frozen_count ?? 0,
           active: true,
+          announced: prev?.announced ?? false,
         };
 
         // HOURS-GATED: state + observation bus only — no Slack, either channel
@@ -890,35 +915,51 @@ const main = async () => {
           continue;
         }
 
-        if (!changed) continue;
         const line = volChannelLine(gated, prev);
         const mins = gated.wait_minutes ?? -1;
         const volEligible =
           mins >= MIN_POST_MINUTES || gated.wait_category === "long";
+        if (!volEligible) {
+          if (prev?.announced) next[key].announced = false; // cooled — re-arm
+          if (
+            changed &&
+            mins >= VETTING_MIN_MINUTES &&
+            settings.volsWebhookUrl
+          ) {
+            // two-channel mode: vetting tier sees churn for source smell-tests
+            vetChanges.push(line);
+          }
+          continue;
+        }
+        // (A) FIRST-DISPATCH ANNOUNCEMENT: a hot line posts once on its first
+        // eval-clean observation even if the value is UNCHANGED — steady
+        // queues rarely trip the change-only trigger (Esri counties stamp in
+        // 30-60min batches; Clay MO sat at 90 min for an hour without a single
+        // change-based post). After the announcement, change-only resumes;
+        // cooling below the threshold re-arms it for the next episode.
+        const announce = !prev?.announced;
+        const post = changed || announce;
+        if (!post) continue; // steady + already announced — quiet
         const evaluation = await evaluateReading(s, gated);
+        totalChanged++;
+        next[key].announced = true; // the attempt is consumed, post or block
         // VOL FEED (graduated sources only): dispatch signal = lines >= 1 hour
         // AND eval-clean (name + address + live verify link + fresh).
         // Single-channel mode (no vols webhook): the one channel is VOL-GRADE —
         // sub-60min churn stays in console/state/digest until a vols channel
         // exists (user call 2026-10-21: "15-min posts are not helpful").
-        if (volEligible) {
-          totalChanged++;
-          if (evaluation.dispatchable) {
-            volChanges.push(
-              line + (r.address ? ` — ${r.address.slice(0, 50)}` : ""),
-            );
-            vetChanges.push(
-              line + (r.address ? ` — ${r.address.slice(0, 50)}` : ""),
-            );
-          } else {
-            // eval-blocked: visible in vetting with reasons, never vol-posted
-            vetChanges.push(
-              `🚫 ${line} — eval: ${evaluation.reasons.join("; ")}`,
-            );
-          }
-        } else if (mins >= VETTING_MIN_MINUTES && settings.volsWebhookUrl) {
-          // two-channel mode: vetting tier sees churn for source smell-tests
-          vetChanges.push(line);
+        if (evaluation.dispatchable) {
+          volChanges.push(
+            line + (r.address ? ` — ${r.address.slice(0, 50)}` : ""),
+          );
+          vetChanges.push(
+            line + (r.address ? ` — ${r.address.slice(0, 50)}` : ""),
+          );
+        } else {
+          // eval-blocked: visible in vetting with reasons, never vol-posted
+          vetChanges.push(
+            `🚫 ${line} — eval: ${evaluation.reasons.join("; ")}`,
+          );
         }
       }
       // Site-removal tolerance (issue #12): the county adds/removes rows

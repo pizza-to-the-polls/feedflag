@@ -63,6 +63,9 @@ export interface ReadingState {
   frozenCount?: number;
   /** false = the source no longer returns this site (row removed county-side) */
   active?: boolean;
+  /** (A) this hot episode's one-time announcement has been attempted —
+   *  re-armed (false) when the line cools below the dispatch threshold */
+  announced?: boolean;
 }
 
 // ── Freshness gate ─────────────────────────────────────────────────────────
@@ -176,6 +179,21 @@ export function isWithinHours(
     open,
     reason: `outside hours of operation (${hoursSpec} ${timeZone}; local ${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, "0")})`,
   };
+}
+
+/** (B) Timestamp-aware freshness: true when the source's last-refresh stamp
+ *  ADVANCED since the previous run. A county actively re-stamping a steady
+ *  value is live — a real 90-minute queue can sit flat for an hour (2026-10-30:
+ *  Clay MO held 90 for 60+ min and the value-only gate tripped it "frozen"
+ *  before it could ever post). A frozen stamp + frozen value is still a dead
+ *  field (the original issue-#12 Clark incident). Absent on either side →
+ *  false: callers fall back to the value-only gate (fail closed). */
+export function refreshAdvanced(
+  current: string | number | null | undefined,
+  prev: string | null | undefined,
+): boolean {
+  if (current == null || prev == null) return false;
+  return String(current) !== String(prev);
 }
 
 // ── Per-field helpers (issue #12 root cause, 2026-10-29) ───────────────────
