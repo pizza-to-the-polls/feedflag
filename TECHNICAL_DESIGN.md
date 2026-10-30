@@ -140,3 +140,33 @@ JSONL only — aggregator logic lives in pizzabase.
 - [ ] D1–D6 decisions ratified (esp. D2 Zapier-in-delivery-only, D3 file bus)
 - [ ] Cost envelope accepted ($6–27/wk now, $15–40/wk combined P4)
 - [ ] Epic child tickets (FEAT-002a/b/c) scoped for pickup
+
+## 8. Intents (Triple Helix pillar 3)
+
+Every guarantee above is now also **machine-readable, versioned, and enforced**:
+one `intents/<module>.yml` per `src/<dir>/` (plus `pipeline` and
+`extract-wait-times`) declares the module's decision, contract, invariants,
+fallback, SLA (latency / freshness / cost) and PII floor. This is pillar 3 of
+the triple helix — **code / tests / intents** (implementation / executable
+proof / declared contract) — after David Kabii's Triple Helix Data Framework:
+the organizational contract must be explicit, versioned, and enforced through
+tooling. `scripts/test-intents.ts` is that tooling: it fails CI when an intent
+is missing, malformed, orphaned, over the $350/wk cost ceiling, or out of sync
+with the `feedflag/observation@1` literal in source. Agents read `intents/`
+before `src/` — see `intents/README.md` for the doctrine.
+
+## 8. Intents
+
+Every decision above is mirrored as a machine-readable, versioned module
+contract under `intents/` — one YAML per `src/` directory plus the two
+cross-tree entrypoints (`pipeline`, `extract-wait-times`). This is the third
+pillar of the Triple Helix framework (code / tests / intents): the contract
+is explicit, versioned (`feedflag.intent/<module>@n`), and enforced through
+tooling — `scripts/test-intents.ts` checks module↔intent mapping, schema,
+invariant length, observation-schema version sync against the source
+literal, and the $350/wk cost ceiling.
+
+Read `intents/README.md` (the doctrine) before reading `src/` — an intent
+states what a module guarantees and what it costs; the code is one
+implementation of that guarantee. When intent and code disagree, fix the
+pair in the same PR.

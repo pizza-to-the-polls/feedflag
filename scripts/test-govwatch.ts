@@ -22,11 +22,13 @@ import {
   OUTSIDE_HOURS_CONFIDENCE,
   STALE_CONFIDENCE,
   freshnessConfidence,
+  hoursSpecFromFields,
   isWithinHours,
   localMinutesOfDay,
   markVanishedSites,
   nextFreshness,
   parseHoursWindow,
+  waitMinutesFromSeconds,
   type ReadingState,
 } from "../src/govt/gates.js";
 
@@ -345,7 +347,10 @@ const CLARK_HOURS = "09:00-18:00";
           rest?: {
             defaultHours?: string;
             timezone?: string;
+            waitSecondsField?: string;
             waitMinutesField?: string;
+            openTimeField?: string;
+            closeTimeField?: string;
             updatedField?: string;
             url?: string;
           };
@@ -358,9 +363,31 @@ const CLARK_HOURS = "09:00-18:00";
   assert.ok(clarkRest, "Clark rest config present");
   assert.equal(clarkRest.defaultHours, "09:00-18:00");
   assert.equal(clarkRest.timezone, CLARK_TZ);
-  assert.equal(clarkRest.waitMinutesField, "WAIT_TIME");
+  // 2026-10-29 root cause: the live wait field is WAIT_TIME_secs; the
+  // WAIT_TIME minutes field is dead — it must NOT be configured anymore
+  // (a configured seconds field is authoritative and exclusive).
+  assert.equal(clarkRest.waitSecondsField, "WAIT_TIME_secs");
+  assert.equal(
+    clarkRest.waitMinutesField,
+    undefined,
+    "dead WAIT_TIME minutes field must not be configured",
+  );
+  assert.equal(clarkRest.openTimeField, "START_TIME");
+  assert.equal(clarkRest.closeTimeField, "END_TIME");
   assert.equal(clarkRest.updatedField, "Last_Refresh");
   assert.equal(clark.graduated, true);
+  // Election Day coverage: the query spans EV + ED groups (133 ED rows sit
+  // DATE-less until Nov 3; stale EV rows that day are frozen-gate fodder).
+  assert.match(
+    clarkRest.url ?? "",
+    /POLL_GROUP%20IN%20\(%27EV%27(,|%2C)%27ED%27\)/,
+    "query covers both early-voting and election-day rows",
+  );
+  assert.match(
+    clarkRest.url ?? "",
+    /WAIT_TIME_secs/,
+    "query fetches the live seconds field",
+  );
 
   // The configured spec actually closes at the incident timestamp.
   assert.equal(
@@ -454,6 +481,99 @@ const CLARK_HOURS = "09:00-18:00";
 
   console.log(
     "  ✓ incident chain: frozen + pre-open reading stays under the dispatch floor",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Seconds wait field + per-site hours (issue #12 root cause, 2026-10-29)
+// ---------------------------------------------------------------------------
+{
+  // The incident: Hend City Hall (POLL_CODE 921) card showed
+  // "Approximately 60 minutes" (WAIT_TIME_secs 3600) while the dead
+  // WAIT_TIME minutes field read 0 — the extractor must read secs.
+  assert.equal(
+    waitMinutesFromSeconds(3600),
+    60,
+    "3600s → 60 min (the number the county card shows)",
+  );
+  assert.equal(waitMinutesFromSeconds(1800), 30, "1800s → 30 min");
+  assert.equal(
+    waitMinutesFromSeconds(0),
+    0,
+    "0s → 0 min (no line is a valid reading, not a missing one)",
+  );
+  assert.equal(waitMinutesFromSeconds(90), 2, "90s rounds to 2 min");
+  assert.equal(waitMinutesFromSeconds("3600"), 60, "string seconds parse");
+  assert.equal(
+    waitMinutesFromSeconds(null),
+    null,
+    "null secs → null — never falls back to a dead minutes field",
+  );
+  assert.equal(waitMinutesFromSeconds(undefined), null);
+  assert.equal(waitMinutesFromSeconds(-5), null, "negative secs → null");
+  assert.equal(waitMinutesFromSeconds("junk"), null, "non-numeric → null");
+  assert.equal(
+    waitMinutesFromSeconds(60 * 601),
+    null,
+    "absurd (>600 min) → null, same sanity bound as minutes fields",
+  );
+
+  // Per-site hours from Clark's 24-hour SQL time strings: Henderson City
+  // Hall runs 08:00-17:00, not the 09:00-18:00 county default.
+  assert.equal(
+    hoursSpecFromFields("08:00:00.0000000", "17:00:00.0000000"),
+    "08:00-17:00",
+    "SQL time strings → HH:MM-HH:MM",
+  );
+  assert.equal(
+    hoursSpecFromFields("08:00", "18:00"),
+    "08:00-18:00",
+    "plain HH:MM works too",
+  );
+  assert.equal(
+    hoursSpecFromFields("08:00 AM", "05:00 PM"),
+    null,
+    "AM/PM strings rejected — a 05:00 PM close would build a bogus midnight-crossing window; fail to the default",
+  );
+  assert.equal(
+    hoursSpecFromFields(null, "17:00:00.0000000"),
+    null,
+    "missing side → null (falls back to defaultHours)",
+  );
+  assert.equal(hoursSpecFromFields("", "17:00"), null);
+  assert.equal(hoursSpecFromFields(8, 17), null, "non-strings → null");
+
+  // Gate composition with the per-site spec, at the incident times:
+  // 15:45 PT (the user's card, "Approximately 60 minutes") is inside
+  // 08:00-17:00 even though the old 09:00-18:00 default would have been
+  // fine here — but 08:30 PT is inside real hours while the old default
+  // gated it, and 17:30 PT is outside real hours while the old default
+  // let it through (posting to a closed site).
+  const hendSpec = hoursSpecFromFields("08:00:00.0000000", "17:00:00.0000000");
+  assert.ok(hendSpec, "Henderson spec parses");
+  assert.equal(
+    isWithinHours(hendSpec!, CLARK_TZ, new Date("2026-10-29T22:45:00Z")).open,
+    true,
+    "15:45 PT: inside 08:00-17:00 — the card's 60-min reading is postable",
+  );
+  assert.equal(
+    isWithinHours(CLARK_HOURS, CLARK_TZ, new Date("2026-10-29T15:30:00Z")).open,
+    false,
+    "08:30 PT: old default gate would wrongly suppress a pre-9am line",
+  );
+  assert.equal(
+    isWithinHours(hendSpec!, CLARK_TZ, new Date("2026-10-30T00:30:00Z")).open,
+    false,
+    "17:30 PT: outside real 08:00-17:00 hours — never post to a closed site",
+  );
+  assert.equal(
+    isWithinHours(CLARK_HOURS, CLARK_TZ, new Date("2026-10-30T00:30:00Z")).open,
+    true,
+    "…while the old 09:00-18:00 default would have let it through",
+  );
+
+  console.log(
+    "  ✓ seconds field + per-site hours: Henderson incident reads 60 min, open, dispatchable",
   );
 }
 

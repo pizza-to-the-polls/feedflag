@@ -8,6 +8,10 @@
  * batches (≤50), POSTs {"observations":[...]} — snake_case per the API —
  * and prints {inserted, skipped}. Idempotent: re-runs skip existing rows
  * (server-side ON CONFLICT DO NOTHING on source_ref+observed_at).
+ * A 413 (body too large) is bisected and retried at half size — a fixed
+ * 50-row chunk blows the API body limit whenever the row mix carries fat
+ * description blobs (observed 2026-10-28: run-dependent 413s dropped the
+ * NEW observations and tripped the TOTAL-FAILURE exit).
  *
  * Failure is non-fatal to the pipeline (JSONL stays the local audit copy);
  * this script exits 0 with a warning so CI runs stay green.
@@ -88,14 +92,18 @@ function toApi(o: Obs): Record<string, unknown> {
   };
 }
 
+type PostResult =
+  | { ok: true; inserted: number; skipped: number }
+  | { ok: false; status: number }; // 0 = network/timeout
+
 async function post(
   observations: Record<string, unknown>[],
-): Promise<{ inserted: number; skipped: number } | null> {
+): Promise<PostResult> {
   if (!API || !TOKEN) {
     console.log(
       "[emit] PIZZABASE_API_URL / PIZZABASE_API_KEY unset — skipping (non-fatal)",
     );
-    return null;
+    return { ok: false, status: 0 };
   }
   try {
     const res = await fetch(`${API}/feed-observations`, {
@@ -111,7 +119,7 @@ async function post(
       console.warn(
         `[emit] POST ${res.status}: ${(await res.text()).slice(0, 150)}`,
       );
-      return null;
+      return { ok: false, status: res.status };
     }
     const j = (await res.json()) as {
       inserted?: number;
@@ -120,11 +128,43 @@ async function post(
     };
     if (j.errors?.length)
       console.warn(`[emit] API errors: ${j.errors.slice(0, 2).join("; ")}`);
-    return { inserted: j.inserted ?? 0, skipped: j.skipped ?? 0 };
+    return { ok: true, inserted: j.inserted ?? 0, skipped: j.skipped ?? 0 };
   } catch (err) {
     console.warn(`[emit] POST failed: ${String(err).slice(0, 120)}`);
-    return null;
+    return { ok: false, status: 0 };
   }
+}
+
+interface SendTotals {
+  sent: number;
+  inserted: number;
+  skipped: number;
+}
+
+/** POST a chunk, bisecting on 413 (payload too large) until rows fit.
+ *  Other failures mark the whole chunk unsent (as before). A single row
+ *  that still 413s is skipped loudly — it never sinks the rest of the
+ *  batch or the TOTAL-FAILURE exit heuristic. */
+async function sendChunk(rows: Record<string, unknown>[]): Promise<SendTotals> {
+  if (!rows.length) return { sent: 0, inserted: 0, skipped: 0 };
+  const r = await post(rows);
+  if (r.ok)
+    return { sent: rows.length, inserted: r.inserted, skipped: r.skipped };
+  if (r.status === 413 && rows.length > 1) {
+    const mid = rows.length >> 1;
+    const a = await sendChunk(rows.slice(0, mid));
+    const b = await sendChunk(rows.slice(mid));
+    return {
+      sent: a.sent + b.sent,
+      inserted: a.inserted + b.inserted,
+      skipped: a.skipped + b.skipped,
+    };
+  }
+  if (r.status === 413)
+    console.warn(
+      `[emit] 413 even for a single observation — skipping it: ${String(rows[0]?.source_ref ?? "(unknown)").slice(0, 100)}`,
+    );
+  return { sent: 0, inserted: 0, skipped: 0 };
 }
 
 const main = async () => {
@@ -164,7 +204,9 @@ const main = async () => {
   if (!batch.length) {
     console.log(
       `[emit] 0 observations in the last ${HOURS}h` +
-        (evidenceBlocked > 0 ? ` (${evidenceBlocked} evidence-blocked, issue #20)` : ""),
+        (evidenceBlocked > 0
+          ? ` (${evidenceBlocked} evidence-blocked, issue #20)`
+          : ""),
     );
     return;
   }
@@ -176,22 +218,25 @@ const main = async () => {
   let skipped = 0;
   let sent = 0;
   for (let i = 0; i < batch.length; i += 50) {
-    const chunk = batch.slice(i, i + 50);
-    const r = await post(chunk);
-    if (r) {
-      inserted += r.inserted;
-      skipped += r.skipped;
-      sent += chunk.length;
-    }
+    const r = await sendChunk(batch.slice(i, i + 50));
+    inserted += r.inserted;
+    skipped += r.skipped;
+    sent += r.sent;
   }
   console.log(
     `[emit] ${sent}/${batch.length} sent → inserted ${inserted}, skipped ${skipped}` +
-      (evidenceBlocked > 0 ? `, evidence-blocked ${evidenceBlocked} (issue #20)` : ""),
+      (evidenceBlocked > 0
+        ? `, evidence-blocked ${evidenceBlocked} (issue #20)`
+        : ""),
   );
-  // TOTAL FAILURE = everything sent, nothing landed (API errors, not idempotent
-  // skips). Hard-fail so callers alert — the 4-day-silent-DB postmortem rule:
-  // never fail quiet. (skipped>0 with inserted 0 is the normal re-run case.)
-  if (sent > 0 && inserted === 0 && !DRY) {
+  // TOTAL FAILURE = everything POSTed, nothing landed, AND nothing reported
+  // as an existing duplicate (API errors, not idempotent skips). Hard-fail so
+  // callers alert — the 4-day-silent-DB postmortem rule: never fail quiet.
+  // inserted=0 + skipped>0 is the normal re-run case (every 15-min leg
+  // re-POSTs the same 4h window; the server dedupes) — it must NOT alert
+  // (observed 2026-10-30 03:15: social leg TOTAL-FAILURE false alarm while
+  // peak had inserted the same rows a minute earlier).
+  if (sent > 0 && inserted === 0 && skipped === 0 && !DRY) {
     console.error(
       `[emit] TOTAL FAILURE — ${sent} sent, 0 inserted. Observations are NOT reaching feed_observations.`,
     );

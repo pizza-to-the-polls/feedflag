@@ -1,0 +1,9 @@
+[Unit]
+Description=feedflag social timer run
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/feedflag
+ExecStart=/opt/feedflag/ops/bastion/run-timer.sh social
+User=root

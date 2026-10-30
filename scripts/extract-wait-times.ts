@@ -29,6 +29,7 @@ import {
   readFileSync,
   existsSync,
   writeFileSync,
+  renameSync,
   mkdirSync,
   appendFileSync,
 } from "node:fs";
@@ -39,7 +40,9 @@ import {
   FRESHNESS_FROZEN_RUNS,
   OUTSIDE_HOURS_CONFIDENCE,
   freshnessConfidence,
+  hoursSpecFromFields,
   isWithinHours,
+  waitMinutesFromSeconds,
   markVanishedSites,
   nextFreshness,
   type ReadingState,
@@ -109,6 +112,11 @@ interface Source {
     keyField?: string;
     /** physical address fields (dispatch gate: volunteer needs an address to act) */
     addressFields?: string[];
+    /** Live wait field in SECONDS (Clark NV: WAIT_TIME_secs — the WAIT_TIME
+     *  minutes field died Oct 21 while secs keeps ticking; the county card
+     *  renders secs/60). AUTHORITATIVE and exclusive when set: no fallback
+     *  to waitMinutesField (null secs = not reporting = N/A, like the card). */
+    waitSecondsField?: string;
     waitMinutesField?: string;
     waitTextField?: string;
     lineCountField?: string;
@@ -120,6 +128,11 @@ interface Source {
     /** Uniform hours of operation "HH:MM-HH:MM" local — readings observed
      *  outside them are recorded but never posted (issue #12 hours gate). */
     defaultHours?: string;
+    /** Per-row open/close time fields (24-hour "HH:MM[:ss…]") — build a
+     *  per-site hours spec that takes precedence over defaultHours when
+     *  parseable (Clark sites vary: Hend City Hall 08:00-17:00). */
+    openTimeField?: string;
+    closeTimeField?: string;
     /** IANA timezone used to evaluate defaultHours (e.g. America/Los_Angeles). */
     timezone?: string;
   };
@@ -148,6 +161,9 @@ interface Reading {
   outside_hours?: boolean;
   /** Why the hours gate tripped (reason string for vetting/console) */
   hours_reason?: string;
+  /** Per-site hours spec "HH:MM-HH:MM" (from REST open/close fields) —
+   *  preferred over the source-wide defaultHours by the hours gate */
+  hours_spec?: string | null;
 }
 
 const pct = (n: number) => `${Math.round(n * 100)}%`;
@@ -415,78 +431,119 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
       }
       records = Array.isArray(node) ? (node as Record<string, unknown>[]) : [];
     }
-    return records
-      .map((rec) => {
-        const name = String(
-          [r.nameField, ...(r.nameFallbackFields ?? [])]
-            .map((f) => rec[f])
-            .find((v) => v != null && String(v).trim() !== "") ?? "",
-        ).trim();
-        const siteKey =
-          r.keyField != null && rec[r.keyField] != null
-            ? `${String(rec[r.keyField]).trim()}`
-            : undefined;
-        const address =
-          r.addressFields
-            ?.map((f) => rec[f])
-            .filter((v) => v != null && String(v).trim() !== "")
-            .map((v) => String(v).trim())
-            .join(", ") || null;
-        const rawMin =
-          r.waitMinutesField != null ? rec[r.waitMinutesField] : undefined;
-        let minutes: number | null =
-          typeof rawMin === "number"
-            ? rawMin
-            : rawMin != null
-              ? normalizeRange(String(rawMin))
+    return (
+      records
+        .map((rec) => {
+          const name = String(
+            [r.nameField, ...(r.nameFallbackFields ?? [])]
+              .map((f) => rec[f])
+              .find((v) => v != null && String(v).trim() !== "") ?? "",
+          ).trim();
+          const siteKey =
+            r.keyField != null && rec[r.keyField] != null
+              ? `${String(rec[r.keyField]).trim()}`
+              : undefined;
+          const address =
+            r.addressFields
+              ?.map((f) => rec[f])
+              .filter((v) => v != null && String(v).trim() !== "")
+              .map((v) => String(v).trim())
+              .join(", ") || null;
+          // ── Wait value (issue #12 root cause, 2026-10-29) ──
+          // waitSecondsField, when configured, is AUTHORITATIVE and exclusive:
+          // Clark NV's live field is WAIT_TIME_secs while its WAIT_TIME minutes
+          // field has been dead since Oct 21 — falling back to the minutes
+          // field when secs is null would resurrect the #12 bug (the county
+          // card renders N/A for null secs; so do we).
+          let minutes: number | null = null;
+          if (r.waitSecondsField != null) {
+            minutes = waitMinutesFromSeconds(rec[r.waitSecondsField]);
+          } else {
+            const rawMin =
+              r.waitMinutesField != null ? rec[r.waitMinutesField] : undefined;
+            minutes =
+              typeof rawMin === "number"
+                ? rawMin
+                : rawMin != null
+                  ? normalizeRange(String(rawMin))
+                  : null;
+            if (minutes != null && (minutes < 0 || minutes > 600))
+              minutes = null;
+          }
+          const rawWaitVal =
+            r.waitSecondsField != null
+              ? rec[r.waitSecondsField]
+              : r.waitMinutesField != null
+                ? rec[r.waitMinutesField]
+                : undefined;
+          const hours_spec =
+            r.openTimeField != null && r.closeTimeField != null
+              ? hoursSpecFromFields(rec[r.openTimeField], rec[r.closeTimeField])
               : null;
-        if (minutes != null && (minutes < 0 || minutes > 600)) minutes = null;
-        const text =
-          r.waitTextField != null ? String(rec[r.waitTextField] ?? "") : "";
-        if (minutes == null && text) minutes = normalizeRange(text);
-        const cat =
-          minutes == null
-            ? /short|no wait|zero|closed/i.test(text)
-              ? "short"
-              : /long/i.test(text)
-                ? "long"
-                : null
-            : null;
-        // "Closed" is a valid reading (site exists, not open) — record 0-min so
-        // change detection sees Closed→30min when polls open. Don't drop on null minutes
-        // when the text carries a status word.
-        const minutes2 = minutes ?? (/closed/i.test(text) ? 0 : null);
-        const people = r.peopleField != null ? rec[r.peopleField] : undefined;
-        const extra =
-          people != null && Number(people) > 0 ? ` (${people} in line)` : "";
-        const lastRefreshRaw =
-          r.updatedField != null ? rec[r.updatedField] : undefined;
-        const statusText =
-          r.isOpenField != null ? String(rec[r.isOpenField] ?? "") : "";
-        return {
-          precinct_name: (name || "(unnamed)") + extra,
-          site_key: siteKey,
-          address,
-          wait_minutes: minutes ?? minutes2,
-          wait_category: cat,
-          last_updated: lastRefreshRaw != null ? String(lastRefreshRaw) : null,
-          confidence: 0.95, // structured API — near-certain
-          // Raw REST attributes ride on the reading (issue #12): evidence for
-          // audits, freshness-gate input, and status-field hours gating.
-          raw_wait_time:
-            typeof rawMin === "number" || typeof rawMin === "string"
-              ? rawMin
-              : null,
-          last_refresh: lastRefreshRaw != null ? String(lastRefreshRaw) : null,
-          ...(r.isOpenField != null && /closed/i.test(statusText)
-            ? {
-                outside_hours: true,
-                hours_reason: `status field reports "${statusText}"`,
-              }
-            : {}),
-        } satisfies Reading;
-      })
-      .filter((x) => x.wait_minutes != null || x.wait_category != null);
+          const text =
+            r.waitTextField != null ? String(rec[r.waitTextField] ?? "") : "";
+          if (minutes == null && text) minutes = normalizeRange(text);
+          const cat =
+            minutes == null
+              ? /short|no wait|zero|closed/i.test(text)
+                ? "short"
+                : /long/i.test(text)
+                  ? "long"
+                  : null
+              : null;
+          // "Closed" is a valid reading (site exists, not open) — record 0-min so
+          // change detection sees Closed→30min when polls open. Don't drop on null minutes
+          // when the text carries a status word.
+          const minutes2 = minutes ?? (/closed/i.test(text) ? 0 : null);
+          const people = r.peopleField != null ? rec[r.peopleField] : undefined;
+          const extra =
+            people != null && Number(people) > 0 ? ` (${people} in line)` : "";
+          const lastRefreshRaw =
+            r.updatedField != null ? rec[r.updatedField] : undefined;
+          const statusText =
+            r.isOpenField != null ? String(rec[r.isOpenField] ?? "") : "";
+          return {
+            precinct_name: (name || "(unnamed)") + extra,
+            site_key: siteKey,
+            address,
+            wait_minutes: minutes ?? minutes2,
+            wait_category: cat,
+            last_updated:
+              lastRefreshRaw != null ? String(lastRefreshRaw) : null,
+            confidence: 0.95, // structured API — near-certain
+            // Raw REST attributes ride on the reading (issue #12): evidence for
+            // audits, freshness-gate input, and status-field hours gating.
+            raw_wait_time:
+              typeof rawWaitVal === "number" || typeof rawWaitVal === "string"
+                ? rawWaitVal
+                : null,
+            hours_spec,
+            last_refresh:
+              lastRefreshRaw != null ? String(lastRefreshRaw) : null,
+            ...(r.isOpenField != null && /closed/i.test(statusText)
+              ? {
+                  outside_hours: true,
+                  hours_reason: `status field reports "${statusText}"`,
+                }
+              : {}),
+          } satisfies Reading;
+        })
+        // Keep NAMED rows even when the wait value is null: a successful REST
+        // query returning sites with no current wait (overnight, pre-open, or
+        // Esri Election Management `waittime` nulls) is NOT a JS-wall miss.
+        // Dropping them made main() escalate to screenshot+vision on the raw
+        // JSON URL — useless pixels, 3-minute Apify timeouts, and per-run cost
+        // across the 2026-10-30 43-source sweep. Null-wait rows record state
+        // ("site not reporting"), keep vanished-site tracking honest, chain
+        // frozen-history for the freshness gate, and never post (null < any
+        // threshold). Only rows that are BOTH unnamed and waitless are garbage.
+        .filter(
+          (x) =>
+            x.wait_minutes != null ||
+            x.wait_category != null ||
+            !/^\(unnamed\)/.test(x.precinct_name),
+        )
+    );
   } catch {
     return [];
   }
@@ -679,6 +736,21 @@ const main = async () => {
       let readings = await restExtractReadings(s);
       let method: string | null = readings.length > 0 ? "rest" : null;
       let html: string | null = null;
+      // source_type "api" (REST/JSON) sources NEVER escalate to the
+      // browser paths: a screenshot of a JSON response cannot yield better
+      // data than the query that already ran (0 rows = cycle not loaded or
+      // nothing reporting — carry forward, next run retries). Without this,
+      // every empty-result run burned an Apify screenshot + 3-min vision
+      // call on the raw JSON URL (2026-10-30 sweep finding).
+      if (readings.length === 0 && s.source_type === "api") {
+        console.log(
+          `  0 readings (REST empty — cycle not loaded or nothing reporting)`,
+        );
+        for (const [k, v] of Object.entries(state)) {
+          if (k.startsWith(s.url)) next[k] = v;
+        }
+        continue;
+      }
       if (readings.length === 0) {
         html = await fetchPage(s.url);
         if (html == null) {
@@ -748,11 +820,15 @@ const main = async () => {
             confidence: freshnessConfidence(gated.confidence, fv),
           };
         }
-        if (s.rest?.defaultHours && s.rest?.timezone) {
+        const hoursSpec = gated.hours_spec ?? s.rest?.defaultHours;
+        if (hoursSpec && s.rest?.timezone) {
           // HOURS GATE: readings observed outside the site's hours of
           // operation are recorded but never posted (pre-open churn is noise —
           // the 08:13 PT "65 min" post fired 47 min before opening).
-          const hv = isWithinHours(s.rest.defaultHours, s.rest.timezone);
+          // Per-site hours (Clark rows carry START_TIME/END_TIME — Hend City
+          // Hall runs 08:00-17:00, not the 09:00-18:00 county default) take
+          // precedence; the source-wide defaultHours is the fallback.
+          const hv = isWithinHours(hoursSpec, s.rest.timezone);
           if (!hv.open) {
             gated = {
               ...gated,
@@ -956,13 +1032,15 @@ const main = async () => {
         if (k.startsWith(s.url)) next[k] = v;
       }
     }
-    // persist state incrementally — a crash mid-run keeps completed sources
+    // persist state incrementally — a crash mid-run keeps completed sources.
+    // ATOMIC via tmp+rename: a plain mid-source writeFileSync can leave a
+    // torn file for the next run's loadState to swallow as {} (2026-10-30
+    // state-clobber incident) — rename is atomic, readers see old-or-new.
     if (!DRY) {
       mkdirSync(DATA_DIR, { recursive: true });
-      writeFileSync(
-        join(DATA_DIR, "govt-readings.json"),
-        JSON.stringify(next, null, 2),
-      );
+      const statePath = join(DATA_DIR, "govt-readings.json");
+      writeFileSync(`${statePath}.tmp`, JSON.stringify(next, null, 2));
+      renameSync(`${statePath}.tmp`, statePath);
     }
   }
 

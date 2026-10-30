@@ -1,0 +1,9 @@
+[Unit]
+Description=feedflag hot every 15 minutes (Nov 2-4)
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -26,6 +26,15 @@ Everything JEV touches is string-in, typed-value-out (see
 `JEV_EXPLORATION.md`): human-facing text is written by this codebase, not the
 model.
 
+## Intents
+
+Every module's contract — decision served, input/output, invariants,
+fallback, SLA (latency, freshness, weekly cost), PII floor — is
+machine-readable and versioned under `intents/` (Triple Helix pillar 3:
+code / tests / intents), enforced by `scripts/test-intents.ts`. Agents read
+`intents/README.md` before `src/`: the intent states the guarantee, the code
+is one implementation of it.
+
 ## Cost options (the ask: < $350/wk — all options land 1–2 orders of magnitude under)
 
 Assumed volume for the math: **~300 posts/day** across all sources, ~15%

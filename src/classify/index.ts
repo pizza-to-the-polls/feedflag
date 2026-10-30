@@ -10,7 +10,7 @@ import { llmFallbackProvider } from "./llm-fallback.js";
  * flash-lite classifier so the pipeline keeps flowing. The provider name
  * records which leg produced each classification.
  */
-function composite(
+export function composite(
   jev: DecisionProvider,
   fallback: DecisionProvider,
 ): DecisionProvider {

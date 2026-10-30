@@ -1,0 +1,22 @@
+id: feedflag.intent/govt@1
+module: src/govt/
+layer: reliable-data
+decision: "Is this wait-time reading live, in-hours, and evidenced — or must it be withheld from the volunteer feed?"
+consumer: "scripts/extract-wait-times.ts (freshness/hours gates + evidence block) + scripts/emit-to-db.ts (hasGovtEvidence guard); locked in by scripts/test-govwatch.ts + scripts/test-data-branch.ts"
+contract:
+  input: "this run's wait value + prior-run ReadingState (data/govt-readings.json), hours spec 'HH:MM-HH:MM', IANA timezone, description set"
+  output: "FreshnessVerdict { frozenCount, stale }, gated confidence via freshnessConfidence, HoursVerdict { open, reason }, vanished-site keys via markVanishedSites, hasGovtEvidence boolean"
+  invariants:
+    - "a wait value unchanged across FRESHNESS_FROZEN_RUNS (3, ~90 min at the 30-min cron) is a frozen field, not a live queue (Clark 2026-10-26)"
+    - "stale readings are pinned to STALE_CONFIDENCE (0.2) and outside-hours to OUTSIDE_HOURS_CONFIDENCE (0.5) — both under the 0.6 dispatch floor"
+    - "gates fail OPEN on bad config (unparseable hours spec, unknown timezone) — misconfig must never suppress live data"
+    - "vanished sites are marked inactive, not deleted; a failed or empty fetch must never mark sites inactive"
+    - "a govt observation without a non-empty evidence block is the pre-gate-code signature and is refused at both ends (writer + DB emitter)"
+  fallback: "fail open — the reading is recorded (state + observation bus) but never posted to the volunteer feed"
+  sla:
+    latency_ms_p95: 1000
+    freshness: "must not repeat a frozen value across FRESHNESS_FROZEN_RUNS=3 consecutive runs (~30 min apart)"
+    cost_per_week_usd_max: 0
+  pii: "none — county site names and street addresses only; no personal data"
+tests: scripts/test-govwatch.ts
+status: implemented
