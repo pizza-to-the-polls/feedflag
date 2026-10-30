@@ -322,7 +322,7 @@ case $MODE in
     # Hard-fail on generation errors: a partial/empty /tmp/digest.md must
     # NEVER be posted as an issue #5 comment (that's worse than a stale
     # digest — the issue is the durable daily surface).
-    if ! node --import tsx scripts/digest.ts --hours 26 > /tmp/digest.md; then
+    if ! node --import tsx scripts/digest.ts --hours 26 --source db > /tmp/digest.md; then
       maybe_alert "feedflag $(hostname): digest generation FAILED ($MODE) — issue #5 will go stale. journalctl -u feedflag-digest.service"
       exit 1
     fi
@@ -372,7 +372,7 @@ case $MODE in
     if [ -n "$SLACK_WEBHOOK_URL" ]; then
       # Slack mirror with the comment link (same shape as the workflow step:
       # JSON payload so flagged thumbnails ride via attachments.image_url).
-      if node --import tsx scripts/digest.ts --hours 26 --slack > /tmp/slack-digest.json 2>/dev/null \
+      if node --import tsx scripts/digest.ts --hours 26 --slack --source db > /tmp/slack-digest.json 2>/dev/null \
          && jq -e '.text' /tmp/slack-digest.json >/dev/null 2>&1; then
         jq --arg u "$COMMENT_URL" '.text += "\nDetails: " + $u | .icon_emoji = ":feedflag:"' /tmp/slack-digest.json > /tmp/slack-payload.json 2>/dev/null \
           && curl -s -m 10 -o /dev/null -X POST -H 'content-type: application/json' \
