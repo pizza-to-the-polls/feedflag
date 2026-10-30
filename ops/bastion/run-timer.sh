@@ -25,10 +25,13 @@ cd /opt/feedflag
 # between healthy peak pushes, then rode restore_state back onto the box).
 # Serialize the WHOLE leg — deploy pull included (a reset --hard racing a
 # live extraction is the same bug). A leg that can't take the lock within
-# 5 min skips its tick; the next 15-min fire retries. Heartbeat waits too —
+# 10 min skips its tick; the next 15-min fire retries. 2026-10-30: with a
+# WORKING Apify token the web-tier vision fallbacks actually run and a peak
+# extraction takes 6+ min (it was ~30s when Apify 401'd instantly) — 300s
+# starved the social leg out of its tick. Heartbeat waits too —
 # the CW dead-man alarms on long gaps, not one skipped tick.
 exec 9>/opt/feedflag/.run-lock
-if ! flock -w 300 9; then
+if ! flock -w 600 9; then
   echo "[timer] another feedflag leg holds the run lock >5min — skipping this tick ($MODE)"
   exit 0
 fi
