@@ -71,12 +71,12 @@ const INVARIANT_MAX_LENGTH = 200;
  *  doc so this constant cannot silently drift from it. */
 const COST_CEILING_USD_PER_WEEK = 350;
 /** Intents that bind a single file rather than a src/<dir>/. */
-const SPECIAL_INTENTS: Record<string, string> = {
+export const SPECIAL_INTENTS: Record<string, string> = {
   pipeline: "src/pipeline.ts",
   "extract-wait-times": "scripts/extract-wait-times.ts",
 };
 
-interface Intent {
+export interface Intent {
   [key: string]: unknown;
 }
 
@@ -151,7 +151,7 @@ interface Intent {
   console.log("  ✓ YAML parser: scalars, nesting, lists, comments, errors");
 }
 
-function parseIntentYaml(text: string): Intent {
+export function parseIntentYaml(text: string): Intent {
   const root: Intent = {};
   const stack: { indent: number; obj: Intent }[] = [{ indent: -1, obj: root }];
   let pending: { parent: Intent; key: string; indent: number } | null = null;
