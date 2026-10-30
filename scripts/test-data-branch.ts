@@ -430,6 +430,7 @@ console.log("data-branch separation regression tests (issue #20)\n");
     "IN_WINDOW",
     "restore_state",
     "push_state",
+    "rotate_observations",
   ];
   for (const fn of REQUIRED_FNS) {
     assert.ok(
@@ -452,6 +453,34 @@ console.log("data-branch separation regression tests (issue #20)\n");
       `run-timer.sh dispatch must invoke ${fn} (it is load-bearing for the legs)`,
     );
   }
+
+  // Single-flight lock (2026-10-30 state-clobber incident): all legs share
+  // one working tree while the extractor persists govt-readings.json
+  // mid-run per source — without flock, a sibling leg's state-push snapshots
+  // the half-built file onto refs/heads/data (observed {} / 4-key / 34-key
+  // partial states alternating with healthy peak pushes).
+  assert.match(
+    runner,
+    /flock -w \d+ 9/,
+    "run-timer.sh must serialize legs with flock (partial-state clobber regression)",
+  );
+  // Rotation is load-bearing post-run plumbing: invoked only after a
+  // successful emit, so un-POSTed rows are never rotated away.
+  const postRun = runner.slice(runner.indexOf("esac"));
+  assert.ok(
+    postRun.includes("rotate_observations"),
+    "run-timer.sh must rotate observations.jsonl after a successful emit (62MB+ growth regression)",
+  );
+
+  // emit-to-db TOTAL FAILURE must not fire on the normal all-duplicates
+  // re-run (every 15-min leg re-POSTs the same 4h window; the server
+  // dedupes) — observed false alert 2026-10-30 03:15 social leg.
+  const emit = readFileSync(join(ROOT, "scripts", "emit-to-db.ts"), "utf8");
+  assert.match(
+    emit,
+    /sent > 0 && inserted === 0 && skipped === 0/,
+    "emit-to-db TOTAL FAILURE must exclude the all-duplicates re-run case",
+  );
   console.log(
     "  ✓ run-timer.sh defines + dispatches every load-bearing function (IN_WINDOW regression)",
   );

@@ -16,6 +16,23 @@ set -uo pipefail
 MODE=$1
 cd /opt/feedflag
 
+# ── single-flight lock (2026-10-30 state-clobber incident) ───────────────
+# All feedflag-* units fire the same second and share this working tree, the
+# .git, and every data/ state file. extract-wait-times persists
+# data/govt-readings.json INCREMENTALLY (after each source), so a sibling
+# leg finishing mid-extraction pushed half-built states to refs/heads/data
+# (observed 2026-10-29/30: {}/4-key/34-key partials rode social pushes
+# between healthy peak pushes, then rode restore_state back onto the box).
+# Serialize the WHOLE leg — deploy pull included (a reset --hard racing a
+# live extraction is the same bug). A leg that can't take the lock within
+# 5 min skips its tick; the next 15-min fire retries. Heartbeat waits too —
+# the CW dead-man alarms on long gaps, not one skipped tick.
+exec 9>/opt/feedflag/.run-lock
+if ! flock -w 300 9; then
+  echo "[timer] another feedflag leg holds the run lock >5min — skipping this tick ($MODE)"
+  exit 0
+fi
+
 ALERT_MARKER=/opt/feedflag/data/.alert-throttle
 maybe_alert() {
   echo "[timer] ALERT: $1" >&2
@@ -101,6 +118,29 @@ heartbeat() {
 # pipeline went dark 23:30–23:59 UTC on election-eve eve. Restored + a
 # test now asserts every function the case block calls is defined.
 IN_WINDOW() { H=$(date -u +%H); [ "$H" -ge 12 ] || [ "$H" -lt 4 ]; }
+
+# observations.jsonl is an append-only audit trail whose rows live in the DB
+# once emit-to-db lands them. Unbounded it hit 62-70MB in a week — GitHub
+# warns at 50MB and hard-blocks the push at 100MB, and every emit re-reads
+# the whole file. After a SUCCESSFUL emit, rotate the live file out of the
+# repo: gzip to /opt/feedflag-archive/ (stays on the box, never rides
+# refs/heads/data). The DB is the system of record; the archive is the local
+# belt-and-braces copy. Rotation on emit success means un-POSTed rows are
+# never rotated away mid-flight (flock above guarantees no sibling writer).
+ARCHIVE_DIR=/opt/feedflag-archive
+rotate_observations() {
+  local f=data/observations.jsonl size cap=20971520  # 20MB
+  [ -f "$f" ] || return 0
+  size=$(stat -c %s "$f" 2>/dev/null || echo 0)
+  [ "$size" -lt "$cap" ] && return 0
+  mkdir -p "$ARCHIVE_DIR"
+  local dest="$ARCHIVE_DIR/observations-$(date -u +%Y%m%d-%H%M%S).jsonl"
+  if mv "$f" "$dest" && gzip -q "$dest"; then
+    echo "[timer] observations.jsonl rotated ($size bytes → $dest.gz)"
+  else
+    echo "[timer] WARN: observations rotation failed — file left as-is" >&2
+  fi
+}
 
 restore_state() {
   # Shared-state convergence — the duplicate-flag fix. The GH Actions backup
@@ -203,8 +243,11 @@ RUN_RC=$?
 if [ $RUN_RC -ne 0 ]; then
   maybe_alert "feedflag $(hostname): $MODE run FAILED (rc=$RUN_RC) — pipeline leg down. journalctl -u feedflag-$MODE.service on the bastion."
 else
-  node --import tsx scripts/emit-to-db.ts --hours 4 \
-    || maybe_alert "feedflag $(hostname): emit-to-DB TOTAL FAILURE ($MODE) — observations NOT reaching feed_observations. Check PIZZABASE_API_* + API health."
+  if node --import tsx scripts/emit-to-db.ts --hours 4; then
+    rotate_observations
+  else
+    maybe_alert "feedflag $(hostname): emit-to-DB TOTAL FAILURE ($MODE) — observations NOT reaching feed_observations. Check PIZZABASE_API_* + API health."
+  fi
 fi
 push_state
 heartbeat
