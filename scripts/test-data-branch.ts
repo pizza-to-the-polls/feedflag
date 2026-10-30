@@ -426,7 +426,11 @@ console.log("data-branch separation regression tests (issue #20)\n");
   for (const [needle, what] of [
     ["scripts/digest.ts --hours 26", "26h digest build"],
     ["extract-wait-times.ts --report-only", "govwait board addendum"],
-    ["gh issue comment", "issue #5 comment post"],
+    [
+      "api.github.com/repos/",
+      "issue #5 comment post (curl — this box has no gh)",
+    ],
+    ["--purpose feedflag-digest", "purpose-scoped token mint"],
     ["SLACK_WEBHOOK_URL", "Slack mirror"],
   ] as const) {
     assert.ok(
@@ -439,10 +443,39 @@ console.log("data-branch separation regression tests (issue #20)\n");
     /exit 0/,
     "run-timer.sh digest case must exit before the shared post-run block (read-only: no emit/push)",
   );
+  // The boot env gate runs BEFORE the mode dispatch and exits 1, so it must
+  // never list a credential only one mode needs. FEEDFLAG_DIGEST_TOKEN in
+  // REQUIRED would fail EVERY leg (heartbeat, social, peak, hot, govwatch) at
+  // the first tick after deploy — the deploy pull above resets to origin/main,
+  // so the gate change goes live on its own, ≤15 min after merge, with no unit
+  // install required. The digest mints a 1h repo-scoped issues:write token at
+  // run time instead (pizza-eagle#44/#45), so no durable PAT exists to require.
+  assert.ok(
+    !/REQUIRED="[^"\n]*FEEDFLAG_DIGEST_TOKEN/.test(runnerText),
+    "run-timer.sh boot env gate must NOT require a digest-only credential — it exits 1 for every mode, so merging one darkens all the legs",
+  );
+  assert.ok(
+    !digestCase[0].includes("FEEDFLAG_DIGEST_TOKEN"),
+    "the digest must not read a long-lived PAT anywhere, including as a fallback",
+  );
   assert.match(
-    runnerText,
-    /REQUIRED="[^"\n]*FEEDFLAG_DIGEST_TOKEN/,
-    "run-timer.sh boot env gate must require FEEDFLAG_DIGEST_TOKEN (loud boot, not a dark digest)",
+    digestCase[0],
+    /gh-token\.mjs[\s\S]*--purpose feedflag-digest/,
+    "run-timer.sh digest case must mint a purpose-scoped token via the pizza-eagle broker",
+  );
+  assert.match(
+    digestCase[0],
+    /2>>\/tmp\/digest-mint\.log/,
+    "the mint's stderr (metadata, never the token) must go to a log while stdout is captured",
+  );
+  assert.match(
+    digestCase[0],
+    /MINT FAILED/,
+    "a failed mint must alert loudly and exit 1 — never post without a token, never skip silently",
+  );
+  assert.ok(
+    !digestCase[0].includes("command -v gh"),
+    "the gh branch is gone: gh is not installed on this box (verified 2026-10-30), so it was unreachable dead code",
   );
   // Reactions mode: runs collect-reactions.ts UNCHANGED, gated by IN_WINDOW
   // like the other voting-hours legs, and flows through restore/push (it

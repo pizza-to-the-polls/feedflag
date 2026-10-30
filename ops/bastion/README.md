@@ -32,8 +32,9 @@ equivalent — both went dark when the Actions schedule was disabled):**
   pipeline legs. The digest excludes wrong-verdict flags via that corpus,
   so this leg is what keeps the human feedback loop alive.
 
-Deploy both (after the templates land in `/etc/systemd/system/` and
-`FEEDFLAG_DIGEST_TOKEN` is in `.env`):
+Deploy both (after the templates land in `/etc/systemd/system/`, and
+`pizza-to-the-polls/pizza-eagle#45` is deployed on this box so the broker
+knows the `feedflag-digest` purpose — **no** feedflag secret is needed):
 ```
 systemctl daemon-reload
 systemctl enable --now feedflag-digest.timer feedflag-reactions.timer
@@ -41,6 +42,8 @@ systemctl list-timers 'feedflag-*'   # both new units listed
 # Manual digest fire (dry check before 02:00 UTC):
 systemd-run --unit=feedflag-digest-test /opt/feedflag/ops/bastion/run-timer.sh digest
 journalctl -u feedflag-digest-test   # expect "[timer] digest comment posted: <url>"
+# and in the pizza-eagle ledger, a matching mint:
+tail -n 20 /opt/pizza-eagle/state/usage.jsonl | grep 'timer:feedflag-digest'
 ```
 
 ## Deploy model (issue #22)
@@ -79,19 +82,49 @@ keeps `gh-token.mjs` as a fallback; a missing token still `maybe_alert`s loudly
 `/opt/feedflag/.env` on the bastion (`jq -r 'to_entries[] | "\(.key)=\(.value)"'`
 of the secret JSON into the dotenv file), revoke the old PAT.
 
-**Digest credential (issue #31, `FEEDFLAG_DIGEST_TOKEN`):** the digest
-leg's `gh issue comment` on findings issue #5 needs its own scoped
-fine-grained PAT — **issues:write** on `pizza-to-the-polls/feedflag`
-ONLY. Neither existing token covers it: `gh-token.mjs` cannot mint from
-the timer context (listener write-gate, issue #22 notes) and
-`FEEDFLAG_STATE_PUSH_TOKEN` is contents:write (git operations only).
-Same lifecycle as the state-push token: store in Secrets Manager
-`ptp/prod/feedflag/env`, land in `/opt/feedflag/.env`, rotate by minting
-→ merging into the secret → re-syncing the dotenv → revoking the old
-PAT. A missing token is caught by the runner's LOUD boot validation
-(exit 1 + throttled Slack alert), never a silent dark digest. The
-`reactions` leg needs no new credential (`SLACK_BOT_TOKEN` +
-`SLACK_FLAG_CHANNELS` are already in the v5 REQUIRED list).
+**Digest credential (issue #31 → #67): minted, not stored.** The digest
+leg's comment on findings issue #5 authenticates with a **1-hour,
+repo-scoped `issues:write` installation token minted at run time** by
+pizza-eagle's broker:
+
+```
+cd /opt/pizza-eagle/scripts && GH_APP_ID="$(…)" node gh-token.mjs \
+  --repo "$FEEDFLAG_REPO_SLUG" --purpose feedflag-digest
+```
+
+The `feedflag-digest` purpose is a hard-coded binding in `gh-token.mjs`
+(pizza-eagle#44/#45) to one repo, a permission set that is a strict subset
+of the interactive mint, and a `timer:feedflag-digest` ledger identity. It
+needs no `request-auth.json` case file — that gate exists to stop a
+prompt-injected investigation from minting, and a systemd timer has no
+Slack input to inject — and the broker fetches the App PEM from Secrets
+Manager per call, so no key and **no PAT** ever lands in
+`/opt/feedflag/.env`. There is nothing to rotate and nothing to revoke.
+
+`GH_APP_ID` is read from `/etc/pizza-eagle/.env` (the `EnvironmentFiles=` of
+`pizza-eagle.service`) rather than duplicated into
+`ptp/prod/feedflag/env` — two copies of the same id is how they drift.
+
+A failed mint is loud: `maybe_alert` + `exit 1`, so the digest is never
+posted without a token and never silently skipped. Note this is a
+*mode-local* failure — the credential is deliberately **not** in the
+runner's boot `REQUIRED` list, because that gate runs before the mode
+dispatch and exits 1, so a digest-only entry there would have darkened
+every leg (heartbeat, social, peak, hot, govwatch) at the first tick after
+deploy.
+
+`curl` is the only posting path: `gh` is **not installed** on this box
+(verified 2026-10-30; `curl`, `jq`, `flock`, `python3` and `node` are), so
+the earlier `gh issue comment` branch was unreachable dead code and is
+gone. The `reactions` leg needs no credential change (`SLACK_BOT_TOKEN` +
+`SLACK_FLAG_CHANNELS` are already required).
+
+What this does **not** fix: the timer runs as root, and root on this box can
+already reach the App key through the instance role, so root's minting power
+is unchanged. That is `pizza-to-the-polls/pizza-eagle#14` (splitting the
+instance role). The gain here is the absence of a durable secret in a
+world-readable-by-root dotenv, a 1h lifetime, narrower permissions than the
+interactive path, and a per-job ledger identity.
 
 **ExecStart path: the TRACKED script only (issue #24).** Every `feedflag-*.service`
 unit here must ExecStart the tracked runner at `ops/bastion/run-timer.sh`
