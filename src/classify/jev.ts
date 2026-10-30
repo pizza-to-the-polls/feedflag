@@ -22,12 +22,15 @@ import { renderInput } from "./render-input.js";
  * Jev transport hiccup never drops a post.
  */
 
-interface JevChoice {
+export interface JevChoice {
   category: string;
   confidence: number;
 }
 
-function parseJevResponse(content: string, categories: string[]): JevChoice {
+export function parseJevResponse(
+  content: string,
+  categories: string[],
+): JevChoice {
   // Try strict JSON first: {"category": "...", "confidence": 0.82}
   const candidates: string[] = [];
   const first = content.indexOf("{");
