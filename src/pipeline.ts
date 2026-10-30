@@ -224,9 +224,17 @@ export async function buildQueue(
   seen: SeenView,
   opts: RunOptions,
   s: Settings,
+  ignoredAuthors: string[] = [],
 ): Promise<FeedItem[]> {
+  const ignored = new Set(
+    ignoredAuthors.map((a) => a.replace(/^@/, "").toLowerCase()),
+  );
   let queue = dedupeById(fetched)
     .filter((it) => !seen.has(it.id))
+    .filter(
+      (it) =>
+        !ignored.has(it.authorHandle.replace(/^@/, "").toLowerCase()),
+    )
     .sort((a, b) => b.postedAt.localeCompare(a.postedAt));
   if (opts.sourceFilter) {
     queue = queue.filter(
@@ -451,7 +459,13 @@ export async function runPipeline(
   // 2) Dedupe, filter seen, newest-first, cap the run.
   const seen = new SeenStore(s.dataDir);
   await seen.load();
-  const queue = await buildQueue(fetched, seen, opts, s);
+  const queue = await buildQueue(
+    fetched,
+    seen,
+    opts,
+    s,
+    cfg.ignoredAuthors ?? [],
+  );
 
   // 3) Describe (OpenRouter vision) + classify (Jev / fallback) + resolve the
   //    place being discussed (issue #35 — after classify, before emit).

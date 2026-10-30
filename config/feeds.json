@@ -49,5 +49,8 @@
   "flagCategories": [
     "poll_line_report",
     "wait_time_page_mention"
+  ],
+  "ignoredAuthors": [
+    "pizzatothepolls"
   ]
 }
