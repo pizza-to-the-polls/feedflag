@@ -431,6 +431,7 @@ console.log("data-branch separation regression tests (issue #20)\n");
     "restore_state",
     "push_state",
     "rotate_observations",
+    "sync_env",
   ];
   for (const fn of REQUIRED_FNS) {
     assert.ok(
@@ -463,6 +464,21 @@ console.log("data-branch separation regression tests (issue #20)\n");
     runner,
     /flock -w \d+ 9/,
     "run-timer.sh must serialize legs with flock (partial-state clobber regression)",
+  );
+  // The env auto-sync is the boot path that makes "save the token in Secrets
+  // Manager" sufficient (2026-10-30: saves never reached the box — the .env
+  // copy was manual and the instance role couldn't read the secret). It must
+  // run BEFORE `source .env` and keep the current file on any failure.
+  const envSync = runner.slice(0, runner.indexOf("set -a; source .env"));
+  assert.ok(
+    envSync.includes("sync_env") &&
+      envSync.includes("secretsmanager get-secret-value"),
+    "run-timer.sh must sync .env from Secrets Manager before sourcing it (save-never-sticks regression)",
+  );
+  assert.match(
+    runner,
+    /secretsmanager get-secret-value[\s\S]*?--secret-id ptp\/prod\/feedflag\/env/,
+    "the sync must read the secret the operator actually saves into",
   );
   // Rotation is load-bearing post-run plumbing: invoked only after a
   // successful emit, so un-POSTed rows are never rotated away.
