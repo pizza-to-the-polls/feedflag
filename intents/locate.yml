@@ -1,0 +1,26 @@
+id: feedflag.intent/locate@1
+module: src/locate/
+layer: intelligence
+decision: "Which concrete polling place is this observation actually about — or is it none of them?"
+consumer: "src/pipeline.ts (additive FlaggedItem.resolvedLocation on the social + govt legs) -> src/emit/records.ts (observation location.resolved JSONB) -> src/notify/format.ts (placeLine + flagPayload.resolved_place, both behind one confidence floor)"
+contract:
+  input: "ResolveInput { domain, description or govt raw point label, sourceUrl, sourceRef, author, registryLocationId } flattened to text by flattenResolveText"
+  output: "ResolvedLocation { method: registry | fuzzy | jev | no-match, confidence 0..1, address?, name?, location_id?, canonical_id? }"
+  invariants:
+    - "deterministic short-circuits first: registry join (govt, confidence 0.97), then clear-winner similarity and a recent-context tiebreak - neither costs a model call"
+    - "only ambiguous mentions reach Jev (0.85 <= score, no clear winner), over at most RESOLVE_MAX_CANDIDATES (default 25) candidates - Jev's choice-cardinality guard"
+    - "Jev is string-in, typed-value-out: { location_id | null, confidence }; an id outside the candidate set is a contract violation and throws (D5, no prose)"
+    - "any Jev failure (transport, parse, budget) degrades to the deterministic pick or NO_MATCH - never a dropped or stalled observation; mirrors the classify composite"
+    - "no-match is a normal outcome: { method: no-match, confidence: 0 }, the raw label is preserved verbatim, and ingestion is never blocked"
+    - "per-run Jev call cap RESOLVE_JEV_MAX_CALLS (default 200); registry joins and deterministic picks are not metered"
+    - "pizzabase access is strictly GET (locations, wait_time_sources) - the pipeline writes only its own observation rows, via the existing emit path"
+    - "resolution is additive: today's location raw / county / state keys stay as they were, and location is JSONB so no schema migration is required"
+    - "the place reaches volunteers through ONE floor - max(PLACE_SHOW_CONFIDENCE 0.6, RESOLVE_SLACK_MIN_CONFIDENCE default 0.8) - on both the text line and the payload field"
+  fallback: "deterministic similarity pick (method fuzzy), else NO_MATCH; JEV_RESOLVE_MODEL='' disables model-assisted disambiguation entirely and the chain stays deterministic"
+  sla:
+    latency_ms_p95: 120000
+    freshness: "n/a — per-observation and stateless apart from the recent-context read of the local bus"
+    cost_per_week_usd_max: 1
+  pii: "no new PII — resolves against pizzabase locations rows and emits address / name / location_id / canonical_id only, never contact data (D6)"
+tests: scripts/test-locate.ts
+status: implemented

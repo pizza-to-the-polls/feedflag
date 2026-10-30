@@ -13,6 +13,11 @@ import {
 } from "./store/jsonl.js";
 import { toObservation } from "./emit/records.js";
 import {
+  NO_MATCH,
+  createResolveDeps,
+  resolveLocation,
+} from "./locate/resolve.js";
+import {
   fetchSiteReportsSince,
   reportsToObservations,
 } from "./ingest/reports.js";
@@ -89,8 +94,10 @@ export async function runPipeline(opts: RunOptions = {}) {
     `[feedflag] ${queue.length} new posts to process (${fetched.length} fetched)`,
   );
 
-  // 3) Describe (OpenRouter vision) + classify (Jev / fallback).
+  // 3) Describe (OpenRouter vision) + classify (Jev / fallback) + resolve the
+  //    place being discussed (issue #35 — after classify, before emit).
   const classifier = resolveClassifier();
+  const resolver = createResolveDeps();
   const notifier = opts.skipNotify || opts.dryRun ? null : resolveNotifier();
   const flagged: FlaggedItem[] = [];
   const processed = await mapLimit(
@@ -113,7 +120,25 @@ export async function runPipeline(opts: RunOptions = {}) {
           return null;
         });
       if (!classification) return null;
-      const f: FlaggedItem = { item, description, classification };
+      // Location triangulation (issue #35): resolve the actual place the post
+      // discusses. Additive (FlaggedItem.resolvedLocation); never blocks —
+      // resolveLocation degrades internally, .catch is belt-and-braces.
+      const resolvedLocation = await resolveLocation(
+        {
+          domain: "social",
+          description,
+          sourceUrl: item.url ?? null,
+          sourceRef: item.source,
+          author: item.authorHandle,
+        },
+        resolver,
+      ).catch(() => NO_MATCH);
+      const f: FlaggedItem = {
+        item,
+        description,
+        classification,
+        resolvedLocation,
+      };
       const isFlag =
         classification.relevant &&
         classification.confidence >= settings.flagConfidence &&
@@ -125,6 +150,10 @@ export async function runPipeline(opts: RunOptions = {}) {
   const done = processed.filter((x): x is FlaggedItem => x !== null);
 
   // 4) Deliver + persist state + emit aggregator-ready observations.
+  //    Location resolution already ran inside the mapLimit closure above
+  //    (issue #35 — after classify, before emit), so `done`'s
+  //    resolvedLocation feeds both the Slack place line and
+  //    toObservation's additive `location.resolved` block.
   for (const f of flagged) {
     if (!opts.dryRun) await appendFlagged(f);
     const line =
@@ -166,7 +195,7 @@ export async function runPipeline(opts: RunOptions = {}) {
     }
   }
 
-  // 6) Persist observations + state.
+  // 6) Persist observations + state (location-resolved in step 3).
   if (!opts.dryRun) {
     await appendObservations([...done.map(toObservation), ...crowd]);
     await writeSyncStamp();
