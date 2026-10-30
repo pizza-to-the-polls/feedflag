@@ -10,10 +10,41 @@ Primary scheduler (GitHub Actions is the 30-min backup). systemd timers on
 | `feedflag-govwatch.timer` | `*:0/30` | none (24/7) → ungated govwatch extraction |
 | `feedflag-social.timer` | `*:0/15` | same hour gate → social pipeline |
 | `feedflag-hot.timer` | `*:0/15` | date 2026-11-02..04 → govwatch extraction (hot mode) |
+| `feedflag-digest.timer` | `*-*-* 02:00:00` | none (daily) → findings digest comment on issue #5 + Slack mirror (issue #31; the ONLY writer of issue #5) |
+| `feedflag-reactions.timer` | `*:20` | hour in 12:00–03:59 UTC (same IN_WINDOW gate as social/peak) → collect Slack 👍/👎 labels into `data/labels.jsonl` (issue #31) |
 
 Net cadence: **govwatch + social both 15-min during voting hours only;
 overnight both dark** (2026-10-27 user call — no polling when polls are
 closed). Nov 2–4 hot mode: 15-min 24/7, date-guarded.
+
+**Issue #31 legs (bastion ports of the feedflag.yml steps that had no timer
+equivalent — both went dark when the Actions schedule was disabled):**
+
+- `feedflag-digest` — daily 02:00 UTC, `scripts/digest.ts --hours 26` +
+  `extract-wait-times.ts --report-only` appended, posted as a comment on
+  findings issue #5, mirrored to Slack with the comment URL. **Read-only**
+  leg: consumes the state files the 15-min legs keep current, writes only
+  to the issue + Slack — no `restore_state` / `push_state` / emit-to-DB.
+- `feedflag-reactions` — hourly at :20 during voting hours, runs
+  `scripts/collect-reactions.ts` unchanged. Appends to the box's live
+  `data/labels.jsonl` (and its `data/reactions-sync.json` cursor), so it
+  DOES `restore_state` + `push_state` + emit — same state contract as the
+  pipeline legs. The digest excludes wrong-verdict flags via that corpus,
+  so this leg is what keeps the human feedback loop alive.
+
+Deploy both (after the templates land in `/etc/systemd/system/`, and
+`pizza-to-the-polls/pizza-eagle#45` is deployed on this box so the broker
+knows the `feedflag-digest` purpose — **no** feedflag secret is needed):
+```
+systemctl daemon-reload
+systemctl enable --now feedflag-digest.timer feedflag-reactions.timer
+systemctl list-timers 'feedflag-*'   # both new units listed
+# Manual digest fire (dry check before 02:00 UTC):
+systemd-run --unit=feedflag-digest-test /opt/feedflag/ops/bastion/run-timer.sh digest
+journalctl -u feedflag-digest-test   # expect "[timer] digest comment posted: <url>"
+# and in the pizza-eagle ledger, a matching mint:
+tail -n 20 /opt/pizza-eagle/state/usage.jsonl | grep 'timer:feedflag-digest'
+```
 
 ## Deploy model (issue #22)
 
@@ -50,6 +81,50 @@ keeps `gh-token.mjs` as a fallback; a missing token still `maybe_alert`s loudly
 (throttled 1h). Rotation: mint a new PAT, merge it into the secret, re-sync
 `/opt/feedflag/.env` on the bastion (`jq -r 'to_entries[] | "\(.key)=\(.value)"'`
 of the secret JSON into the dotenv file), revoke the old PAT.
+
+**Digest credential (issue #31 → #67): minted, not stored.** The digest
+leg's comment on findings issue #5 authenticates with a **1-hour,
+repo-scoped `issues:write` installation token minted at run time** by
+pizza-eagle's broker:
+
+```
+cd /opt/pizza-eagle/scripts && GH_APP_ID="$(…)" node gh-token.mjs \
+  --repo "$FEEDFLAG_REPO_SLUG" --purpose feedflag-digest
+```
+
+The `feedflag-digest` purpose is a hard-coded binding in `gh-token.mjs`
+(pizza-eagle#44/#45) to one repo, a permission set that is a strict subset
+of the interactive mint, and a `timer:feedflag-digest` ledger identity. It
+needs no `request-auth.json` case file — that gate exists to stop a
+prompt-injected investigation from minting, and a systemd timer has no
+Slack input to inject — and the broker fetches the App PEM from Secrets
+Manager per call, so no key and **no PAT** ever lands in
+`/opt/feedflag/.env`. There is nothing to rotate and nothing to revoke.
+
+`GH_APP_ID` is read from `/etc/pizza-eagle/.env` (the `EnvironmentFiles=` of
+`pizza-eagle.service`) rather than duplicated into
+`ptp/prod/feedflag/env` — two copies of the same id is how they drift.
+
+A failed mint is loud: `maybe_alert` + `exit 1`, so the digest is never
+posted without a token and never silently skipped. Note this is a
+*mode-local* failure — the credential is deliberately **not** in the
+runner's boot `REQUIRED` list, because that gate runs before the mode
+dispatch and exits 1, so a digest-only entry there would have darkened
+every leg (heartbeat, social, peak, hot, govwatch) at the first tick after
+deploy.
+
+`curl` is the only posting path: `gh` is **not installed** on this box
+(verified 2026-10-30; `curl`, `jq`, `flock`, `python3` and `node` are), so
+the earlier `gh issue comment` branch was unreachable dead code and is
+gone. The `reactions` leg needs no credential change (`SLACK_BOT_TOKEN` +
+`SLACK_FLAG_CHANNELS` are already required).
+
+What this does **not** fix: the timer runs as root, and root on this box can
+already reach the App key through the instance role, so root's minting power
+is unchanged. That is `pizza-to-the-polls/pizza-eagle#14` (splitting the
+instance role). The gain here is the absence of a durable secret in a
+world-readable-by-root dotenv, a 1h lifetime, narrower permissions than the
+interactive path, and a per-job ledger identity.
 
 **ExecStart path: the TRACKED script only (issue #24).** Every `feedflag-*.service`
 unit here must ExecStart the tracked runner at `ops/bastion/run-timer.sh`
@@ -103,7 +178,8 @@ commits). Any `git add -f data` or `git commit` in the runner is a regression.
 - Setup: `aws ssm send-command` with base64'd script (quoting-safe); unit
   files in `/etc/systemd/system/` are deployed from the templates in this
   directory (source of truth — see "ExecStart path" above), then
-  `systemctl daemon-reload`.
+  `systemctl daemon-reload` + `systemctl enable --now` each new timer
+  (feedflag-digest + feedflag-reactions, issue #31).
 - Dedupe (seen.json + ON CONFLICT + change-detection) makes overlapping
   runs with GH Actions harmless.
 

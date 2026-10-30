@@ -1,0 +1,9 @@
+[Unit]
+Description=feedflag daily findings digest (issue #5 comment + Slack mirror)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/feedflag
+ExecStart=/opt/feedflag/ops/bastion/run-timer.sh digest
+User=root

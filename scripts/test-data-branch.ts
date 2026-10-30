@@ -325,12 +325,30 @@ console.log("data-branch separation regression tests (issue #20)\n");
   const entries = readdirSync(bastionDir).sort();
   const serviceFiles = entries.filter((e) => e.endsWith(".service"));
   const timerFiles = entries.filter((e) => e.endsWith(".timer"));
-  const MODES = ["heartbeat", "govwatch", "peak", "social", "hot"];
+  // Issue #31 adds the two feedflag.yml steps that had no bastion
+  // equivalent: digest (daily 02:00 UTC findings digest + Slack mirror —
+  // the only writer of findings issue #5) and reactions (Slack 👍/👎 →
+  // data/labels.jsonl). Both go dark when the Actions schedule is off.
+  const MODES = [
+    "heartbeat",
+    "govwatch",
+    "peak",
+    "social",
+    "hot",
+    "digest",
+    "reactions",
+  ];
 
   assert.ok(
-    serviceFiles.length >= 5,
-    `expected the 5 timer service templates in ops/bastion/, found ${serviceFiles.length}: ${serviceFiles.join(", ")}`,
+    serviceFiles.length >= MODES.length,
+    `expected ${MODES.length} timer service templates in ops/bastion/, found ${serviceFiles.length}: ${serviceFiles.join(", ")}`,
   );
+  for (const mode of MODES) {
+    assert.ok(
+      serviceFiles.includes(`feedflag-${mode}.service`),
+      `ops/bastion/feedflag-${mode}.service must exist (mode ${mode} is implemented by run-timer.sh)`,
+    );
+  }
 
   for (const file of serviceFiles) {
     const text = readFileSync(join(bastionDir, file), "utf8");
@@ -356,11 +374,30 @@ console.log("data-branch separation regression tests (issue #20)\n");
       `${file}: matching ${timer} template must exist in ops/bastion/`,
     );
     const timerText = readFileSync(join(bastionDir, timer), "utf8");
-    assert.match(
-      timerText,
-      /OnCalendar=\*:0\/(15|30)/,
-      `${timer}: must carry the expected OnCalendar cadence`,
-    );
+    // Cadence per mode (issue #31): digest is once daily at 02:00 UTC
+    // (same one-per-day gate as the workflow step), reactions is hourly at
+    // :20 (offset off the busy :0/:15/:30 marks), everything else rides the
+    // 15/30-min slice boundaries.
+    const mode = match[2]!;
+    if (mode === "digest") {
+      assert.match(
+        timerText,
+        /OnCalendar=\*-\*-\* 02:00:00/,
+        `${timer}: digest must fire daily at 02:00 UTC (parity with the feedflag.yml 02:00 UTC gate)`,
+      );
+    } else if (mode === "reactions") {
+      assert.match(
+        timerText,
+        /OnCalendar=\*:20/,
+        `${timer}: reactions must fire hourly at :20 (offset from the :0/:15/:30 marks)`,
+      );
+    } else {
+      assert.match(
+        timerText,
+        /OnCalendar=\*:0\/(15|30)/,
+        `${timer}: must carry the expected OnCalendar cadence`,
+      );
+    }
     assert.match(
       timerText,
       /Persistent=true/,
@@ -368,8 +405,103 @@ console.log("data-branch separation regression tests (issue #20)\n");
     );
   }
 
+  // The runner must implement every mode a unit ExecStarts — a unit fired
+  // against an unimplemented mode exits 1 on the `unknown mode` branch, a
+  // silent dark leg (issue #31: digest + reactions were exactly the two
+  // feedflag.yml steps with no bastion case).
+  const runnerText = readFileSync(join(bastionDir, "run-timer.sh"), "utf8");
+  for (const mode of MODES) {
+    assert.match(
+      runnerText,
+      new RegExp(`^\\s{2}${mode}\\)`, "m"),
+      `run-timer.sh must implement the "${mode}" mode (case label)`,
+    );
+  }
+  // Digest mode content parity with the feedflag.yml "Post findings digest"
+  // step: 26h digest + --report-only addendum + issue #5 comment + Slack
+  // mirror; and it needs its own credential (issues:write PAT) in the boot
+  // gate so a missing token fails LOUDLY instead of going dark.
+  const digestCase = runnerText.match(/^  digest\)[\s\S]*?^    ;;/m);
+  assert.ok(digestCase, "run-timer.sh: digest case block must exist");
+  for (const [needle, what] of [
+    ["scripts/digest.ts --hours 26", "26h digest build"],
+    ["extract-wait-times.ts --report-only", "govwait board addendum"],
+    [
+      "api.github.com/repos/",
+      "issue #5 comment post (curl — this box has no gh)",
+    ],
+    ["--purpose feedflag-digest", "purpose-scoped token mint"],
+    ["SLACK_WEBHOOK_URL", "Slack mirror"],
+  ] as const) {
+    assert.ok(
+      digestCase[0].includes(needle),
+      `run-timer.sh digest case must include ${what} (${needle})`,
+    );
+  }
+  assert.match(
+    digestCase[0],
+    /exit 0/,
+    "run-timer.sh digest case must exit before the shared post-run block (read-only: no emit/push)",
+  );
+  // The boot env gate runs BEFORE the mode dispatch and exits 1, so it must
+  // never list a credential only one mode needs. FEEDFLAG_DIGEST_TOKEN in
+  // REQUIRED would fail EVERY leg (heartbeat, social, peak, hot, govwatch) at
+  // the first tick after deploy — the deploy pull above resets to origin/main,
+  // so the gate change goes live on its own, ≤15 min after merge, with no unit
+  // install required. The digest mints a 1h repo-scoped issues:write token at
+  // run time instead (pizza-eagle#44/#45), so no durable PAT exists to require.
+  assert.ok(
+    !/REQUIRED="[^"\n]*FEEDFLAG_DIGEST_TOKEN/.test(runnerText),
+    "run-timer.sh boot env gate must NOT require a digest-only credential — it exits 1 for every mode, so merging one darkens all the legs",
+  );
+  assert.ok(
+    !digestCase[0].includes("FEEDFLAG_DIGEST_TOKEN"),
+    "the digest must not read a long-lived PAT anywhere, including as a fallback",
+  );
+  assert.match(
+    digestCase[0],
+    /gh-token\.mjs[\s\S]*--purpose feedflag-digest/,
+    "run-timer.sh digest case must mint a purpose-scoped token via the pizza-eagle broker",
+  );
+  assert.match(
+    digestCase[0],
+    /2>>\/tmp\/digest-mint\.log/,
+    "the mint's stderr (metadata, never the token) must go to a log while stdout is captured",
+  );
+  assert.match(
+    digestCase[0],
+    /MINT FAILED/,
+    "a failed mint must alert loudly and exit 1 — never post without a token, never skip silently",
+  );
+  assert.ok(
+    !digestCase[0].includes("command -v gh"),
+    "the gh branch is gone: gh is not installed on this box (verified 2026-10-30), so it was unreachable dead code",
+  );
+  // Reactions mode: runs collect-reactions.ts UNCHANGED, gated by IN_WINDOW
+  // like the other voting-hours legs, and flows through restore/push (it
+  // appends to data/labels.jsonl — state).
+  const reactionsCase = runnerText.match(/^  reactions\)[\s\S]*?^    ;;/m);
+  assert.ok(reactionsCase, "run-timer.sh: reactions case block must exist");
+  assert.ok(
+    reactionsCase[0].includes("scripts/collect-reactions.ts"),
+    "run-timer.sh reactions case must run scripts/collect-reactions.ts unchanged",
+  );
+  assert.match(
+    reactionsCase[0],
+    /IN_WINDOW/,
+    "run-timer.sh reactions case must gate on voting hours (IN_WINDOW, like peak/social)",
+  );
+  assert.match(
+    reactionsCase[0],
+    /restore_state/,
+    "run-timer.sh reactions case must restore shared state (it reads data/labels.jsonl to dedupe)",
+  );
+
   console.log(
     `  ✓ all ${serviceFiles.length} service templates ExecStart the tracked runner (issue #24)`,
+  );
+  console.log(
+    "  ✓ runner implements digest (issue #5 + Slack, read-only) and reactions (labels.jsonl, gated) modes (issue #31)",
   );
 }
 

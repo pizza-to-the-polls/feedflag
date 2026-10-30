@@ -1,0 +1,9 @@
+[Unit]
+Description=feedflag digest daily at 02:00 UTC (one digest per day — US day complete, lands for morning coffee)
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

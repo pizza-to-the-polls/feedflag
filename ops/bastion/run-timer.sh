@@ -36,6 +36,10 @@ if ! flock -w 600 9; then
   exit 0
 fi
 
+# Digest targets (issue #31) — overridable from .env; never REQUIRED.
+FINDINGS_ISSUE="${FINDINGS_ISSUE:-5}"
+FEEDFLAG_REPO_SLUG="${FEEDFLAG_REPO_SLUG:-pizza-to-the-polls/feedflag}"
+
 ALERT_MARKER=/opt/feedflag/data/.alert-throttle
 maybe_alert() {
   echo "[timer] ALERT: $1" >&2
@@ -263,12 +267,31 @@ push_state() {
     # push silently never fired its whole life (2026-10-28 finding). The
     # remediation is the FEEDFLAG_STATE_PUSH_TOKEN key in Secrets Manager
     # ptp/prod/feedflag/env + a .env re-sync on the bastion.
-    maybe_alert "feedflag $(hostname): timer state push SKIPPED — no FEEDFLAG_STATE_PUSH_TOKEN ($MODE). Add the scoped state-push PAT to Secrets Manager ptp/prod/feedflag/env and re-sync /opt/feedflag/.env on the bastion — box state is NOT backed up to git. (gh-token.mjs cannot mint from the timer context — listener write-gate.)"
+    maybe_alert "feedflag $(hostname): timer state push SKIPPED — no FEEDFLAG_STATE_PUSH_TOKEN ($MODE). Add the scoped state-push PAT to Secrets Manager ptp/prod/feedflag/env and re-sync /opt/feedflag/.env on the bastion — box state is NOT backed up to git. (Since pizza-eagle#45 a timer CAN mint via gh-token.mjs --purpose, so this PAT could become a contents:write purpose mint — tracked as a follow-up, not done here.)"
   fi
+}
+
+# Voting-hours gate (2026-10-27 postmortem: overnight runs are dark — no
+# polling when polls are closed). True when the current UTC hour is inside
+# the 12:00–03:59 UTC window (7am–11pm ET). Used by the peak, social, and
+# reactions legs (issue #31); an undefined gate here would throw "command
+# not found" (exit 127 → falsy) and silently skip every gated leg.
+IN_WINDOW() {
+  local h
+  h=$(date -u +%H)
+  [ "$h" -ge 12 ] || [ "$h" -le 3 ]
 }
 
 # ---- boot: heartbeat + LOUD env validation -------------------------------
 heartbeat
+# The digest no longer needs a credential here: it mints a 1h repo-scoped
+# token at run time via pizza-eagle's broker (see the digest) mode below).
+# FEEDFLAG_DIGEST_TOKEN was removed from REQUIRED on purpose — this gate runs
+# BEFORE the mode dispatch and exits 1, so a digest-only credential listed here
+# would have failed EVERY leg (heartbeat, social, peak, hot, govwatch) at the
+# first tick after deploy, since the deploy pull above resets to origin/main.
+# Per-mode REQUIRED subsets are still a later refactor; until then nothing
+# mode-specific belongs in this list.
 REQUIRED="OPENROUTER_API_KEY APIFY_API_TOKEN PIZZABASE_API_URL PIZZABASE_API_KEY SLACK_WEBHOOK_URL SLACK_BOT_TOKEN SLACK_FLAG_CHANNELS"
 MISSING=""
 for v in $REQUIRED; do
@@ -286,6 +309,99 @@ case $MODE in
   peak)     if IN_WINDOW; then restore_state; node --import tsx scripts/extract-wait-times.ts; else echo "peak: outside voting hours ($(date -u +%H) UTC)"; exit 0; fi ;;
   social)   if IN_WINDOW; then restore_state; node --import tsx src/index.ts; else echo "social: outside voting hours ($(date -u +%H) UTC)"; exit 0; fi ;;
   hot)      if date -u +%Y-%m-%d | grep -qE '2026-11-0[234]'; then restore_state; node --import tsx scripts/extract-wait-times.ts; else echo "hot: not in election window"; exit 0; fi ;;
+  digest)
+    # Issue #31: daily at 02:00 UTC — bastion port of the feedflag.yml
+    # "Post findings digest" step (the ONLY writer of findings issue #5).
+    # Read-only leg: it consumes data/observations.jsonl + data/labels.jsonl
+    # (kept current by the 15-min legs' restore/push cycle) and writes to
+    # git issue #5 + Slack — never to state — so it skips restore_state /
+    # push_state / emit-to-DB entirely and exits before the shared post-run
+    # block. 26h window (02:00 fire covers the full US day + margin),
+    # matching the workflow's --hours 26.
+    echo "[timer] digest: building 26h findings digest"
+    # Hard-fail on generation errors: a partial/empty /tmp/digest.md must
+    # NEVER be posted as an issue #5 comment (that's worse than a stale
+    # digest — the issue is the durable daily surface).
+    if ! node --import tsx scripts/digest.ts --hours 26 > /tmp/digest.md; then
+      maybe_alert "feedflag $(hostname): digest generation FAILED ($MODE) — issue #5 will go stale. journalctl -u feedflag-digest.service"
+      exit 1
+    fi
+    # Addendum: live govwait board from committed state (no keys needed).
+    node --import tsx scripts/extract-wait-times.ts --report-only >> /tmp/digest.md 2>/dev/null || true
+    # Authenticate by MINTING, not by reading a PAT (pizza-eagle#44/#45,
+    # feedflag#67): `--purpose feedflag-digest` returns a 1h token scoped to
+    # this repo with issues:write ONLY, needs no request-auth.json case file,
+    # and leaves no durable secret in /opt/feedflag/.env. The broker fetches
+    # the App PEM from Secrets Manager per call, so the key never lands here.
+    #
+    # gh-token.mjs prints the TOKEN to stdout and metadata to stderr: capture
+    # stdout only, send stderr to a log, and never echo the variable. This
+    # script runs `set -uo pipefail` and must never gain `-x` on this path, or
+    # the token lands in the journal.
+    PE_SCRIPTS=/opt/pizza-eagle/scripts
+    PE_ENV=/etc/pizza-eagle/.env
+    # GH_APP_ID lives in pizza-eagle's env (EnvironmentFiles= on
+    # pizza-eagle.service). Read it; do NOT duplicate it into
+    # ptp/prod/feedflag/env — two copies of the same id is how they drift.
+    PE_APP_ID="${GH_APP_ID:-$(grep -m1 -oE '^GH_APP_ID=.*' "$PE_ENV" 2>/dev/null | cut -d= -f2- | tr -d "\"'")}"
+    DIGEST_TOKEN=""
+    if [ -n "$PE_APP_ID" ] && [ -x "$PE_SCRIPTS/gh-token.mjs" ]; then
+      DIGEST_TOKEN=$(cd "$PE_SCRIPTS" && GH_APP_ID="$PE_APP_ID" node gh-token.mjs \
+        --repo "$FEEDFLAG_REPO_SLUG" --purpose feedflag-digest 2>>/tmp/digest-mint.log) || DIGEST_TOKEN=""
+    fi
+    if [ -z "$DIGEST_TOKEN" ]; then
+      maybe_alert "feedflag $(hostname): digest MINT FAILED ($MODE) — no 1h issues:write token from $PE_SCRIPTS/gh-token.mjs --purpose feedflag-digest (GH_APP_ID read from $PE_ENV). Digest was built but NOT posted; issue #5 will go stale. See /tmp/digest-mint.log and journalctl -u feedflag-digest.service"
+      exit 1
+    fi
+    # curl is the primary path: `gh` is NOT installed on this box (verified
+    # 2026-10-30 — curl, jq, flock, python3 and node are; gh is absent), so the
+    # old `gh issue comment` branch was unreachable in practice and is gone
+    # rather than kept as dead code nobody exercises.
+    COMMENT_URL=$(curl -s -m 15 -X POST \
+      -H "authorization: Bearer $DIGEST_TOKEN" \
+      -H "content-type: application/json" \
+      -d "$(jq -n --arg body "$(cat /tmp/digest.md)" '{body: $body}')" \
+      "https://api.github.com/repos/${FEEDFLAG_REPO_SLUG}/issues/${FINDINGS_ISSUE}/comments" 2>/dev/null \
+      | jq -r '.html_url // empty') || true
+    DIGEST_TOKEN=""   # drop the reference as soon as it is used
+    if [ -z "$COMMENT_URL" ]; then
+      maybe_alert "feedflag $(hostname): digest comment post FAILED ($MODE) — token minted but the API rejected the comment; digest built, issue #5 + Slack mirror skipped. Check the broker purpose feedflag-digest, the repo slug, and curl/jq on the bastion."
+      exit 1
+    fi
+    echo "[timer] digest comment posted: $COMMENT_URL"
+    if [ -n "$SLACK_WEBHOOK_URL" ]; then
+      # Slack mirror with the comment link (same shape as the workflow step:
+      # JSON payload so flagged thumbnails ride via attachments.image_url).
+      if node --import tsx scripts/digest.ts --hours 26 --slack > /tmp/slack-digest.json 2>/dev/null \
+         && jq -e '.text' /tmp/slack-digest.json >/dev/null 2>&1; then
+        jq --arg u "$COMMENT_URL" '.text += "\nDetails: " + $u | .icon_emoji = ":feedflag:"' /tmp/slack-digest.json > /tmp/slack-payload.json 2>/dev/null \
+          && curl -s -m 10 -o /dev/null -X POST -H 'content-type: application/json' \
+               --data-binary @/tmp/slack-payload.json "$SLACK_WEBHOOK_URL" \
+          || maybe_alert "feedflag $(hostname): digest Slack mirror FAILED ($MODE) (non-fatal — issue #5 comment posted: $COMMENT_URL)"
+      else
+        maybe_alert "feedflag $(hostname): digest Slack payload build FAILED ($MODE) (non-fatal — issue #5 comment posted: $COMMENT_URL)"
+      fi
+    fi
+    echo "[timer] digest done head=$DEPLOY_SHA"
+    exit 0
+    ;;
+  reactions)
+    # Issue #31: hourly at :20 — bastion port of the feedflag.yml "Collect
+    # Slack reactions" step (unchanged scripts/collect-reactions.ts). 👍/👎
+    # in the flag channels append to data/labels.jsonl — the corpus the
+    # digest uses to exclude wrong-verdict flags, so without this leg the
+    # human feedback loop dies. Voting-hours gate (same IN_WINDOW as
+    # peak/social — reactions only accrue while flags are posting) at the
+    # :20 offset so it never lands on the busy :0/:15/:30 marks.
+    if IN_WINDOW; then
+      restore_state
+      echo "[timer] reactions: collecting Slack 👍/👎 labels"
+      node --import tsx scripts/collect-reactions.ts
+    else
+      echo "reactions: outside voting hours ($(date -u +%H) UTC)"
+      exit 0
+    fi
+    ;;
   *) echo "unknown mode: $MODE" >&2; exit 1 ;;
 esac
 RUN_RC=$?
