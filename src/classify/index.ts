@@ -1,5 +1,5 @@
 import type { DecisionProvider } from "../types.js";
-import { settings } from "../config.js";
+import { settings, type Settings } from "../config.js";
 import { jevProvider } from "./jev.js";
 import { llmFallbackProvider } from "./llm-fallback.js";
 
@@ -30,11 +30,11 @@ export function composite(
   };
 }
 
-export function resolveClassifier(): DecisionProvider {
-  if (settings.jevModel && settings.openrouterKey) {
+export function resolveClassifier(s: Settings = settings): DecisionProvider {
+  if (s.jevModel && s.openrouterKey) {
     return composite(jevProvider, llmFallbackProvider);
   }
-  if (settings.openrouterKey) {
+  if (s.openrouterKey) {
     console.warn(
       "[feedflag] JEV_MODEL empty — using LLM fallback (uncalibrated confidence)",
     );

@@ -18,5 +18,5 @@ contract:
     freshness: "n/a — per-item, stateless"
     cost_per_week_usd_max: 1
   pii: "author handle + url only (D6) — renderInput sends platform/author/posted_at/caption/hashtags/url, never contactInfo"
-tests: scripts/test-analyze.ts
+tests: scripts/test-classify.ts
 status: implemented

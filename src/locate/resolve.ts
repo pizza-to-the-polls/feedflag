@@ -24,7 +24,7 @@
  * never throws): a resolution problem can only ever cost the resolved block,
  * never the observation.
  */
-import { settings } from "../config.js";
+import { settings, type Settings } from "../config.js";
 import type {
   DescriptionSet,
   Observation,
@@ -97,19 +97,16 @@ export interface ResolveInput {
 
 /** Fresh deps for one run — one PizzabaseApi instance (cache shared across
  *  a source's readings). Callers hold this for the run's lifetime. */
-export function createResolveDeps(): ResolveDeps {
-  const api = settings.pizzabaseUrl
-    ? new PizzabaseApi(settings.pizzabaseUrl, settings.pizzabaseKey)
+export function createResolveDeps(s: Settings = settings): ResolveDeps {
+  const api = s.pizzabaseUrl
+    ? new PizzabaseApi(s.pizzabaseUrl, s.pizzabaseKey)
     : undefined;
   return {
     registry: api,
     locations: api,
     context: new LocalBusContextProvider(),
-    jev:
-      settings.jevResolveModel && settings.openrouterKey
-        ? jevResolveProvider
-        : undefined,
-    maxCandidates: settings.resolveMaxCandidates,
+    jev: s.jevResolveModel && s.openrouterKey ? jevResolveProvider : undefined,
+    maxCandidates: s.resolveMaxCandidates,
   };
 }
 
