@@ -507,6 +507,20 @@ function syntheticFallbackClassification(): Classification {
 // llm-fallback — parse-fail path via the injected transport (no network)
 // ---------------------------------------------------------------------------
 {
+  /**
+   * Wrap a model `content` string in the OpenRouter API envelope.
+   *
+   * The injected transport stands in for `fetch`, so it must return what the
+   * real API returns: `openrouterChat` does `await res.json()` and reads
+   * `choices[0].message.content` BEFORE `llm-fallback` parses that content.
+   * A bare-string body therefore fails in the wrong place — and because
+   * `openrouterChat` retries once with a 25s backoff on any error, the
+   * `SyntaxError` escapes only after burning 25 seconds. Envelope here,
+   * garbage in the content, is how the parse-fail path is actually reached.
+   */
+  const envelope = (content: string): string =>
+    JSON.stringify({ choices: [{ message: { content } }] });
+
   // A transport returning garbage drives the parse-fail path: relevance
   // false, confidence 0, category "irrelevant", provider '<model>:parse-fail'.
   const parseFailSettings = loadSettings({
@@ -515,7 +529,8 @@ function syntheticFallbackClassification(): Classification {
   });
   const parseFailProvider = createLlmFallbackProvider({
     settings: parseFailSettings,
-    transport: async () => new Response("this is not a json object at all"),
+    transport: async () =>
+      new Response(envelope("this is not a json object at all")),
   });
   const failed = await parseFailProvider.classify(
     syntheticDescriptionSet(),
@@ -538,7 +553,9 @@ function syntheticFallbackClassification(): Classification {
     settings: parseFailSettings,
     transport: async () =>
       new Response(
-        '{"category":"poll_line_report","relevant":true,"confidence":0.9}',
+        envelope(
+          '{"category":"poll_line_report","relevant":true,"confidence":0.9}',
+        ),
       ),
   });
   const ok = await jsonProvider.classify(syntheticDescriptionSet(), CATEGORIES);
@@ -558,7 +575,7 @@ function syntheticFallbackClassification(): Classification {
   await assert.rejects(
     createLlmFallbackProvider({
       settings: loadSettings({}),
-      transport: async () => new Response("{}"),
+      transport: async () => new Response(envelope("{}")),
     }).classify(syntheticDescriptionSet(), CATEGORIES),
     /OPENROUTER_API_KEY not configured/,
     "missing key throws before any transport call",
