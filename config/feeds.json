@@ -5,11 +5,7 @@
       "adapter": "apify",
       "actor": "apify/instagram-hashtag-scraper",
       "input": {
-        "hashtags": [
-          "pollingplace",
-          "electionday",
-          "ivoted"
-        ],
+        "hashtags": ["pollingplace", "electionday", "ivoted"],
         "resultsLimit": 15
       }
     },
@@ -18,9 +14,7 @@
       "adapter": "apify",
       "actor": "clockworks/tiktok-hashtag-scraper",
       "input": {
-        "hashtags": [
-          "electionday"
-        ],
+        "hashtags": ["electionday"],
         "resultsPerPage": 10,
         "pages": 1
       }
@@ -30,10 +24,7 @@
       "adapter": "apify",
       "actor": "apidojo/tweet-scraper",
       "input": {
-        "searchTerms": [
-          "poll line",
-          "voting line wait"
-        ],
+        "searchTerms": ["poll line", "voting line wait"],
         "maxItems": 40
       }
     }
@@ -46,11 +37,6 @@
     "community_shoutout",
     "irrelevant"
   ],
-  "flagCategories": [
-    "poll_line_report",
-    "wait_time_page_mention"
-  ],
-  "ignoredAuthors": [
-    "pizzatothepolls"
-  ]
+  "flagCategories": ["poll_line_report", "wait_time_page_mention"],
+  "ignoredAuthors": ["pizzatothepolls"]
 }

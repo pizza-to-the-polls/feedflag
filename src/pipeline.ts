@@ -232,8 +232,7 @@ export async function buildQueue(
   let queue = dedupeById(fetched)
     .filter((it) => !seen.has(it.id))
     .filter(
-      (it) =>
-        !ignored.has(it.authorHandle.replace(/^@/, "").toLowerCase()),
+      (it) => !ignored.has(it.authorHandle.replace(/^@/, "").toLowerCase()),
     )
     .sort((a, b) => b.postedAt.localeCompare(a.postedAt));
   if (opts.sourceFilter) {
