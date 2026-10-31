@@ -5,25 +5,47 @@
  *   npx tsx scripts/emit-to-db.ts [--hours 24] [--dry]
  *
  * Reads data/observations.jsonl, filters to the window (default 24h),
- * batches (≤50), POSTs {"observations":[...]} — snake_case per the API —
- * and prints {inserted, skipped}. Idempotent: re-runs skip existing rows
- * (server-side ON CONFLICT DO NOTHING on source_ref+observed_at).
- * A 413 (body too large) is bisected and retried at half size — a fixed
- * 50-row chunk blows the API body limit whenever the row mix carries fat
- * description blobs (observed 2026-10-28: run-dependent 413s dropped the
- * NEW observations and tripped the TOTAL-FAILURE exit).
+ * batches (≤ EMIT_MAX_ROWS rows, default 50, AND ≤ EMIT_BYTE_BUDGET
+ * serialized bytes, default 90000), POSTs {"observations":[...]} —
+ * snake_case per the API — and prints {inserted, skipped}. Idempotent:
+ * re-runs skip existing rows (server-side ON CONFLICT DO NOTHING on
+ * source_ref+observed_at).
+ *
+ * Byte-budget batching (issue #76): the old fixed 50-row chunks blew the
+ * API's ~100kb body limit whenever the row mix carried fat description
+ * blobs, tripping the 413 bisect on nearly every leg — a 20-30/hr
+ * PayloadTooLargeError drumbeat in the pizzabase logs that looked like
+ * total data loss and buried real errors. Chunks are now cut by
+ * serialized UTF-8 bytes (Buffer.byteLength — string .length undercounts
+ * multibyte captions) so the request fits the server's body limit on the
+ * FIRST attempt. The 413 bisect remains as the safety net for the one case
+ * batching cannot fix: a single row that alone exceeds the budget.
  *
  * Failure is non-fatal to the pipeline (JSONL stays the local audit copy);
  * this script exits 0 with a warning so CI runs stay green.
  */
 import { readFileSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { hasGovtEvidence } from "../src/govt/evidence.js";
 
 const DATA_DIR = resolve(process.env.DATA_DIR ?? "./data");
 const API = (process.env.PIZZABASE_API_URL ?? "").replace(/\/+$/, "");
 const TOKEN = process.env.PIZZABASE_API_KEY ?? "";
 const DRY = process.argv.includes("--dry");
+
+// Byte budget for one request body. body-parser's default limit is '100kb'
+// (102400 bytes); 90000 leaves headroom for the envelope. Env-overridable so
+// a future server-side limit change is a config change, not a code change.
+const BYTE_BUDGET = (() => {
+  const raw = Number(process.env.EMIT_BYTE_BUDGET ?? 90000);
+  return Number.isFinite(raw) && raw > 0 ? raw : 90000;
+})();
+// Secondary bound: rows per chunk, unchanged from the pre-#76 behaviour.
+const MAX_ROWS = (() => {
+  const raw = Number(process.env.EMIT_MAX_ROWS ?? 50);
+  return Number.isFinite(raw) && raw > 0 ? raw : 50;
+})();
 
 const HOURS = Number(
   (() => {
@@ -141,10 +163,53 @@ interface SendTotals {
   skipped: number;
 }
 
+/**
+ * Cut rows into request-sized chunks under BOTH bounds: serialized UTF-8
+ * bytes (primary, #76 — the server rejects bodies over ~100kb) and rows per
+ * chunk (secondary). Pure and exported for tests.
+ *
+ * A single row that alone exceeds the byte budget still gets its own chunk —
+ * deliberately: the post() → 413 → bisect → single-row-skip path is the
+ * safety net that reports it by source_ref, and it must not block the rows
+ * behind it.
+ */
+export function chunkByBudget(
+  rows: Record<string, unknown>[],
+  byteBudget = BYTE_BUDGET,
+  maxRows = MAX_ROWS,
+): Record<string, unknown>[][] {
+  const envelope = Buffer.byteLength(
+    JSON.stringify({ observations: [] }),
+    "utf8",
+  );
+  const chunks: Record<string, unknown>[][] = [];
+  let cur: Record<string, unknown>[] = [];
+  let curBytes = envelope;
+  for (const row of rows) {
+    // +1 for the comma the row adds when it is not the array's first element
+    const rowBytes =
+      Buffer.byteLength(JSON.stringify(row), "utf8") + (cur.length ? 1 : 0);
+    if (
+      cur.length > 0 &&
+      (curBytes + rowBytes > byteBudget || cur.length >= maxRows)
+    ) {
+      chunks.push(cur);
+      cur = [];
+      curBytes = envelope;
+    }
+    cur.push(row);
+    curBytes += rowBytes;
+  }
+  if (cur.length) chunks.push(cur);
+  return chunks;
+}
+
 /** POST a chunk, bisecting on 413 (payload too large) until rows fit.
  *  Other failures mark the whole chunk unsent (as before). A single row
  *  that still 413s is skipped loudly — it never sinks the rest of the
- *  batch or the TOTAL-FAILURE exit heuristic. */
+ *  batch or the TOTAL-FAILURE exit heuristic. With #76's byte-budget
+ *  batching this fires only for a genuinely oversize single row, never
+ *  in the normal path. */
 async function sendChunk(rows: Record<string, unknown>[]): Promise<SendTotals> {
   if (!rows.length) return { sent: 0, inserted: 0, skipped: 0 };
   const r = await post(rows);
@@ -217,8 +282,8 @@ const main = async () => {
   let inserted = 0;
   let skipped = 0;
   let sent = 0;
-  for (let i = 0; i < batch.length; i += 50) {
-    const r = await sendChunk(batch.slice(i, i + 50));
+  for (const chunk of chunkByBudget(batch)) {
+    const r = await sendChunk(chunk);
     inserted += r.inserted;
     skipped += r.skipped;
     sent += r.sent;
@@ -244,7 +309,14 @@ const main = async () => {
   }
 };
 
-main().catch((err) => {
-  console.error(`[emit] FATAL: ${err?.stack ?? err}`);
-  process.exit(1);
-});
+// Run only when executed directly — importing the module (the test suite)
+// must not trigger a real emit.
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  main().catch((err) => {
+    console.error(`[emit] FATAL: ${err?.stack ?? err}`);
+    process.exit(1);
+  });
+}
