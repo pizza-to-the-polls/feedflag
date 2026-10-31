@@ -44,6 +44,31 @@ maybe_alert() {
   fi
 }
 
+heartbeat() {
+  aws cloudwatch put-metric-data --namespace Feedflag --metric-name Heartbeat \
+    --value 1 --unit Count --region us-west-2 >/dev/null 2>&1 || true
+}
+
+# ── heartbeat: LOCK-FREE, by design ──────────────────────────────────────
+# The heartbeat is the dead-man signal: ONE CloudWatch put, no state files,
+# no tree access — nothing the single-flight lock exists to protect. It
+# exits BEFORE the lock because waiting is fatal to it: the anti-wedge
+# commit caps this unit at TimeoutStartSec=2min (a wedged heartbeat must
+# die fast — election-night 2026-10-31), while the lock wait is 600s (#64:
+# working-Apify peak legs run 6+ min). A heartbeat queued behind the
+# govt/peak legs on every :00/:30 tick was hard-killed at 120s 2-4x/hour
+# with "Failed with result 'timeout'" — and because the boot-time heartbeat
+# call sat AFTER the lock, those killed ticks never posted the CW metric
+# either: the dead-man went dark while legs were merely busy. Posting
+# lock-free fixes both — the metric flows during long AND wedged legs, and
+# the unit exits in ~2s. The deploy pull is redundant on heartbeat ticks:
+# the other seven fires per hour own it.
+if [ "$MODE" = "heartbeat" ]; then
+  heartbeat
+  echo "[timer] heartbeat only (metric posted, lock-free)"
+  exit 0
+fi
+
 exec 9>/opt/feedflag/.run-lock
 if ! flock -w 600 9; then
   echo "[timer] another feedflag leg holds the run lock >5min — skipping this tick ($MODE)"
@@ -164,11 +189,6 @@ PY
 sync_env
 
 set -a; source .env; set +a
-
-heartbeat() {
-  aws cloudwatch put-metric-data --namespace Feedflag --metric-name Heartbeat \
-    --value 1 --unit Count --region us-west-2 >/dev/null 2>&1 || true
-}
 
 # Voting-hours gate for the peak/social legs (7am–11pm ET = 12:00–03:59 UTC,
 # bumped 2026-11-01 post-DST). NOTE: PR #29 accidentally deleted this
@@ -313,7 +333,7 @@ fi
 
 # ---- the work --------------------------------------------------------------
 case $MODE in
-  heartbeat) echo "[timer] heartbeat only"; exit 0 ;;
+  # heartbeat: handled lock-free above — see the heartbeat block comment.
   govwatch) restore_state; node --import tsx scripts/extract-wait-times.ts ;;
   peak)     if IN_WINDOW; then restore_state; node --import tsx scripts/extract-wait-times.ts; else echo "peak: outside voting hours ($(date -u +%H) UTC)"; exit 0; fi ;;
   social)   if IN_WINDOW; then restore_state; node --import tsx src/index.ts; else echo "social: outside voting hours ($(date -u +%H) UTC)"; exit 0; fi ;;
