@@ -7,3 +7,11 @@ Type=oneshot
 WorkingDirectory=/opt/feedflag
 ExecStart=/opt/feedflag/ops/bastion/run-timer.sh hot
 User=root
+# 2026-10-31 election-night wedge: a peak leg spun a full core holding the
+# run-lock until a manual EC2 reboot; memory pressure then OOM'd the SSM
+# agent + pizza-eagle (Retool tunnel stranded). TimeoutStartSec hard-kills
+# a wedged leg -- the flock releases with the process, next tick proceeds.
+# MemoryMax makes a ballooning leg die here instead of the box. Healthy
+# peak legs run ~27 min under load; 45 min = ~1.7x observed max.
+TimeoutStartSec=45min
+MemoryMax=1G

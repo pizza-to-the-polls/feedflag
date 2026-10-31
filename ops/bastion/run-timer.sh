@@ -30,16 +30,6 @@ cd /opt/feedflag
 # extraction takes 6+ min (it was ~30s when Apify 401'd instantly) — 300s
 # starved the social leg out of its tick. Heartbeat waits too —
 # the CW dead-man alarms on long gaps, not one skipped tick.
-exec 9>/opt/feedflag/.run-lock
-if ! flock -w 600 9; then
-  echo "[timer] another feedflag leg holds the run lock >5min — skipping this tick ($MODE)"
-  exit 0
-fi
-
-# Digest targets (issue #31) — overridable from .env; never REQUIRED.
-FINDINGS_ISSUE="${FINDINGS_ISSUE:-5}"
-FEEDFLAG_REPO_SLUG="${FEEDFLAG_REPO_SLUG:-pizza-to-the-polls/feedflag}"
-
 ALERT_MARKER=/opt/feedflag/data/.alert-throttle
 maybe_alert() {
   echo "[timer] ALERT: $1" >&2
@@ -53,6 +43,25 @@ maybe_alert() {
     touch "$ALERT_MARKER"
   fi
 }
+
+exec 9>/opt/feedflag/.run-lock
+if ! flock -w 600 9; then
+  echo "[timer] another feedflag leg holds the run lock >5min — skipping this tick ($MODE)"
+  # 2026-10-31 election-night wedge: a peak leg spun a full core holding this
+  # lock until a manual EC2 reboot — timers kept firing, heartbeats stayed
+  # green, and these skip lines only reached journald. Make a held lock
+  # observable: a LockWait datapoint (alarm feedflag-lock-wait → SNS
+  # feedflag-alerts) + a throttled Slack page. Next tick retries either way.
+  aws cloudwatch put-metric-data --namespace Feedflag --metric-name LockWait \
+    --value 1 --unit Count --region us-west-2 >/dev/null 2>&1 || true
+  maybe_alert "feedflag run-lock held >10min on $(hostname) — a leg (likely peak) is wedged or very long; ticks are being skipped. journalctl -t run-timer on the box."
+  exit 0
+fi
+
+# Digest targets (issue #31) — overridable from .env; never REQUIRED.
+FINDINGS_ISSUE="${FINDINGS_ISSUE:-5}"
+FEEDFLAG_REPO_SLUG="${FEEDFLAG_REPO_SLUG:-pizza-to-the-polls/feedflag}"
+
 
 # ── deploy pull: self-healing (issue #22) ────────────────────────────────
 # The old `git pull --ff-only` silently wedged when the local `main` branch

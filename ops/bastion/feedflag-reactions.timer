@@ -2,8 +2,6 @@
 Description=feedflag reactions hourly at :20 (voting-hours gate inside the runner)
 
 [Timer]
-# :20 offset — the other legs fire on the :0/:15/:30 marks; hourly collection
-# is plenty for reaction latency and keeps this fire off the busy marks.
 OnCalendar=*:20
 Persistent=true
 
