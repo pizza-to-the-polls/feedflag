@@ -48,6 +48,7 @@ import {
   refreshAdvanced,
   type ReadingState,
 } from "../src/govt/gates.js";
+import { unwrapJsonString } from "../src/govt/rest-body.js";
 import { hasGovtEvidence } from "../src/govt/evidence.js";
 import { MIN_POST_MINUTES } from "../src/notify/format.js";
 import { createResolveDeps, resolveLocation } from "../src/locate/resolve.js";
@@ -427,7 +428,7 @@ async function restExtractReadings(s: Source): Promise<Reading[]> {
         signal: AbortSignal.timeout(30000),
       });
       if (!res.ok) return [];
-      const j = (await res.json()) as Record<string, unknown>;
+      const j = unwrapJsonString(await res.json()) as Record<string, unknown>;
       let node: unknown = j;
       if (r.recordsPath) {
         for (const part of r.recordsPath.split(".")) {
