@@ -195,3 +195,21 @@ commits). Any `git add -f data` or `git commit` in the runner is a regression.
 
 The watchdog is GH-side **because** the box can't witness its own death; CW alarm is AWS-side.
 Both feed Slack; the SNS email is the only passive path that works with Slack itself down.
+
+## Hardening — anti-wedge (2026-10-31)
+
+Election-night incident class: a wedged `peak` leg (hot loop) held the
+run-lock until a manual EC2 reboot; memory pressure OOM'd the SSM agent +
+pizza-eagle and stranded the Retool tunnel. Layers, all in this dir:
+
+| Layer | What it stops | Where |
+|---|---|---|
+| `TimeoutStartSec=45min` | a wedged leg hanging the lock until manual reboot — systemd kills it, fd closes, **the flock releases**, next tick proceeds. Healthy peak legs ~27 min under load → 45m ≈ 1.7× headroom | `feedflag-{peak,social,hot,digest,reactions,govwatch}.service` |
+| `MemoryMax=1G` (256M heartbeat) | a ballooning leg OOM-ing the box (tonight it was SSM + pizza-eagle that died) | same units |
+| **`LockWait` metric + `feedflag-lock-wait` alarm** | the *silent* wedge: the skip path was journald-only while heartbeats stayed green (timers kept firing) — now it emits `Feedflag/LockWait` + throttled Slack; alarm Sum ≥ 2 over 30 min → SNS `feedflag-alerts` | `run-timer.sh` flock-skip branch |
+| `install.sh` | units lost on instance replacement (they're out-of-band of the pizza-eagle stack) — idempotent installer, run via SSM after any resize/AMI bump; header has the command | `ops/bastion/install.sh` |
+
+Plus headroom on the box itself: bastion resized t4g.small → t4g.medium
+(pizza-eagle stack, 2026-10-31) — a wedged leg has 4 GB to spin against
+before it can pressure its neighbours, and pizza-eagle.service got
+`MemoryMax=1G` (it has oom-kill history: Oct 24/26/31).
