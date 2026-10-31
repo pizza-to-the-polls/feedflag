@@ -16,6 +16,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { unwrapJsonString } from "../src/govt/rest-body.js";
 import {
   FRESHNESS_FROZEN_RUNS,
   INACTIVE_TTL_MS,
@@ -640,6 +641,62 @@ const CLARK_HOURS = "09:00-18:00";
 
   console.log(
     "  ✓ announce+freshness: refreshAdvanced gates liveness, state carries announced",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// REST body unwrap — the Tarrant GIS double-encoded GetWaitTimes response
+// ---------------------------------------------------------------------------
+{
+  // The incident body: ASP.NET page method returns JSON.stringify(payload)
+  // as the HTTP body — res.json() yields a STRING wrapping the real object.
+  // The county's own client does JSON.parse(raw) on it (shared.js
+  // CallWebMethod); unwrapJsonString replicates that upstream of recordsPath.
+  const inner = { ElectionLocations: [{ POLLING_PL: "ACTIV" }], n: 2 };
+  const body = JSON.stringify(JSON.stringify(inner)); // "\"{\\\"ElectionLocations…}\""
+  const parsed = JSON.parse(body); // what res.json() actually yields
+  assert.equal(
+    typeof parsed,
+    "string",
+    "fixture really is the double-encoded shape (JSON string body)",
+  );
+  assert.deepEqual(
+    unwrapJsonString(parsed),
+    inner,
+    "a JSON-string body unwraps to the payload object",
+  );
+
+  // Passthrough: an already-decoded body must never be touched.
+  const plain = { ElectionLocations: [{ POLLING_PL: "ACTIV" }] };
+  assert.equal(
+    unwrapJsonString(plain),
+    plain,
+    "a plain object passes through unchanged",
+  );
+
+  // A string that is NOT JSON (plain-text/HTML body) passes through as-is —
+  // the caller must see it, not null, not {}.
+  assert.equal(
+    unwrapJsonString("<html>Length Required</html>"),
+    "<html>Length Required</html>",
+    "a non-JSON string passes through unchanged",
+  );
+  assert.equal(unwrapJsonString(""), "", "empty string passes through");
+  assert.deepEqual(
+    unwrapJsonString(null),
+    null,
+    "null body passes through (restExtractReadings treats it via recordsPath)",
+  );
+  // Numbers/booleans are valid JSON *scalars* — unwrap must not mangle a
+  // body that is just a number/string scalar (recordsPath then finds null).
+  assert.equal(
+    unwrapJsonString(JSON.stringify("522")),
+    "522",
+    "a JSON string scalar parses to the string itself, not a number",
+  );
+
+  console.log(
+    "  ✓ rest-body: JSON-string bodies unwrap, everything else passes through",
   );
 }
 
