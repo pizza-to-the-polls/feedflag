@@ -408,15 +408,40 @@ console.log("data-branch separation regression tests (issue #20)\n");
   // The runner must implement every mode a unit ExecStarts — a unit fired
   // against an unimplemented mode exits 1 on the `unknown mode` branch, a
   // silent dark leg (issue #31: digest + reactions were exactly the two
+  // feedflag.yml steps with no bastion case). HEARTBEAT IS THE EXCEPTION:
+  // a lock-free early exit, not a case label — pinned below.
   // feedflag.yml steps with no bastion case).
   const runnerText = readFileSync(join(bastionDir, "run-timer.sh"), "utf8");
-  for (const mode of MODES) {
+  for (const mode of MODES.filter((m) => m !== "heartbeat")) {
     assert.match(
       runnerText,
       new RegExp(`^\\s{2}${mode}\\)`, "m"),
       `run-timer.sh must implement the "${mode}" mode (case label)`,
     );
   }
+
+  // Heartbeat is the exception: a LOCK-FREE early exit, not a case label.
+  // The 2026-10-31 interaction: the unit is capped at TimeoutStartSec=2min
+  // (anti-wedge: a wedged heartbeat must die fast) while the lock wait is
+  // 600s (#64: working-Apify peak legs run 6+ min), so a heartbeat queued
+  // behind long govt/peak legs was hard-killed at 120s 2-4x/hour — and
+  // since the metric post also sat behind the lock, those ticks posted
+  // nothing: the dead-man went dark while legs were merely busy. Pin the
+  // shape AND the ordering so no future edit moves it back behind the lock.
+  const heartbeatExit = runnerText.match(
+    /^if \[ "\$MODE" = "heartbeat" \]; then\n  heartbeat\n  echo "\[timer\] heartbeat only[^"\n]*"\n  exit 0\nfi$/m,
+  );
+  assert.ok(
+    heartbeatExit,
+    "run-timer.sh: heartbeat must be a lock-free early exit that posts the CW metric and exits 0",
+  );
+  const lockIdx = runnerText.indexOf("exec 9>/opt/feedflag/.run-lock");
+  assert.ok(
+    lockIdx !== -1 &&
+      heartbeatExit !== null &&
+      runnerText.indexOf(heartbeatExit[0]) < lockIdx,
+    "run-timer.sh: the heartbeat early exit must run BEFORE the run-lock acquisition",
+  );
   // Digest mode content parity with the feedflag.yml "Post findings digest"
   // step: 26h digest + --report-only addendum + issue #5 comment + Slack
   // mirror; and it needs its own credential (issues:write PAT) in the boot
