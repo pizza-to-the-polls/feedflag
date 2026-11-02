@@ -88,7 +88,13 @@ import { appendFileSync, readFileSync } from "node:fs";
 const fixture = process.env.DIGEST_STUB_FIXTURE;
 const status = Number(process.env.DIGEST_STUB_STATUS ?? 200);
 const capture = process.env.DIGEST_STUB_CAPTURE;
+// DIGEST_STUB_THROW_FIRST: throw on the first N calls (network-fail probe).
+let throwFirst = Number(process.env.DIGEST_STUB_THROW_FIRST ?? 0);
 globalThis.fetch = async (url) => {
+  if (throwFirst > 0) {
+    throwFirst--;
+    throw new Error("synthetic network failure");
+  }
   if (capture) appendFileSync(capture, String(url) + "\\n");
   return new Response(readFileSync(fixture, "utf8"), {
     status,
@@ -330,7 +336,35 @@ const API = "https://pizzabase.example.invalid";
   });
   assert.equal(noCreds.code, 1, "missing creds exit 1");
   assert.match(noCreds.err, /PIZZABASE_API_URL \+ PIZZABASE_API_KEY/);
-  console.log("  ✓ transport: 500 and missing creds exit 1 with a message");
+
+  // The 2026-11-01 outage, pinned: a transient network failure on the first
+  // fetch must NOT kill the digest — it retries once and posts. Two
+  // consecutive failures exit 1 (loud floor intact).
+  const flaky = runDigest(cannedSummary(), {
+    PIZZABASE_API_URL: API,
+    PIZZABASE_API_KEY: "synthetic-key",
+    DIGEST_STUB_THROW_FIRST: "1",
+  });
+  assert.equal(
+    flaky.code,
+    0,
+    "one transient fetch failure retries and succeeds",
+  );
+  assert.match(flaky.err, /retrying once/);
+  assert.match(flaky.out, /2931 observations/, "the digest still rendered");
+
+  const dead = runDigest(cannedSummary(), {
+    PIZZABASE_API_URL: API,
+    PIZZABASE_API_KEY: "synthetic-key",
+    DIGEST_STUB_THROW_FIRST: "5",
+  });
+  assert.equal(dead.code, 1, "two consecutive failures exit 1");
+  assert.match(dead.err, /failed twice/);
+  assert.equal(dead.out, "", "nothing posted");
+
+  console.log(
+    "  ✓ transport: 500, missing creds, and retry-once on network failure",
+  );
 }
 
 console.log("\nAll digest db-mode regression tests passed.");
