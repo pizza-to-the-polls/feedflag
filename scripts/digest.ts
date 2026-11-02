@@ -160,17 +160,43 @@ async function fetchSummary(): Promise<SummaryResponse> {
     // explicitly-empty string carries that same meaning.
     flag_categories: FLAG_CATEGORIES ? FLAG_CATEGORIES.join(",") : "",
   });
-  const res = await fetch(`${API}/feed-observations/summary?${q.toString()}`, {
-    headers: { authorization: `Basic ${TOKEN}` },
-    signal: AbortSignal.timeout(15000),
-  });
-  if (!res.ok) {
-    console.error(
-      `[digest] summary endpoint ${res.status} — pizzabase unreachable or unauthorized`,
-    );
-    process.exit(1);
+  // The 2026-11-01 outage: 15s was too tight for election volume — the
+  // summary scans a 26h window that reached ~400k rows (measured 2.7s for
+  // the bare count warm, but the full aggregate with its CTEs took >15s
+  // at 02:00 UTC with cold buffers), so the fetch aborted, the digest
+  // exited 1, and issue #5 went dark for the day — the loud floor worked
+  // exactly as designed; the timeout was simply wrong for a once-daily
+  // query over a cold, election-sized window. 75s + one retry: slow is
+  // fine at 02:00, dark is not.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    let res: Response;
+    try {
+      res = await fetch(`${API}/feed-observations/summary?${q.toString()}`, {
+        headers: { authorization: `Basic ${TOKEN}` },
+        signal: AbortSignal.timeout(75000),
+      });
+    } catch (err) {
+      if (attempt === 1) {
+        console.warn(
+          `[digest] summary fetch failed (${String(err).slice(0, 100)}) — retrying once`,
+        );
+        continue;
+      }
+      console.error(
+        `[digest] summary fetch failed twice — pizzabase unreachable: ${String(err).slice(0, 120)}`,
+      );
+      process.exit(1);
+    }
+    if (!res.ok) {
+      console.error(
+        `[digest] summary endpoint ${res.status} — pizzabase unreachable or unauthorized`,
+      );
+      process.exit(1);
+    }
+    return (await res.json()) as SummaryResponse;
   }
-  return (await res.json()) as SummaryResponse;
+  // Unreachable: the loop returns or exits.
+  throw new Error("unreachable");
 }
 
 function renderDbDigest(
